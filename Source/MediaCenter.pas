@@ -380,7 +380,7 @@ begin
 
   if umlFileExists(FileName) then
     begin
-      Result := TCoreClassFileStream.Create(FileName, fmOpenRead or fmShareDenyWrite);
+      Result := TCoreClassFileStream.Create(FileName, fmOpenRead or fmShareDenyNone);
       Exit;
     end;
 
@@ -390,7 +390,7 @@ begin
   n := umlCombineFileName(TPath.GetLibraryPath, n);
   if umlFileExists(n) then
     begin
-      Result := TCoreClassFileStream.Create(n, fmOpenRead or fmShareDenyWrite);
+      Result := TCoreClassFileStream.Create(n, fmOpenRead or fmShareDenyNone);
       Exit;
     end;
 
@@ -398,7 +398,7 @@ begin
   n := umlCombineFileName(TPath.GetDocumentsPath, n);
   if umlFileExists(n) then
     begin
-      Result := TCoreClassFileStream.Create(n, fmOpenRead or fmShareDenyWrite);
+      Result := TCoreClassFileStream.Create(n, fmOpenRead or fmShareDenyNone);
       Exit;
     end;
 
@@ -406,7 +406,7 @@ begin
   n := umlCombineFileName(TPath.GetDownloadsPath, n);
   if umlFileExists(n) then
     begin
-      Result := TCoreClassFileStream.Create(n, fmOpenRead or fmShareDenyWrite);
+      Result := TCoreClassFileStream.Create(n, fmOpenRead or fmShareDenyNone);
       Exit;
     end;
 
@@ -414,7 +414,7 @@ begin
   n := umlCombineFileName(TPath.GetSharedDownloadsPath, n);
   if umlFileExists(n) then
     begin
-      Result := TCoreClassFileStream.Create(n, fmOpenRead or fmShareDenyWrite);
+      Result := TCoreClassFileStream.Create(n, fmOpenRead or fmShareDenyNone);
       Exit;
     end;
 {$ENDIF}
@@ -714,7 +714,7 @@ begin
       n := umlCombineFileName(TPath.GetLibraryPath, n);
       if umlFileExists(n) then
         begin
-          Result := TCoreClassFileStream.Create(n, fmOpenRead or fmShareDenyWrite);
+          Result := TCoreClassFileStream.Create(n, fmOpenRead or fmShareDenyNone);
           Exit;
         end;
 
@@ -722,7 +722,7 @@ begin
       n := umlCombineFileName(TPath.GetDocumentsPath, n);
       if umlFileExists(n) then
         begin
-          Result := TCoreClassFileStream.Create(n, fmOpenRead or fmShareDenyWrite);
+          Result := TCoreClassFileStream.Create(n, fmOpenRead or fmShareDenyNone);
           Exit;
         end;
 
@@ -730,7 +730,7 @@ begin
       n := umlCombineFileName(TPath.GetDownloadsPath, n);
       if umlFileExists(n) then
         begin
-          Result := TCoreClassFileStream.Create(n, fmOpenRead or fmShareDenyWrite);
+          Result := TCoreClassFileStream.Create(n, fmOpenRead or fmShareDenyNone);
           Exit;
         end;
 
@@ -738,7 +738,7 @@ begin
       n := umlCombineFileName(TPath.GetSharedDownloadsPath, n);
       if umlFileExists(n) then
         begin
-          Result := TCoreClassFileStream.Create(n, fmOpenRead or fmShareDenyWrite);
+          Result := TCoreClassFileStream.Create(n, fmOpenRead or fmShareDenyNone);
           Exit;
         end;
 {$ENDIF}

@@ -23,7 +23,7 @@ var
 begin
   p := PLearnMemory(FMemorySource[IndexFor]);
   Source.index := IndexFor;
-  for i := 0 to FInLen - 1 do
+  for i := 0 to FInSize - 1 do
       Source.buff[i] := p^.m_in[i];
   Source.token := p^.token;
 end;
@@ -35,7 +35,7 @@ var
 begin
   p := PLearnMemory(FMemorySource[IndexFor]);
   Source.index := IndexFor;
-  for i := 0 to FOutLen - 1 do
+  for i := 0 to FOutSize - 1 do
       Source.buff[i] := p^.m_out[i];
   Source.token := p^.token;
 end;
@@ -76,7 +76,7 @@ begin
     end;
 end;
 
-procedure TLearn.CreateLearnData(const isTrainTime: Boolean);
+procedure TLearn.CreateLearnData(const isTrainingTime: Boolean);
 var
   p_k: PLearnKDT;
   p_f: PDecisionForest;
@@ -84,22 +84,22 @@ var
   p_n: PMultiLayerPerceptron;
   p_e: PMLPEnsemble;
 begin
-  if not isTrainTime then
+  if not isTrainingTime then
       FreeLearnData;
 
   case FLearnType of
     ltKDT, ltKM:
       begin
-        if not isTrainTime then
+        if not isTrainingTime then
           begin
             new(p_k);
-            p_k^.K := TKDTree.Create(FInLen);
+            p_k^.K := TKDTree.Create(FInSize);
             FLearnData := p_k;
           end;
       end;
     ltForest:
       begin
-        if not isTrainTime then
+        if not isTrainingTime then
           begin
             new(p_f);
             FLearnData := p_f;
@@ -107,7 +107,7 @@ begin
       end;
     ltLogit:
       begin
-        if not isTrainTime then
+        if not isTrainingTime then
           begin
             new(p_logit);
             FLearnData := p_logit;
@@ -115,7 +115,7 @@ begin
       end;
     ltLM, ltLM_MT, ltLBFGS, ltLBFGS_MT, ltLBFGS_MT_Mod, ltMonteCarlo:
       begin
-        if not isTrainTime then
+        if not isTrainingTime then
           begin
             new(p_n);
             FLearnData := p_n;
@@ -125,28 +125,28 @@ begin
 
         if FClassifier then
           begin
-            if isTrainTime then
+            if isTrainingTime then
               begin
                 case FHideLayerDepth of
-                  hld0: MLPCreateC0(FInLen, Round(FLastTrainMaxOutValue) + 1, p_n^);
-                  hld1: MLPCreateC1(FInLen, FInLen, Round(FLastTrainMaxOutValue) + 1, p_n^);
-                  else MLPCreateC2(FInLen, FInLen, FInLen, Round(FLastTrainMaxOutValue) + 1, p_n^);
+                  hld0: MLPCreateC0(FInSize, Round(FLastTrainMaxOutValue) + 1, p_n^);
+                  hld1: MLPCreateC1(FInSize, FInSize, Round(FLastTrainMaxOutValue) + 1, p_n^);
+                  else MLPCreateC2(FInSize, FInSize, FInSize, Round(FLastTrainMaxOutValue) + 1, p_n^);
                 end;
               end;
           end
         else
           begin
             case FHideLayerDepth of
-              hld0: MLPCreate0(FInLen, FOutLen, p_n^);
-              hld1: MLPCreate1(FInLen, FInLen, FOutLen, p_n^);
-              else MLPCreate2(FInLen, FInLen, FInLen, FOutLen, p_n^);
+              hld0: MLPCreate0(FInSize, FOutSize, p_n^);
+              hld1: MLPCreate1(FInSize, FInSize, FOutSize, p_n^);
+              else MLPCreate2(FInSize, FInSize, FInSize, FOutSize, p_n^);
             end;
           end;
 
       end;
     ltLM_Ensemble, ltLM_Ensemble_MT, ltLBFGS_Ensemble, ltLBFGS_Ensemble_MT:
       begin
-        if not isTrainTime then
+        if not isTrainingTime then
           begin
             new(p_e);
             FLearnData := p_e;
@@ -156,21 +156,21 @@ begin
 
         if FClassifier then
           begin
-            if isTrainTime then
+            if isTrainingTime then
               begin
                 case FHideLayerDepth of
-                  hld0: MLPECreateC0(FInLen, Round(FLastTrainMaxOutValue) + 1, 10, p_e^);
-                  hld1: MLPECreateC1(FInLen, FInLen, Round(FLastTrainMaxOutValue) + 1, 10, p_e^);
-                  else MLPECreateC2(FInLen, FInLen, FInLen, Round(FLastTrainMaxOutValue) + 1, 10, p_e^);
+                  hld0: MLPECreateC0(FInSize, Round(FLastTrainMaxOutValue) + 1, 10, p_e^);
+                  hld1: MLPECreateC1(FInSize, FInSize, Round(FLastTrainMaxOutValue) + 1, 10, p_e^);
+                  else MLPECreateC2(FInSize, FInSize, FInSize, Round(FLastTrainMaxOutValue) + 1, 10, p_e^);
                 end;
               end;
           end
         else
           begin
             case FHideLayerDepth of
-              hld0: MLPECreate0(FInLen, FOutLen, 10, p_e^);
-              hld1: MLPECreate1(FInLen, FInLen, FOutLen, 10, p_e^);
-              else MLPECreate2(FInLen, FInLen, FInLen, FOutLen, 10, p_e^);
+              hld0: MLPECreate0(FInSize, FOutSize, 10, p_e^);
+              hld1: MLPECreate1(FInSize, FInSize, FOutSize, 10, p_e^);
+              else MLPECreate2(FInSize, FInSize, FInSize, FOutSize, 10, p_e^);
             end;
           end;
       end;
@@ -187,21 +187,21 @@ begin
   Result := TLearn.Create;
   with Result do
     begin
-      FEnabledRandomNumber := False;
+      FRandomNumber := False;
 
-      FInLen := InDataLen;
-      FOutLen := OutDataLen;
+      FInSize := InDataLen;
+      FOutSize := OutDataLen;
 
-      if (FOutLen <> 1) then
+      if (FOutSize <> 1) then
         begin
           if (lt = ltForest) then
-              FOutLen := 1
+              FOutSize := 1
           else if (lt = ltLogit) then
-              FOutLen := 1;
+              FOutSize := 1;
         end;
 
       FMemorySource := TCoreClassList.Create;
-      FKDToken := TKDTree.Create(FOutLen);
+      FKDToken := TKDTree.Create(FOutSize);
       FLearnType := lt;
 
       FLearnData := nil;
@@ -213,7 +213,7 @@ begin
       FLastTrainMaxOutValue := 0;
       FInfo := '';
       FIsTraining := False;
-      FTrainThreadRuning := False;
+      FTrainingThreadRuning := False;
 
       FUserData := nil;
       FUserObject := nil;
@@ -230,21 +230,21 @@ begin
   Result := TLearn.Create;
   with Result do
     begin
-      FEnabledRandomNumber := False;
+      FRandomNumber := False;
 
-      FInLen := InDataLen;
-      FOutLen := OutDataLen;
+      FInSize := InDataLen;
+      FOutSize := OutDataLen;
 
-      if (FOutLen <> 1) then
+      if (FOutSize <> 1) then
         begin
           if (lt = ltForest) then
-              FOutLen := 1
+              FOutSize := 1
           else if (lt = ltLogit) then
-              FOutLen := 1;
+              FOutSize := 1;
         end;
 
       FMemorySource := TCoreClassList.Create;
-      FKDToken := TKDTree.Create(FOutLen);
+      FKDToken := TKDTree.Create(FOutSize);
       FLearnType := lt;
 
       FLearnData := nil;
@@ -256,7 +256,7 @@ begin
       FLastTrainMaxOutValue := 0;
       FInfo := '';
       FIsTraining := False;
-      FTrainThreadRuning := False;
+      FTrainingThreadRuning := False;
 
       FUserData := nil;
       FUserObject := nil;
@@ -273,21 +273,21 @@ begin
   Result := TLearn.Create;
   with Result do
     begin
-      FEnabledRandomNumber := False;
+      FRandomNumber := False;
 
-      FInLen := InDataLen;
-      FOutLen := OutDataLen;
+      FInSize := InDataLen;
+      FOutSize := OutDataLen;
 
-      if (FOutLen <> 1) then
+      if (FOutSize <> 1) then
         begin
           if (lt = ltForest) then
-              FOutLen := 1
+              FOutSize := 1
           else if (lt = ltLogit) then
-              FOutLen := 1;
+              FOutSize := 1;
         end;
 
       FMemorySource := TCoreClassList.Create;
-      FKDToken := TKDTree.Create(FOutLen);
+      FKDToken := TKDTree.Create(FOutSize);
       FLearnType := lt;
 
       FLearnData := nil;
@@ -299,7 +299,7 @@ begin
       FLastTrainMaxOutValue := 0;
       FInfo := '';
       FIsTraining := False;
-      FTrainThreadRuning := False;
+      FTrainingThreadRuning := False;
 
       FUserData := nil;
       FUserObject := nil;
@@ -314,12 +314,12 @@ begin
   Result := TLearn.Create;
   with Result do
     begin
-      FEnabledRandomNumber := False;
+      FRandomNumber := False;
 
-      FInLen := InDataLen;
-      FOutLen := 1;
+      FInSize := InDataLen;
+      FOutSize := 1;
       FMemorySource := TCoreClassList.Create;
-      FKDToken := TKDTree.Create(FOutLen);
+      FKDToken := TKDTree.Create(FOutSize);
       FLearnType := lt;
 
       FLearnData := nil;
@@ -331,7 +331,7 @@ begin
       FLastTrainMaxOutValue := 0;
       FInfo := '';
       FIsTraining := False;
-      FTrainThreadRuning := False;
+      FTrainingThreadRuning := False;
 
       FUserData := nil;
       FUserObject := nil;
@@ -346,12 +346,12 @@ begin
   Result := TLearn.Create;
   with Result do
     begin
-      FEnabledRandomNumber := False;
+      FRandomNumber := False;
 
-      FInLen := InDataLen;
-      FOutLen := 1;
+      FInSize := InDataLen;
+      FOutSize := 1;
       FMemorySource := TCoreClassList.Create;
-      FKDToken := TKDTree.Create(FOutLen);
+      FKDToken := TKDTree.Create(FOutSize);
       FLearnType := lt;
 
       FLearnData := nil;
@@ -363,7 +363,7 @@ begin
       FLastTrainMaxOutValue := 0;
       FInfo := '';
       FIsTraining := False;
-      FTrainThreadRuning := False;
+      FTrainingThreadRuning := False;
 
       FUserData := nil;
       FUserObject := nil;
@@ -378,12 +378,12 @@ begin
   Result := TLearn.Create;
   with Result do
     begin
-      FEnabledRandomNumber := False;
+      FRandomNumber := False;
 
-      FInLen := InDataLen;
-      FOutLen := 1;
+      FInSize := InDataLen;
+      FOutSize := 1;
       FMemorySource := TCoreClassList.Create;
-      FKDToken := TKDTree.Create(FOutLen);
+      FKDToken := TKDTree.Create(FOutSize);
       FLearnType := lt;
 
       FLearnData := nil;
@@ -395,7 +395,7 @@ begin
       FLastTrainMaxOutValue := 0;
       FInfo := '';
       FIsTraining := False;
-      FTrainThreadRuning := False;
+      FTrainingThreadRuning := False;
 
       FUserData := nil;
       FUserObject := nil;
@@ -405,9 +405,9 @@ end;
 constructor TLearn.Create;
 begin
   inherited Create;
-  FEnabledRandomNumber := False;
-  FInLen := 1;
-  FOutLen := 1;
+  FRandomNumber := False;
+  FInSize := 1;
+  FOutSize := 1;
   FMemorySource := nil;
   FKDToken := nil;
   FLearnType := ltKDT;
@@ -418,7 +418,7 @@ begin
   FLastTrainMaxOutValue := 0;
   FInfo := '';
   FIsTraining := False;
-  FTrainThreadRuning := False;
+  FTrainingThreadRuning := False;
   FUserData := nil;
   FUserObject := nil;
 end;
@@ -427,7 +427,7 @@ destructor TLearn.Destroy;
 var
   i: TLInt;
 begin
-  WaitTrain;
+  WaitTraining;
 
   if FMemorySource <> nil then
     begin
@@ -449,8 +449,8 @@ begin
 
   FreeLearnData;
 
-  FInLen := 0;
-  FOutLen := 0;
+  FInSize := 0;
+  FOutSize := 0;
   FInfo := '';
   inherited Destroy;
 end;
@@ -465,7 +465,7 @@ var
   p_n: PMultiLayerPerceptron;
   p_e: PMLPEnsemble;
 begin
-  WaitTrain;
+  WaitTraining;
 
   if FMemorySource <> nil then
     begin
@@ -505,10 +505,10 @@ var
   p: PLearnMemory;
   i: TLInt;
 begin
-  if FIsTraining or FTrainThreadRuning then
+  if FIsTraining or FTrainingThreadRuning then
       RaiseInfo('wait Training');
-  if length(f_In) <> FInLen then
-      RaiseInfo('input length need = %d', [FInLen]);
+  if length(f_In) <> FInSize then
+      RaiseInfo('input length need = %d', [FInSize]);
   if FClassifier then
     begin
       if (length(f_Out) <> 1) then
@@ -516,15 +516,15 @@ begin
     end
   else
     begin
-      if (length(f_Out) <> FOutLen) then
-          RaiseInfo('Regression output length need = %d', [FOutLen]);
+      if (length(f_Out) <> FOutSize) then
+          RaiseInfo('Regression output length need = %d', [FOutSize]);
     end;
 
   new(p);
-  SetLength(p^.m_in, FInLen);
-  CopyPtr(@f_In[0], @(p^.m_in[0]), FInLen * SizeOf(TLFloat));
-  SetLength(p^.m_out, FOutLen);
-  CopyPtr(@f_Out[0], @(p^.m_out[0]), FOutLen * SizeOf(TLFloat));
+  SetLength(p^.m_in, FInSize);
+  CopyPtr(@f_In[0], @(p^.m_in[0]), FInSize * SizeOf(TLFloat));
+  SetLength(p^.m_out, FOutSize);
+  CopyPtr(@f_Out[0], @(p^.m_out[0]), FOutSize * SizeOf(TLFloat));
   p^.token := f_token;
 
   FMemorySource.Add(p);
@@ -534,7 +534,7 @@ procedure TLearn.AddMemory(const f_In: TLVec; f_token: SystemString);
 var
   f_Out: TLVec;
 begin
-  f_Out := LVec(FOutLen);
+  f_Out := LVec(FOutSize);
   LSetVec(f_Out, Count);
   AddMemory(f_In, f_Out, f_token);
   SetLength(f_Out, 0);
@@ -549,8 +549,8 @@ procedure TLearn.AddMemory(const s_In, s_Out, s_token: SystemString);
 var
   f_In, f_Out: TLVec;
 begin
-  f_In := LVec(s_In, FInLen);
-  f_Out := LVec(s_Out, FOutLen);
+  f_In := LVec(s_In, FInSize);
+  f_Out := LVec(s_Out, FOutSize);
   AddMemory(f_In, f_Out, s_token);
   SetLength(f_In, 0);
   SetLength(f_Out, 0);
@@ -572,7 +572,7 @@ begin
       AddMemory(s_In.Text, s_Out.Text)
   else
     begin
-      v := LVec(FOutLen);
+      v := LVec(FOutSize);
       LSetVec(v, Count);
       AddMemory(s_In.Text, LVec(v), s_Out.Text);
       SetLength(v, 0);
@@ -598,7 +598,7 @@ procedure TLearn.AddMatrix(const m_in: TLMatrix; const f_Out: TLVec);
 var
   f_In: TLVec;
 begin
-  f_In := LVec(m_in, FInLen);
+  f_In := LVec(m_in, FInSize);
   AddMemory(f_In, f_Out);
   SetLength(f_In, 0);
 end;
@@ -607,7 +607,7 @@ procedure TLearn.AddMatrix(const m_in: TLMatrix; const f_Out: TLVec; const f_tok
 var
   f_In: TLVec;
 begin
-  f_In := LVec(m_in, FInLen);
+  f_In := LVec(m_in, FInSize);
   AddMemory(f_In, f_Out, f_token);
   SetLength(f_In, 0);
 end;
@@ -624,7 +624,7 @@ begin
     end;
 end;
 
-function TLearn.Train(const TrainDepth: TLInt): Boolean;
+function TLearn.Training(const TrainDepth: TLInt): Boolean;
 var
   p_k: PLearnKDT;
   p_f: PDecisionForest;
@@ -651,43 +651,43 @@ var
 
     if FClassifier then
       begin
-        SetLength(buff, FMemorySource.Count, FInLen + 1);
+        SetLength(buff, FMemorySource.Count, FInSize + 1);
         for i := 0 to FMemorySource.Count - 1 do
           begin
-            for j := 0 to FInLen - 1 do
+            for j := 0 to FInSize - 1 do
               begin
                 v := PLearnMemory(FMemorySource[i])^.m_in[j];
                 if v > FLastTrainMaxInValue then
                     FLastTrainMaxInValue := v;
-                buff[i][j] := v;
+                buff[i, j] := v;
               end;
 
             v := PLearnMemory(FMemorySource[i])^.m_out[0];;
             if v > FLastTrainMaxOutValue then
                 FLastTrainMaxOutValue := v;
-            buff[i][FInLen] := v;
+            buff[i, FInSize] := v;
           end;
         CreateLearnData(True);
       end
     else
       begin
-        SetLength(buff, FMemorySource.Count, FInLen + FOutLen);
+        SetLength(buff, FMemorySource.Count, FInSize + FOutSize);
         for i := 0 to FMemorySource.Count - 1 do
           begin
-            for j := 0 to FInLen - 1 do
+            for j := 0 to FInSize - 1 do
               begin
                 v := PLearnMemory(FMemorySource[i])^.m_in[j];
                 if v > FLastTrainMaxInValue then
                     FLastTrainMaxInValue := v;
-                buff[i][j] := v;
+                buff[i, j] := v;
               end;
 
-            for j := 0 to FOutLen - 1 do
+            for j := 0 to FOutSize - 1 do
               begin
                 v := PLearnMemory(FMemorySource[i])^.m_out[j];
                 if v > FLastTrainMaxOutValue then
                     FLastTrainMaxOutValue := v;
-                buff[i][FInLen + j] := v;
+                buff[i, FInSize + j] := v;
               end;
           end;
       end;
@@ -715,8 +715,8 @@ begin
 
   FIsTraining := True;
 
-  if not FEnabledRandomNumber then
-      RandSeed := 0;
+  if not FRandomNumber then
+      SetMT19937Seed(0);
 
   FKDToken.BuildKDTreeM(FMemorySource.Count, nil, {$IFDEF FPC}@{$ENDIF FPC}TokenInput);
 
@@ -752,9 +752,9 @@ begin
           BuildInternalData;
           p_f := PDecisionForest(FLearnData);
           if FClassifier then
-              DFBuildRandomDecisionForest(buff, length(buff), FInLen, Max(1, Round(FLastTrainMaxOutValue) + 1), 100, 1, rInfo, p_f^, DFRep)
+              DFBuildRandomDecisionForest(buff, length(buff), FInSize, Max(1, Round(FLastTrainMaxOutValue) + 1), 100, 1, rInfo, p_f^, DFRep)
           else
-              DFBuildRandomDecisionForest(buff, length(buff), FInLen, 1, 100, 1, rInfo, p_f^, DFRep);
+              DFBuildRandomDecisionForest(buff, length(buff), FInSize, 1, 100, 1, rInfo, p_f^, DFRep);
 
           FreeInternalData;
           case rInfo of
@@ -769,7 +769,7 @@ begin
         begin
           BuildInternalData;
           p_logit := PLogitModel(FLearnData);
-          MNLTrainH(buff, length(buff), FInLen, Max(2, Round(FLastTrainMaxOutValue) + 1), rInfo, p_logit^, logitRep);
+          MNLTrainH(buff, length(buff), FInSize, Max(2, Round(FLastTrainMaxOutValue) + 1), rInfo, p_logit^, logitRep);
 
           FreeInternalData;
           case rInfo of
@@ -914,82 +914,77 @@ begin
   end;
 end;
 
-function TLearn.Train: Boolean;
+function TLearn.Training: Boolean;
 begin
-  Result := Train(1);
+  Result := Training(1);
 end;
 
-procedure TLearn.Train_MT;
+procedure TLearn.Training_MT;
 var
-  th: TLearn_th;
+  th: TLearn_thread;
 begin
-  WaitTrain;
-  FTrainThreadRuning := True;
-  th := TLearn_th.Create;
+  WaitTraining;
+  FTrainingThreadRuning := True;
+  th := TLearn_thread.Create;
   th.Source := Self;
   th.TrainDepth := 1;
   th.Suspended := False;
 end;
 
-procedure TLearn.Train_MT(const TrainDepth: TLInt);
+procedure TLearn.Training_MT(const TrainDepth: TLInt);
 var
-  th: TLearn_th;
+  th: TLearn_thread;
 begin
-  WaitTrain;
-  FTrainThreadRuning := True;
-  th := TLearn_th.Create;
+  WaitTraining;
+  FTrainingThreadRuning := True;
+  th := TLearn_thread.Create;
   th.Source := Self;
   th.TrainDepth := TrainDepth;
   th.Suspended := False;
 end;
 
-procedure TLearn.TrainC(const TrainDepth: TLInt; const OnResult: TLearnState_Call);
+procedure TLearn.TrainingC(const TrainDepth: TLInt; const OnResult: TLearnState_Call);
 var
-  th: TLearn_th;
+  th: TLearn_thread;
 begin
-  WaitTrain;
-  FTrainThreadRuning := True;
-  th := TLearn_th.Create;
+  WaitTraining;
+  FTrainingThreadRuning := True;
+  th := TLearn_thread.Create;
   th.Source := Self;
   th.OnStateC := OnResult;
   th.TrainDepth := TrainDepth;
   th.Suspended := False;
 end;
 
-procedure TLearn.TrainM(const TrainDepth: TLInt; const OnResult: TLearnState_Method);
+procedure TLearn.TrainingM(const TrainDepth: TLInt; const OnResult: TLearnState_Method);
 var
-  th: TLearn_th;
+  th: TLearn_thread;
 begin
-  WaitTrain;
-  FTrainThreadRuning := True;
-  th := TLearn_th.Create;
+  WaitTraining;
+  FTrainingThreadRuning := True;
+  th := TLearn_thread.Create;
   th.Source := Self;
   th.OnStateM := OnResult;
   th.TrainDepth := TrainDepth;
   th.Suspended := False;
 end;
 
-{$IFNDEF FPC}
-
-
-procedure TLearn.TrainP(const TrainDepth: TLInt; const OnResult: TLearnState_Proc);
+procedure TLearn.TrainingP(const TrainDepth: TLInt; const OnResult: TLearnState_Proc);
 var
-  th: TLearn_th;
+  th: TLearn_thread;
 begin
-  WaitTrain;
-  FTrainThreadRuning := True;
-  th := TLearn_th.Create;
+  WaitTraining;
+  FTrainingThreadRuning := True;
+  th := TLearn_thread.Create;
   th.Source := Self;
   th.OnStateP := OnResult;
   th.TrainDepth := TrainDepth;
   th.Suspended := False;
 end;
-{$ENDIF FPC}
 
-
-procedure TLearn.WaitTrain;
+procedure TLearn.WaitTraining;
 begin
-  while FTrainThreadRuning do
+  while FTrainingThreadRuning do
       CheckThreadSynchronize(1);
 end;
 
@@ -1012,12 +1007,12 @@ var
 begin
   Result := False;
   try
-    if FIsTraining or FTrainThreadRuning then
+    if FIsTraining or FTrainingThreadRuning then
       begin
         FInfo := 'wait training';
         Exit;
       end;
-    if length(p_in^) <> FInLen then
+    if length(p_in^) <> FInSize then
       begin
         FInfo := 'input length error';
         Exit;
@@ -1040,9 +1035,9 @@ begin
               else
                 begin
                   p_kd_node := PLearnKDT(FLearnData)^.K.Search(p_in^);
-                  SetLength(p_out^, FOutLen);
+                  SetLength(p_out^, FOutSize);
                   if p_kd_node <> nil then
-                      CopyPtr(@(PLearnMemory(FMemorySource[p_kd_node^.Vec^.index])^.m_out[0]), @p_out^[0], FOutLen * SizeOf(TLFloat));
+                      CopyPtr(@(PLearnMemory(FMemorySource[p_kd_node^.Vec^.index])^.m_out[0]), @p_out^[0], FOutSize * SizeOf(TLFloat));
                 end;
               FInfo := 'successed';
               Result := True;
@@ -1078,7 +1073,7 @@ begin
           if FClassifier then
               SetLength(p_out^, Max(2, Round(FLastTrainMaxOutValue) + 1))
           else
-              SetLength(p_out^, FOutLen);
+              SetLength(p_out^, FOutSize);
 
           MLPProcess(PMultiLayerPerceptron(FLearnData)^, p_in^, p_out^);
           FInfo := 'successed';
@@ -1089,7 +1084,7 @@ begin
           if FClassifier then
               SetLength(p_out^, Max(2, Round(FLastTrainMaxOutValue) + 1))
           else
-              SetLength(p_out^, FOutLen);
+              SetLength(p_out^, FOutSize);
 
           MLPEProcess(PMLPEnsemble(FLearnData)^, p_in^, p_out^);
           FInfo := 'successed';
@@ -1119,14 +1114,14 @@ end;
 
 function TLearn.Process(const ProcessIn: TPascalString): SystemString;
 begin
-  Result := Process(TKDTree.KDTreeVec(ProcessIn.Text));
+  Result := Process(TKDTree.Vec(ProcessIn.Text));
 end;
 
 function TLearn.ProcessMatrix(const p_in: PLMatrix; const p_out: PLVec): Boolean;
 var
   f_In: TLVec;
 begin
-  f_In := LVec(p_in^, FInLen);
+  f_In := LVec(p_in^, FInSize);
   Result := Process(@f_In, p_out);
   SetLength(f_In, 0);
 end;
@@ -1166,7 +1161,7 @@ function TLearn.ProcessMax(const ProcessIn: TLMatrix): TLFloat;
 var
   f_In: TLVec;
 begin
-  f_In := LVec(ProcessIn, FInLen);
+  f_In := LVec(ProcessIn, FInSize);
   Result := ProcessMax(f_In);
   SetLength(f_In, 0);
 end;
@@ -1215,7 +1210,7 @@ function TLearn.ProcessMaxIndex(const ProcessIn: TLMatrix): TLInt;
 var
   f_In: TLVec;
 begin
-  f_In := LVec(ProcessIn, FInLen);
+  f_In := LVec(ProcessIn, FInSize);
   Result := ProcessMaxIndex(f_In);
   SetLength(f_In, 0);
 end;
@@ -1240,7 +1235,7 @@ function TLearn.ProcessMaxIndexToken(const ProcessIn: TLMatrix): SystemString;
 var
   f_In: TLVec;
 begin
-  f_In := LVec(ProcessIn, FInLen);
+  f_In := LVec(ProcessIn, FInSize);
   Result := ProcessMaxIndexToken(f_In);
   SetLength(f_In, 0);
 end;
@@ -1268,7 +1263,7 @@ function TLearn.ProcessMin(const ProcessIn: TLMatrix): TLFloat;
 var
   f_In: TLVec;
 begin
-  f_In := LVec(ProcessIn, FInLen);
+  f_In := LVec(ProcessIn, FInSize);
   Result := ProcessMin(f_In);
   SetLength(f_In, 0);
 end;
@@ -1317,7 +1312,7 @@ function TLearn.ProcessMinIndex(const ProcessIn: TLMatrix): TLInt;
 var
   f_In: TLVec;
 begin
-  f_In := LVec(ProcessIn, FInLen);
+  f_In := LVec(ProcessIn, FInSize);
   Result := ProcessMinIndex(f_In);
   SetLength(f_In, 0);
 end;
@@ -1342,7 +1337,7 @@ function TLearn.ProcessMinIndexToken(const ProcessIn: TLMatrix): SystemString;
 var
   f_In: TLVec;
 begin
-  f_In := LVec(ProcessIn, FInLen);
+  f_In := LVec(ProcessIn, FInSize);
   Result := ProcessMinIndexToken(f_In);
   SetLength(f_In, 0);
 end;
@@ -1364,14 +1359,14 @@ function TLearn.ProcessFV(const ProcessIn: TLMatrix): TLFloat;
 var
   f_In: TLVec;
 begin
-  f_In := LVec(ProcessIn, FInLen);
+  f_In := LVec(ProcessIn, FInSize);
   Result := ProcessFV(f_In);
   SetLength(f_In, 0);
 end;
 
 function TLearn.ProcessFV(const ProcessIn: TPascalString): TLFloat;
 begin
-  Result := ProcessFV(TKDTree.KDTreeVec(ProcessIn.Text));
+  Result := ProcessFV(TKDTree.Vec(ProcessIn.Text));
 end;
 
 function TLearn.ProcessLV(const ProcessIn: TLVec): TLFloat;
@@ -1391,14 +1386,14 @@ function TLearn.ProcessLV(const ProcessIn: TLMatrix): TLFloat;
 var
   f_In: TLVec;
 begin
-  f_In := LVec(ProcessIn, FInLen);
+  f_In := LVec(ProcessIn, FInSize);
   Result := ProcessLV(f_In);
   SetLength(f_In, 0);
 end;
 
 function TLearn.ProcessLV(const ProcessIn: TPascalString): TLFloat;
 begin
-  Result := ProcessLV(TKDTree.KDTreeVec(ProcessIn.Text));
+  Result := ProcessLV(TKDTree.Vec(ProcessIn.Text));
 end;
 
 function TLearn.SearchMemoryPearson(const ProcessIn: TLVec): TLInt;
@@ -1412,12 +1407,12 @@ begin
       Exit;
     end;
 
-  K := PearsonCorrelation(ProcessIn, GetMemorySource(0)^.m_in, FInLen);
+  K := PearsonCorrelation(ProcessIn, GetMemorySource(0)^.m_in, FInSize);
   Result := 0;
 
   for i := 1 to Count - 1 do
     begin
-      r := PearsonCorrelation(ProcessIn, GetMemorySource(i)^.m_in, FInLen);
+      r := PearsonCorrelation(ProcessIn, GetMemorySource(i)^.m_in, FInSize);
       if (r <> 0) and (r > K) then
         begin
           K := r;
@@ -1507,7 +1502,7 @@ begin
 
   for i := 0 to Count - 1 do
     begin
-      buff[i].K := PearsonCorrelation(ProcessIn, GetMemorySource(i)^.m_in, FInLen);
+      buff[i].K := PearsonCorrelation(ProcessIn, GetMemorySource(i)^.m_in, FInSize);
       buff[i].index := i;
       buffPtr[i] := @buff[i];
     end;
@@ -1536,12 +1531,12 @@ begin
       Exit;
     end;
 
-  K := SpearmanRankCorrelation(ProcessIn, GetMemorySource(0)^.m_in, FInLen);
+  K := SpearmanRankCorrelation(ProcessIn, GetMemorySource(0)^.m_in, FInSize);
   Result := 0;
 
   for i := 1 to Count - 1 do
     begin
-      r := SpearmanRankCorrelation(ProcessIn, GetMemorySource(i)^.m_in, FInLen);
+      r := SpearmanRankCorrelation(ProcessIn, GetMemorySource(i)^.m_in, FInSize);
       if (r <> 0) and (r > K) then
         begin
           K := r;
@@ -1631,7 +1626,7 @@ begin
 
   for i := 0 to Count - 1 do
     begin
-      buff[i].K := SpearmanRankCorrelation(ProcessIn, GetMemorySource(i)^.m_in, FInLen);
+      buff[i].K := SpearmanRankCorrelation(ProcessIn, GetMemorySource(i)^.m_in, FInSize);
       buff[i].index := i;
       buffPtr[i] := @buff[i];
     end;
@@ -1660,14 +1655,14 @@ begin
       Exit;
     end;
 
-  if length(ProcessIn) <> FInLen then
-      RaiseInfo('processIn need Length=%d', [FInLen]);
-  K := TKDTree.KDTreeDistance(ProcessIn, GetMemorySource(0)^.m_in);
+  if length(ProcessIn) <> FInSize then
+      RaiseInfo('processIn need Length=%d', [FInSize]);
+  K := TKDTree.Distance(ProcessIn, GetMemorySource(0)^.m_in);
   Result := 0;
 
   for i := 1 to Count - 1 do
     begin
-      r := TKDTree.KDTreeDistance(ProcessIn, GetMemorySource(i)^.m_in);
+      r := TKDTree.Distance(ProcessIn, GetMemorySource(i)^.m_in);
       if (r < K) then
         begin
           K := r;
@@ -1759,7 +1754,7 @@ begin
 
   for i := 0 to Count - 1 do
     begin
-      buff[i].K := TKDTree.KDTreeDistance(ProcessIn, GetMemorySource(i)^.m_in);
+      buff[i].K := TKDTree.Distance(ProcessIn, GetMemorySource(i)^.m_in);
       buff[i].index := i;
       buffPtr[i] := @buff[i];
     end;
@@ -1785,10 +1780,10 @@ var
   buffLen: TLInt;
   m64: TMemoryStream64;
 begin
-  df.WriteInt64(FInLen);
-  df.WriteInt64(FOutLen);
+  df.WriteInt64(FInSize);
+  df.WriteInt64(FOutSize);
   df.WriteByte(Byte(FLearnType));
-  df.WriteBool(FEnabledRandomNumber);
+  df.WriteBool(FRandomNumber);
   df.WriteBool(FClassifier);
   df.WriteByte(Byte(FHideLayerDepth));
   df.WriteDouble(FLastTrainMaxInValue);
@@ -1799,9 +1794,9 @@ begin
   for i := 0 to FMemorySource.Count - 1 do
     begin
       p := PLearnMemory(FMemorySource[i]);
-      for j := 0 to FInLen - 1 do
+      for j := 0 to FInSize - 1 do
           ar.Add(p^.m_in[j]);
-      for j := 0 to FOutLen - 1 do
+      for j := 0 to FOutSize - 1 do
           ar.Add(p^.m_out[j]);
 
       nd.WriteString(p^.token);
@@ -1879,10 +1874,10 @@ var
 begin
   Clear;
 
-  FInLen := df.Reader.ReadInt64;
-  FOutLen := df.Reader.ReadInt64;
+  FInSize := df.Reader.ReadInt64;
+  FOutSize := df.Reader.ReadInt64;
   FLearnType := TLearnType(df.Reader.ReadByte);
-  FEnabledRandomNumber := df.Reader.ReadBool;
+  FRandomNumber := df.Reader.ReadBool;
   FClassifier := df.Reader.ReadBool;
   FHideLayerDepth := THideLayerDepth(df.Reader.ReadByte);
   FLastTrainMaxInValue := df.Reader.ReadDouble;
@@ -1896,13 +1891,13 @@ begin
   while i < ar.Count do
     begin
       new(plm);
-      SetLength(plm^.m_in, FInLen);
-      SetLength(plm^.m_out, FOutLen);
+      SetLength(plm^.m_in, FInSize);
+      SetLength(plm^.m_out, FOutSize);
       plm^.token := nd.Reader.ReadString;
       FMemorySource.Add(plm);
 
       j := 0;
-      while j < FInLen do
+      while j < FInSize do
         begin
           plm^.m_in[j] := ar[i];
           inc(j);
@@ -1910,7 +1905,7 @@ begin
         end;
 
       j := 0;
-      while j < FOutLen do
+      while j < FOutSize do
         begin
           plm^.m_out[j] := ar[i];
           inc(j);
@@ -1921,7 +1916,7 @@ begin
 
   if df.Reader.IsEnd then
     begin
-      Train;
+      Training;
       Exit;
     end;
 
@@ -1933,7 +1928,7 @@ begin
 
   if df.Reader.IsEnd then
     begin
-      Train;
+      Training;
       Exit;
     end;
 
@@ -1946,7 +1941,7 @@ begin
         try
             PLearnKDT(FLearnData)^.K.LoadFromStream(m64);
         except
-            Train;
+            Training;
         end;
         DisposeObject(m64);
       end;
@@ -1960,7 +1955,7 @@ begin
         try
             DFUnserialize(buff, PDecisionForest(FLearnData)^);
         except
-            Train;
+            Training;
         end;
         SetLength(buff, 0);
       end;
@@ -1974,7 +1969,7 @@ begin
         try
             MNLUnserialize(buff, PLogitModel(FLearnData)^);
         except
-            Train;
+            Training;
         end;
         SetLength(buff, 0);
       end;
@@ -1988,7 +1983,7 @@ begin
         try
             MLPUNSerialize(buff, PMultiLayerPerceptron(FLearnData)^);
         except
-            Train;
+            Training;
         end;
         SetLength(buff, 0);
       end;
@@ -2002,7 +1997,7 @@ begin
         try
             MLPEUNSerialize(buff, PMLPEnsemble(FLearnData)^);
         except
-            Train;
+            Training;
         end;
         SetLength(buff, 0);
       end;

@@ -668,7 +668,7 @@ begin
       until (BytesRead = 0) or (B = $FF);
       if BytesRead = 0 then
           raise EInvalidImage.Create(sMarkerExpected);
-      S.Seek(-1, soFromCurrent);
+      S.Seek(-1, TSeekOrigin.soCurrent);
       DoDebugOut(Self, wsHint, PFormat('Resuming at %.6d', [S.Position]));
     end;
   Result := MarkerTag;

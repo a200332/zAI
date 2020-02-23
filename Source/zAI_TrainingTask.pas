@@ -251,7 +251,7 @@ var
   m64: TMemoryStream64;
 begin
   m64 := TMemoryStream64.Create;
-  data.SaveToStream(m64, True, True, TRasterSave.rsJPEG_RGB_Qualily80);
+  data.SaveToStream(m64, True, True, TRasterSaveFormat.rsJPEG_YCbCr_Qualily80);
   Write(Name, m64);
   DisposeObject(m64);
 end;
@@ -261,7 +261,7 @@ var
   m64: TMemoryStream64;
 begin
   m64 := TMemoryStream64.Create;
-  data.SaveToStream(m64, SaveImg, TRasterSave.rsJPEG_RGB_Qualily80);
+  data.SaveToStream(m64, SaveImg, TRasterSaveFormat.rsJPEG_YCbCr_Qualily80);
   Write(Name, m64);
   DisposeObject(m64);
 end;
@@ -420,7 +420,7 @@ end;
 function TTrainingTask.CheckTrainingBefore(const paramFile: SystemString; var report: SystemString): Boolean;
 var
   Param: THashVariantList;
-  ComputeFunc: TPascalString;
+  ComputeFunc: U_String;
   inputfile1, inputfile2: SystemString;
 begin
   Result := False;
@@ -543,7 +543,7 @@ function TTrainingTask.CheckTrainingAfter(const paramFile: SystemString; var rep
 var
   Param: THashVariantList;
   ResultValues: THashVariantList;
-  ComputeFunc: TPascalString;
+  ComputeFunc: U_String;
   outputfile: SystemString;
 begin
   Result := False;
@@ -726,7 +726,7 @@ function TTrainingTask.RebuildTrainingData(const paramFile: SystemString; var re
 var
   Param: THashVariantList;
   ResultValues: THashVariantList;
-  ComputeFunc: TPascalString;
+  ComputeFunc: U_String;
   inputfile1, inputfile2: SystemString;
   outputfile1, syncfile: SystemString;
 

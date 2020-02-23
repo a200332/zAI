@@ -214,7 +214,7 @@ procedure BatchImportPathToDB(InitDir, Filter: SystemString; dbEng: TObjectDataM
             if dbEng.ItemFastCreate(aFieldPos, suffixn, '', itmHnd) then
               begin
                 try
-                  fs := TCoreClassFileStream.Create(n, fmOpenRead or fmShareDenyWrite);
+                  fs := TCoreClassFileStream.Create(n, fmOpenRead or fmShareDenyNone);
                   itmStream := TItemStream.Create(dbEng, itmHnd);
 
                   fs.Position := 0;

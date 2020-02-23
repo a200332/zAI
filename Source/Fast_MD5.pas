@@ -167,18 +167,25 @@ var
   ChunkIndex: Byte;
   ChunkBuff: array [0 .. 63] of Byte;
 begin
+  if StartPos > EndPos then
+      Swap(StartPos, EndPos);
   StartPos := umlClamp(StartPos, 0, stream.Size);
   EndPos := umlClamp(EndPos, 0, stream.Size);
+  if EndPos - StartPos <= 0 then
+    begin
+      Result := FastMD5(nil, 0);
+      exit;
+    end;
 {$IFDEF OptimizationMemoryStreamMD5}
   if stream is TCoreClassMemoryStream then
     begin
       Result := FastMD5(Pointer(nativeUInt(TCoreClassMemoryStream(stream).Memory) + StartPos), EndPos - StartPos);
-      Exit;
+      exit;
     end;
   if stream is TMemoryStream64 then
     begin
       Result := FastMD5(TMemoryStream64(stream).PositionAsPtr(StartPos), EndPos - StartPos);
-      Exit;
+      exit;
     end;
 {$ENDIF}
   //

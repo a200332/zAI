@@ -35,11 +35,12 @@ uses SysUtils, Classes,
   CommunicationFramework;
 
 type
-  TAI_Key = array [0 .. 95] of Byte;
+  TAI_Key = array [0 .. 152 - 1] of Byte;
 
 function AIKey(key: TAI_Key): TAI_Key;
-procedure AIKeyState(var expire: SystemString; var OD_key, SP_key, MetricDNN_key, MMOD_key, RNIC_key: Boolean); overload;
-procedure AIKeyState(var expire: SystemString; var SURF_key, OD_key, SP_key, MetricDNN_key, LMetricDNN_key, MMOD_key, RNIC_key, LRNIC_key, GDCNIC_key, GNIC_key, VideoTracker_key, SS_key: Boolean); overload;
+procedure AIKeyState(var expire: SystemString;
+  var SURF_key, OD_key, SP_key, MetricDNN_key, LMetricDNN_key, MMOD_key, RNIC_key, LRNIC_key, GDCNIC_key, GNIC_key, VideoTracker_key, SS_key,
+  Segment_key, Salient_key, CandidateObject_key, Unmixing_key, Poisson_key, CutRaster_key, OCR_key: Boolean); overload;
 function AIKeyInfo(): SystemString;
 function AIGetFreeKey(): SystemString;
 
@@ -54,13 +55,14 @@ const
 type
   TGetKeyServer_Remote = class(TCoreClassObject)
   public
-    ProductID: TPascalString;
-    UserKey: TPascalString;
+    ProductID: U_String;
+    UserKey: U_String;
     key: TAI_Key;
     ResultKey: TAI_Key;
     Tunnel: TPhysicsClient;
     expire: SystemString;
-    SURF_key, OD_key, SP_key, MetricDNN_key, LMetricDNN_key, MMOD_key, RNIC_key, LRNIC_key, GDCNIC_key, GNIC_key, VideoTracker_key, SS_key: Boolean;
+    SURF_key, OD_key, SP_key, MetricDNN_key, LMetricDNN_key, MMOD_key, RNIC_key, LRNIC_key, GDCNIC_key, GNIC_key, VideoTracker_key, SS_key,
+      Segment_key, Salient_key, CandidateObject_key, Unmixing_key, Poisson_key, CutRaster_key, OCR_key: Boolean;
     KeyInfo: SystemString;
     constructor Create;
     destructor Destroy; override;
@@ -93,6 +95,13 @@ begin
   GNIC_key := False;
   VideoTracker_key := False;
   SS_key := False;
+  Segment_key := False;
+  Salient_key := False;
+  CandidateObject_key := False;
+  Unmixing_key := False;
+  Poisson_key := False;
+  CutRaster_key := False;
+  OCR_key := False;
   KeyInfo := '';
 end;
 
@@ -110,7 +119,9 @@ var
 begin
   if TCoreClassThread.CurrentThread.ThreadID <> MainThreadID then
     begin
+{$IFDEF initializationStatus}
       DoStatus('Z-AI Work only on MainThread.');
+{$ENDIF initializationStatus}
       exit;
     end;
 
@@ -126,9 +137,11 @@ begin
           begin
             Tunnel.Progress;
             TCoreClassThread.Sleep(10);
-            if GetTimeTick() - tk > 1000 then
+            if GetTimeTick() - tk > 5000 then
               begin
+{$IFDEF initializationStatus}
                 DoStatus('Unable to connect to license server %s:%d', [AI_Key_Server_Host.Text, AI_Key_Server_Port]);
+{$ENDIF initializationStatus}
                 exit;
               end;
           end;
@@ -159,7 +172,9 @@ var
 begin
   if TCoreClassThread.CurrentThread.ThreadID <> MainThreadID then
     begin
+{$IFDEF initializationStatus}
       DoStatus('Z-AI Work only on MainThread.');
+{$ENDIF initializationStatus}
       exit;
     end;
 
@@ -175,9 +190,11 @@ begin
           begin
             Tunnel.Progress;
             TCoreClassThread.Sleep(10);
-            if GetTimeTick() - tk > 1000 then
+            if GetTimeTick() - tk > 5000 then
               begin
+{$IFDEF initializationStatus}
                 DoStatus('Unable to connect to license server %s:%d', [AI_Key_Server_Host.Text, AI_Key_Server_Port]);
+{$ENDIF initializationStatus}
                 exit;
               end;
           end;
@@ -202,6 +219,13 @@ begin
           GNIC_key := ResultDE.Reader.ReadBool();
           VideoTracker_key := ResultDE.Reader.ReadBool();
           SS_key := ResultDE.Reader.ReadBool();
+          Segment_key := ResultDE.Reader.ReadBool();
+          Salient_key := ResultDE.Reader.ReadBool();
+          CandidateObject_key := ResultDE.Reader.ReadBool();
+          Unmixing_key := ResultDE.Reader.ReadBool();
+          Poisson_key := ResultDE.Reader.ReadBool();
+          CutRaster_key := ResultDE.Reader.ReadBool();
+          OCR_key := ResultDE.Reader.ReadBool();
         end;
     Tunnel.Disconnect;
     Tunnel.Progress;
@@ -217,7 +241,9 @@ var
 begin
   if TCoreClassThread.CurrentThread.ThreadID <> MainThreadID then
     begin
+{$IFDEF initializationStatus}
       DoStatus('Z-AI Work only on MainThread.');
+{$ENDIF initializationStatus}
       exit;
     end;
 
@@ -233,9 +259,11 @@ begin
           begin
             Tunnel.Progress;
             TCoreClassThread.Sleep(10);
-            if GetTimeTick() - tk > 1000 then
+            if GetTimeTick() - tk > 5000 then
               begin
+{$IFDEF initializationStatus}
                 DoStatus('Unable to connect to license server %s:%d', [AI_Key_Server_Host.Text, AI_Key_Server_Port]);
+{$ENDIF initializationStatus}
                 exit;
               end;
           end;
@@ -263,7 +291,9 @@ var
 begin
   if TCoreClassThread.CurrentThread.ThreadID <> MainThreadID then
     begin
+{$IFDEF initializationStatus}
       DoStatus('Z-AI Work only on MainThread.');
+{$ENDIF initializationStatus}
       exit;
     end;
 
@@ -279,9 +309,11 @@ begin
           begin
             Tunnel.Progress;
             TCoreClassThread.Sleep(10);
-            if GetTimeTick() - tk > 1000 then
+            if GetTimeTick() - tk > 5000 then
               begin
+{$IFDEF initializationStatus}
                 DoStatus('Unable to connect to license server %s:%d', [AI_Key_Server_Host.Text, AI_Key_Server_Port]);
+{$ENDIF initializationStatus}
                 exit;
               end;
           end;
@@ -310,22 +342,9 @@ begin
   disposeObject(K_Tunnel);
 end;
 
-procedure AIKeyState(var expire: SystemString; var OD_key, SP_key, MetricDNN_key, MMOD_key, RNIC_key: Boolean);
-var
-  K_Tunnel: TGetKeyServer_Remote;
-begin
-  K_Tunnel := TGetKeyServer_Remote.Create;
-  K_Tunnel.GetKeyState();
-  expire := K_Tunnel.expire;
-  OD_key := K_Tunnel.OD_key;
-  SP_key := K_Tunnel.SP_key;
-  MetricDNN_key := K_Tunnel.MetricDNN_key;
-  MMOD_key := K_Tunnel.MMOD_key;
-  RNIC_key := K_Tunnel.RNIC_key;
-  disposeObject(K_Tunnel);
-end;
-
-procedure AIKeyState(var expire: SystemString; var SURF_key, OD_key, SP_key, MetricDNN_key, LMetricDNN_key, MMOD_key, RNIC_key, LRNIC_key, GDCNIC_key, GNIC_key, VideoTracker_key, SS_key: Boolean);
+procedure AIKeyState(var expire: SystemString;
+  var SURF_key, OD_key, SP_key, MetricDNN_key, LMetricDNN_key, MMOD_key, RNIC_key, LRNIC_key, GDCNIC_key, GNIC_key, VideoTracker_key, SS_key,
+  Segment_key, Salient_key, CandidateObject_key, Unmixing_key, Poisson_key, CutRaster_key, OCR_key: Boolean);
 var
   K_Tunnel: TGetKeyServer_Remote;
 begin
@@ -344,6 +363,14 @@ begin
   GNIC_key := K_Tunnel.GNIC_key;
   VideoTracker_key := K_Tunnel.VideoTracker_key;
   SS_key := K_Tunnel.SS_key;
+
+  Segment_key := K_Tunnel.SS_key;
+  Salient_key := K_Tunnel.SS_key;
+  CandidateObject_key := K_Tunnel.SS_key;
+  Unmixing_key := K_Tunnel.SS_key;
+  Poisson_key := K_Tunnel.SS_key;
+  CutRaster_key := K_Tunnel.SS_key;
+  OCR_key := K_Tunnel.SS_key;
   disposeObject(K_Tunnel);
 end;
 

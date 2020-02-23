@@ -32,27 +32,30 @@ type
 
   TLearnState_Call = procedure(const LSender: TLearn; const State: Boolean);
   TLearnState_Method = procedure(const LSender: TLearn; const State: Boolean) of object;
-{$IFNDEF FPC} TLearnState_Proc = reference to procedure(const LSender: TLearn; const State: Boolean); {$ENDIF}
+{$IFDEF FPC}
+  TLearnState_Proc = procedure(const LSender: TLearn; const State: Boolean) is nested;
+{$ELSE FPC}
+  TLearnState_Proc = reference to procedure(const LSender: TLearn; const State: Boolean);
+{$ENDIF FPC}
+
+  TLearnMemory = record
+    m_in, m_out: TLVec;
+    token: SystemString;
+  end;
+
+  PLearnMemory = ^TLearnMemory;
 
   TLearn = class(TCoreClassInterfacedObject)
   public type
-    TLearnMemory = record
-      m_in, m_out: TLVec;
-      token: SystemString;
-    end;
-
-    PLearnMemory = ^TLearnMemory;
-  private type
     TLearnKDT = record
       K: TKDTree;
     end;
 
     PLearnKDT = ^TLearnKDT;
-
     THideLayerDepth = (hld0, hld1, hld2);
   private
-    FEnabledRandomNumber: Boolean;
-    FInLen, FOutLen: TLInt;
+    FRandomNumber: Boolean;
+    FInSize, FOutSize: TLInt;
     FMemorySource: TCoreClassList;
     FKDToken: TKDTree;
     FLearnType: TLearnType;
@@ -62,7 +65,7 @@ type
     FLastTrainMaxInValue, FLastTrainMaxOutValue: TLFloat;
     FInfo: SystemString;
     FIsTraining: Boolean;
-    FTrainThreadRuning: Boolean;
+    FTrainingThreadRuning: Boolean;
     FUserData: Pointer;
     FUserObject: TCoreClassObject;
 
@@ -70,7 +73,7 @@ type
     procedure TokenInput(const IndexFor: NativeInt; var Source: TKDTree_Source; const Data: Pointer);
 
     procedure FreeLearnData;
-    procedure CreateLearnData(const isTrainTime: Boolean);
+    procedure CreateLearnData(const isTrainingTime: Boolean);
   public
     // regression style
     class function CreateRegression(const lt: TLearnType; const InDataLen, OutDataLen: TLInt): TLearn;
@@ -90,18 +93,18 @@ type
     destructor Destroy; override;
 
     { * random number * }
-    property EnabledRandomNumber: Boolean read FEnabledRandomNumber write FEnabledRandomNumber;
+    property RandomNumber: Boolean read FRandomNumber write FRandomNumber;
 
     { * clear * }
     procedure Clear;
 
     { * parameter * }
     function Count: TLInt;
-    property InLen: TLInt read FInLen;
-    property OutLen: TLInt read FOutLen;
+    property InSize: TLInt read FInSize;
+    property OutSize: TLInt read FOutSize;
     property LearnType: TLearnType read FLearnType;
     property Info: SystemString read FInfo;
-    property TrainThreadRuning: Boolean read FTrainThreadRuning;
+    property TrainingThreadRuning: Boolean read FTrainingThreadRuning;
     function GetMemorySource(const index: TLInt): PLearnMemory;
     property MemorySource[const index: TLInt]: PLearnMemory read GetMemorySource; default;
     property LastTrainMaxInValue: TLFloat read FLastTrainMaxInValue;
@@ -127,18 +130,18 @@ type
     { * kdtree * }
     procedure AddKDTree(kd: TKDTreeDataList);
 
-    { * normal train * }
-    function Train(const TrainDepth: TLInt): Boolean; overload;
-    function Train: Boolean; overload;
-    { * train with thread * }
-    procedure Train_MT; overload;
-    procedure Train_MT(const TrainDepth: TLInt); overload;
-    procedure TrainC(const TrainDepth: TLInt; const OnResult: TLearnState_Call);
-    procedure TrainM(const TrainDepth: TLInt; const OnResult: TLearnState_Method);
-{$IFNDEF FPC} procedure TrainP(const TrainDepth: TLInt; const OnResult: TLearnState_Proc); {$ENDIF FPC}
-    //
+    { * normal Training * }
+    function Training(const TrainDepth: TLInt): Boolean; overload;
+    function Training: Boolean; overload;
+    { * Training with thread * }
+    procedure Training_MT; overload;
+    procedure Training_MT(const TrainDepth: TLInt); overload;
+    procedure TrainingC(const TrainDepth: TLInt; const OnResult: TLearnState_Call);
+    procedure TrainingM(const TrainDepth: TLInt; const OnResult: TLearnState_Method);
+    procedure TrainingP(const TrainDepth: TLInt; const OnResult: TLearnState_Proc);
+
     // wait thread
-    procedure WaitTrain;
+    procedure WaitTraining;
 
     // token
     function SearchToken(const v: TLVec): SystemString;
@@ -220,7 +223,6 @@ type
   end;
 
 {$ENDREGION 'Class'}
-
 {$REGION 'LearnAPI'}
 
 
@@ -249,6 +251,7 @@ function LVec(const veclen: TLInt): TLVec; overload;
 function LVec(const v: TLVec): TPascalString; overload;
 function LVec(const M: TLMatrix; const veclen: TLInt): TLVec; overload;
 function LVec(const M: TLMatrix): TLVec; overload;
+function LVec(const s: TPascalString): TLVec; overload;
 function LVec(const s: TPascalString; const veclen: TLInt): TLVec; overload;
 function LVec(const v: TLVec; const ShortFloat: Boolean): TPascalString; overload;
 function LVec(const M: TLBMatrix; const veclen: TLInt): TLBVec; overload;
@@ -257,6 +260,8 @@ function LVec(const M: TLIMatrix; const veclen: TLInt): TLIVec; overload;
 function LVec(const M: TLIMatrix): TLIVec; overload;
 function ExpressionToLVec(const s: TPascalString; const_vl: THashVariantList): TLVec; overload;
 function ExpressionToLVec(const s: TPascalString): TLVec; overload;
+function ExpLVec(const s: TPascalString; const_vl: THashVariantList): TLVec; overload;
+function ExpLVec(const s: TPascalString): TLVec; overload;
 function LSpearmanVec(const M: TLMatrix; const veclen: TLInt): TLVec;
 function LAbsMaxVec(const v: TLVec): TLFloat;
 function LMaxVec(const v: TLVec): TLFloat; overload;
@@ -295,6 +300,7 @@ function LDA(const M: TLMatrix; const cv: TLVec; const Nclass: TLInt; var sInfo:
 function LDA(const M: TLMatrix; const cv: TLVec; const Nclass: TLInt; var sInfo: SystemString; var output: TLVec): Boolean; overload;
 
 { * principal component analysis support * }
+
 (*
   return code:
   * -4, if SVD subroutine haven't converged
@@ -315,7 +321,6 @@ function ExpressionToLMatrix(w, h: TLInt; const s: TPascalString; const_vl: THas
 function ExpressionToLMatrix(w, h: TLInt; const s: TPascalString): TLMatrix; overload;
 
 {$ENDREGION 'LearnAPI'}
-
 {$REGION 'FloatAPI'}
 function AbsReal(x: TLFloat): TLFloat;
 function AbsInt(i: TLInt): TLInt;
@@ -422,7 +427,6 @@ procedure XSum(var w: TLVec; mx: TLFloat; n: TLInt; var r: TLFloat; var RErr: TL
 function XFastPow(r: TLFloat; n: TLInt): TLFloat;
 
 {$ENDREGION 'FloatAPI'}
-
 {$REGION 'LowLevelMatrix'}
 { matrix base }
 function VectorNorm2(const x: TLVec; const i1, i2: TLInt): TLFloat;
@@ -486,24 +490,22 @@ procedure RMatrixLeftTRSM(M: TLInt; n: TLInt;
   IsUnit: Boolean; OpType: TLInt; var x: TLMatrix; i2: TLInt; j2: TLInt);
 
 procedure CMatrixSYRK(n: TLInt; K: TLInt; alpha: TLFloat;
-  const a: TLComplexMatrix; IA: TLInt; ja: TLInt;
-  OpTypeA: TLInt; beta: TLFloat; var c: TLComplexMatrix; IC: TLInt; JC: TLInt; IsUpper: Boolean);
+  const a: TLComplexMatrix; IA: TLInt; ja: TLInt; OpTypeA: TLInt;
+  beta: TLFloat; var c: TLComplexMatrix; IC: TLInt; JC: TLInt; IsUpper: Boolean);
 
 procedure RMatrixSYRK(n: TLInt; K: TLInt; alpha: TLFloat;
-  const a: TLMatrix; IA: TLInt; ja: TLInt;
-  OpTypeA: TLInt; beta: TLFloat; var c: TLMatrix; IC: TLInt; JC: TLInt; IsUpper: Boolean);
+  const a: TLMatrix; IA: TLInt; ja: TLInt; OpTypeA: TLInt;
+  beta: TLFloat; var c: TLMatrix; IC: TLInt; JC: TLInt; IsUpper: Boolean);
 
-procedure CMatrixGEMM(M: TLInt; n: TLInt; K: TLInt;
-  alpha: TLComplex; const a: TLComplexMatrix; IA: TLInt;
-  ja: TLInt; OpTypeA: TLInt; const b: TLComplexMatrix;
-  IB: TLInt; JB: TLInt; OpTypeB: TLInt; beta: TLComplex;
-  var c: TLComplexMatrix; IC: TLInt; JC: TLInt);
+procedure CMatrixGEMM(M: TLInt; n: TLInt; K: TLInt; alpha: TLComplex;
+  const a: TLComplexMatrix; IA: TLInt; ja: TLInt; OpTypeA: TLInt;
+  const b: TLComplexMatrix; IB: TLInt; JB: TLInt; OpTypeB: TLInt;
+  beta: TLComplex; var c: TLComplexMatrix; IC: TLInt; JC: TLInt);
 
-procedure RMatrixGEMM(M: TLInt; n: TLInt; K: TLInt;
-  alpha: TLFloat; const a: TLMatrix; IA: TLInt;
-  ja: TLInt; OpTypeA: TLInt; const b: TLMatrix;
-  IB: TLInt; JB: TLInt; OpTypeB: TLInt; beta: TLFloat;
-  var c: TLMatrix; IC: TLInt; JC: TLInt);
+procedure RMatrixGEMM(M: TLInt; n: TLInt; K: TLInt; alpha: TLFloat;
+  const a: TLMatrix; IA: TLInt; ja: TLInt; OpTypeA: TLInt;
+  const b: TLMatrix; IB: TLInt; JB: TLInt; OpTypeB: TLInt;
+  beta: TLFloat; var c: TLMatrix; IC: TLInt; JC: TLInt);
 
 { LU and Cholesky decompositions }
 procedure RMatrixLU(var a: TLMatrix; M: TLInt; n: TLInt; var Pivots: TLIVec);
@@ -667,7 +669,6 @@ function RMatrixSchur(var a: TLMatrix; n: TLInt; var s: TLMatrix): Boolean;
 function UpperHessenbergSchurDecomposition(var h: TLMatrix; n: TLInt; var s: TLMatrix): Boolean;
 
 {$ENDREGION 'LowLevelMatrix'}
-
 {$REGION 'LowlevelDistribution'}
 
 { Normal distribution support }
@@ -759,7 +760,6 @@ procedure MannWhitneyUTest(const x: TLVec; n: TLInt; const y: TLVec; M: TLInt; v
 { Wilcoxon signed-rank test }
 procedure WilcoxonSignedRankTest(const x: TLVec; n: TLInt; E: TLFloat; var BothTails, LeftTail, RightTail: TLFloat);
 {$ENDREGION 'LowlevelDistribution'}
-
 {$REGION 'LowLevelGauss'}
 {
   Computation of nodes and weights for a Gauss quadrature formula
@@ -874,13 +874,13 @@ const
 
 implementation
 
-uses KM,
-{$IFDEF FPC}
-  mtprocs,
-{$ELSE}
-  Threading,
-{$ENDIF FPC}
-  SyncObjs, DoStatusIO, TextParsing, zExpression, OpCode;
+uses KM, DoStatusIO, TextParsing, zExpression, OpCode;
+
+type
+  TLearnRandom = class(TMT19937Random)
+  public
+    property RandReal: Double read RandD;
+  end;
 
 {$REGION 'Include'}
 {$INCLUDE learn_base.inc}

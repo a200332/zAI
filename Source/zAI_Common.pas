@@ -32,25 +32,25 @@ uses Types,
   System.IOUtils,
 {$ENDIF FPC}
   PascalStrings, MemoryStream64, UnicodeMixedLib, DataFrameEngine, ListEngine, TextDataEngine,
-  ZDBEngine, ZDBLocalManager, ObjectDataManager, ObjectData, ItemStream,
+  ObjectDataManager, ObjectData, ItemStream,
   zDrawEngine, Geometry2DUnit, MemoryRaster, TextParsing, zExpression, OpCode;
 
 type
-{$REGION 'base define'}
+{$REGION 'base'}
   TAI_DetectorDefine = class;
   TAI_Image = class;
   TAI_ImageList = class;
 
   TSegmentationMask = record
     BackgroundColor, FrontColor: TRColor;
-    Token: TPascalString;
+    Token: U_String;
     Raster: TMemoryRaster;
   end;
 
   PSegmentationMask = ^TSegmentationMask;
 
   TSegmentationColor = record
-    Token: TPascalString;
+    Token: U_String;
     Color: TRColor;
     ID: WORD;
   end;
@@ -61,7 +61,7 @@ type
   TEditorDetectorDefineList = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TAI_DetectorDefine>;
   TSegmentationMasks_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<PSegmentationMask>;
   TSegmentationColorList_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<PSegmentationColor>;
-{$ENDREGION 'base define'}
+{$ENDREGION 'base'}
 {$REGION 'detector'}
 
   TAI_DetectorDefine = class(TCoreClassObject)
@@ -70,14 +70,14 @@ type
   public
     Owner: TAI_Image;
     R: TRect;
-    Token: TPascalString;
+    Token: U_String;
     Part: TVec2List;
     PrepareRaster: TMemoryRaster;
 
     constructor Create(AOwner: TAI_Image);
     destructor Destroy; override;
 
-    procedure SaveToStream(stream: TMemoryStream64; RasterSave_: TRasterSave); overload;
+    procedure SaveToStream(stream: TMemoryStream64; RasterSave_: TRasterSaveFormat); overload;
     procedure SaveToStream(stream: TMemoryStream64); overload;
     procedure LoadFromStream(stream: TMemoryStream64);
   end;
@@ -86,7 +86,7 @@ type
 
   TSegmentationColorList = class(TSegmentationColorList_Decl)
   private
-    procedure DoSegColor(Color: TRColor; var Classify: TSegClassify);
+    procedure DoGetPixelSegClassify(X, Y: Integer; Color: TRColor; var Classify: TMorphologyClassify);
   public
     constructor Create;
     destructor Destroy; override;
@@ -94,32 +94,34 @@ type
     procedure BuildBorderColor;
     procedure Delete(index: Integer);
     procedure Clear;
-    procedure AddColor(const Token: TPascalString; const Color: TRColor);
+    procedure AddColor(const Token: U_String; const Color: TRColor);
+    procedure Assign(source: TSegmentationColorList);
 
     function IsIgnoredBorder(const c: TRColor): Boolean; overload;
     function IsIgnoredBorder(const ID: WORD): Boolean; overload;
-    function IsIgnoredBorder(const Token: TPascalString): Boolean; overload;
+    function IsIgnoredBorder(const Token: U_String): Boolean; overload;
 
     function ExistsColor(const c: TRColor): Boolean;
     function ExistsID(const ID: WORD): Boolean;
 
     function GetColorID(const c: TRColor; const def: WORD; var output: WORD): Boolean;
     function GetIDColor(const ID: WORD; const def: TRColor; var output: TRColor): Boolean;
-    function GetIDColorAndToken(const ID: WORD; const def_color: TRColor; const def_token: TPascalString;
-      var output_color: TRColor; var output_token: TPascalString): Boolean;
+    function GetIDColorAndToken(const ID: WORD; const def_color: TRColor; const def_token: U_String;
+      var output_color: TRColor; var output_token: U_String): Boolean;
 
-    function GetColorToken(const c: TRColor; const def: TPascalString): TPascalString; overload;
-    function GetColorToken(const c: TRColor): TPascalString; overload;
+    function GetColorToken(const c: TRColor; const def: U_String): U_String; overload;
+    function GetColorToken(const c: TRColor): U_String; overload;
 
-    function GetTokenColor(const Token: TPascalString; const def: TRColor): TRColor; overload;
-    function GetTokenColor(const Token: TPascalString): TRColor; overload;
+    function GetTokenColor(const Token: U_String; const def: TRColor): TRColor; overload;
+    function GetTokenColor(const Token: U_String): TRColor; overload;
 
-    procedure BuildLabelViewer(input, output: TMemoryRaster; LabColor, BoxColor: TRColor);
+    procedure BuildViewer(input, output, SegDataOutput: TMemoryRaster; LabColor: TRColor;
+      ConvolutionOperations: array of TBinaryzationOperation; ConvWidth, ConvHeight, MaxClassifyCount, MinGranularity: Integer);
 
     procedure SaveToStream(stream: TCoreClassStream);
     procedure LoadFromStream(stream: TCoreClassStream);
-    procedure SaveToFile(fileName: TPascalString);
-    procedure LoadFromFile(fileName: TPascalString);
+    procedure SaveToFile(fileName: U_String);
+    procedure LoadFromFile(fileName: U_String);
   end;
 
   PSegmentationColorList = ^TSegmentationColorList;
@@ -142,9 +144,9 @@ type
     procedure SaveToStream(stream: TCoreClassStream);
     procedure LoadFromStream(stream: TCoreClassStream);
 
-    procedure BuildSegmentationMask(Width, Height: Integer; polygon: T2DPolygon; buildBG_color, buildFG_color: TRColor; Token: TPascalString); overload;
-    procedure BuildSegmentationMask(Width, Height: Integer; polygon: T2DPolygonGraph; buildBG_color, buildFG_color: TRColor; Token: TPascalString); overload;
-    procedure BuildSegmentationMask(Width, Height: Integer; sour: TMemoryRaster; sampler_FG_Color, buildBG_color, buildFG_color: TRColor; Token: TPascalString); overload;
+    procedure BuildSegmentationMask(Width, Height: Integer; polygon: T2DPolygon; buildBG_color, buildFG_color: TRColor; Token: U_String); overload;
+    procedure BuildSegmentationMask(Width, Height: Integer; polygon: T2DPolygonGraph; buildBG_color, buildFG_color: TRColor; Token: U_String); overload;
+    procedure BuildSegmentationMask(Width, Height: Integer; sour: TMemoryRaster; sampler_FG_Color, buildBG_color, buildFG_color: TRColor; Token: U_String); overload;
 
     procedure BuildMaskMerge(colors: TSegmentationColorList);
 
@@ -187,6 +189,7 @@ type
     DetectorDefineList: TEditorDetectorDefineList;
     SegmentationMaskList: TSegmentationMasks;
     Raster: TMemoryRaster;
+    FileInfo: U_String;
 
     constructor Create(AOwner: TAI_ImageList);
     destructor Destroy; override;
@@ -207,7 +210,7 @@ type
     function FoundNoTokenDefine(output: TMemoryRaster; Color: TDEColor): Boolean; overload;
     function FoundNoTokenDefine: Boolean; overload;
 
-    procedure SaveToStream(stream: TMemoryStream64; SaveImg: Boolean; RasterSave_: TRasterSave); overload;
+    procedure SaveToStream(stream: TMemoryStream64; SaveImg: Boolean; RasterSave_: TRasterSaveFormat); overload;
     procedure SaveToStream(stream: TMemoryStream64); overload;
 
     procedure LoadFromStream(stream: TMemoryStream64; LoadImg: Boolean); overload;
@@ -218,8 +221,8 @@ type
 
     procedure Scale(f: TGeoFloat);
 
-    function ExistsDetectorToken(Token: TPascalString): Boolean;
-    function GetDetectorTokenCount(Token: TPascalString): Integer;
+    function ExistsDetectorToken(Token: U_String): Boolean;
+    function GetDetectorTokenCount(Token: U_String): Integer;
 
     // Serialized And Recycle Memory
     procedure SerializedAndRecycleMemory(Serializ: TRasterSerialized);
@@ -231,7 +234,7 @@ type
   TAI_ImageList = class(TImageList_Decl)
   public
     UsedJpegForXML: Boolean;
-    FileInfo: TPascalString;
+    FileInfo: U_String;
     UserData: TCoreClassObject;
 
     constructor Create;
@@ -286,9 +289,9 @@ type
     procedure SavePrepareRasterToPictureFile(fileName: SystemString);
     procedure SaveToStream(stream: TCoreClassStream); overload;
     procedure SaveToStream(stream: TCoreClassStream; SaveImg, Compressed: Boolean); overload;
-    procedure SaveToStream(stream: TCoreClassStream; SaveImg, Compressed: Boolean; RasterSave_: TRasterSave); overload;
+    procedure SaveToStream(stream: TCoreClassStream; SaveImg, Compressed: Boolean; RasterSave_: TRasterSaveFormat); overload;
     procedure SaveToFile(fileName: SystemString); overload;
-    procedure SaveToFile(fileName: SystemString; SaveImg, Compressed: Boolean; RasterSave_: TRasterSave); overload;
+    procedure SaveToFile(fileName: SystemString; SaveImg, Compressed: Boolean; RasterSave_: TRasterSaveFormat); overload;
 
     // export
     procedure Export_PrepareRaster(outputPath: SystemString);
@@ -315,8 +318,8 @@ type
 
     // statistics: detector
     function DetectorTokens: TArrayPascalString;
-    function ExistsDetectorToken(Token: TPascalString): Boolean;
-    function GetDetectorTokenCount(Token: TPascalString): Integer;
+    function ExistsDetectorToken(Token: U_String): Boolean;
+    function GetDetectorTokenCount(Token: U_String): Integer;
 
     // statistics: segmentation
     procedure SegmentationTokens(output: TPascalStringList);
@@ -364,12 +367,12 @@ type
     procedure ImportImageListAsFragment(imgList: TAI_ImageList; RemoveSource: Boolean); overload;
 
     // image matrix stream
-    procedure SaveToStream(stream: TCoreClassStream; SaveImg: Boolean; RasterSave_: TRasterSave); overload;
+    procedure SaveToStream(stream: TCoreClassStream; SaveImg: Boolean; RasterSave_: TRasterSaveFormat); overload;
     procedure SaveToStream(stream: TCoreClassStream); overload;
     procedure LoadFromStream(stream: TCoreClassStream);
 
     // image matrix file
-    procedure SaveToFile(fileName: SystemString; SaveImg: Boolean; RasterSave_: TRasterSave); overload;
+    procedure SaveToFile(fileName: SystemString; SaveImg: Boolean; RasterSave_: TRasterSaveFormat); overload;
     procedure SaveToFile(fileName: SystemString); overload;
     procedure LoadFromFile(fileName: SystemString);
 
@@ -393,7 +396,7 @@ type
     // statistics: Image
     function ImageCount: Integer;
     function ImageList: TImageList_Decl;
-    function FindImageList(FileInfo: TPascalString): TAI_ImageList;
+    function FindImageList(FileInfo: U_String): TAI_ImageList;
     function FoundNoTokenDefine(output: TMemoryRaster): Boolean; overload;
     function FoundNoTokenDefine: Boolean; overload;
     procedure AllTokens(output: TPascalStringList);
@@ -402,8 +405,8 @@ type
     function DetectorDefineCount: Integer;
     function DetectorDefinePartCount: Integer;
     function DetectorTokens: TArrayPascalString;
-    function ExistsDetectorToken(Token: TPascalString): Boolean;
-    function GetDetectorTokenCount(Token: TPascalString): Integer;
+    function ExistsDetectorToken(Token: U_String): Boolean;
+    function GetDetectorTokenCount(Token: U_String): Integer;
 
     // statistics: segmentation
     procedure SegmentationTokens(output: TPascalStringList);
@@ -413,19 +416,19 @@ type
     procedure LargeScale_BuildMaskMerge(RSeri: TRasterSerialized; colors: TSegmentationColorList);
     procedure ClearMaskMerge;
 
-    // parallel extract image matrix
+    // Parallel extract image matrix
     function ExtractDetectorDefineAsSnapshotProjection(SS_width, SS_height: Integer): TMemoryRaster2DArray;
     function ExtractDetectorDefineAsSnapshot: TMemoryRaster2DArray;
     function ExtractDetectorDefineAsPrepareRaster(SS_width, SS_height: Integer): TMemoryRaster2DArray;
     function ExtractDetectorDefineAsScaleSpace(SS_width, SS_height: Integer): TMemoryRaster2DArray;
 
     // large-scale image matrix stream
-    procedure LargeScale_SaveToStream(RSeri: TRasterSerialized; stream: TCoreClassStream; RasterSave_: TRasterSave); overload;
+    procedure LargeScale_SaveToStream(RSeri: TRasterSerialized; stream: TCoreClassStream; RasterSave_: TRasterSaveFormat); overload;
     procedure LargeScale_SaveToStream(RSeri: TRasterSerialized; stream: TCoreClassStream); overload;
     procedure LargeScale_LoadFromStream(RSeri: TRasterSerialized; stream: TCoreClassStream);
 
     // large-scale image matrix: file
-    procedure LargeScale_SaveToFile(RSeri: TRasterSerialized; fileName: SystemString; RasterSave_: TRasterSave); overload;
+    procedure LargeScale_SaveToFile(RSeri: TRasterSerialized; fileName: SystemString; RasterSave_: TRasterSaveFormat); overload;
     procedure LargeScale_SaveToFile(RSeri: TRasterSerialized; fileName: SystemString); overload;
     procedure LargeScale_LoadFromFile(RSeri: TRasterSerialized; fileName: SystemString);
 
@@ -444,8 +447,6 @@ type
 
 
 const
-  // zAI.conf define
-  C_AI_Conf: SystemString = 'Z-AI.conf';
   // ext define
   C_ImageMatrix_Ext: SystemString = '.imgMat';
   C_ImageList_Ext: SystemString = '.imgDataset';
@@ -462,52 +463,69 @@ const
   C_GDCNIC_Ext: SystemString = '.GDCNIC';
   C_GNIC_Ext: SystemString = '.GNIC';
   C_SS_Ext: SystemString = '.SS';
+  C_OCR_Model_Package: SystemString = 'OCRModelPack.OX';
+  C_Sync_Ext: SystemString = '.sync';
+  C_Sync_Ext2: SystemString = '.sync_';
+
+  // zAI.conf file
+  C_AI_Conf: SystemString = 'Z-AI.conf';
 
 var
+  // configure file
+  AI_Configure_Path: U_String;
   AI_Work_Path: U_String;
   AI_CFG_FILE: U_String;
+  // product ID
   AI_ProductID: U_String;
+  // key
   AI_UserKey: U_String;
+  // auth server
   AI_Key_Server_Host: U_String;
   AI_Key_Server_Port: WORD;
+  // engine
   AI_Engine_Library: U_String;
   AI_Parallel_Count: Integer;
+  // Integrate toolkit
   AI_TrainingTool: U_String;
   AI_PackageTool: U_String;
   AI_ModelTool: U_String;
+  AI_MPEGSplitTool: U_String;
+  AI_MPEGEncodeTool: U_String;
+  AI_PNGConverTool: U_String;
+  AI_TIFConverTool: U_String;
+  // Integrate training server
   AI_TrainingServer: U_String;
+  // toolchain Search directory.
+  AI_SearchDirectory: U_String;
+  // AI configure ready ok
   AI_Configure_ReadyDone: Boolean;
+  // scripter backcall
   On_Script_RegisterProc: TAI_Image_Script_Register;
 
+{$ENDREGION 'global'}
+{$REGION 'API functions'}
+  // external configure file
 function WhereFileFromConfigure(const fileName: U_String): U_String;
 function FileExistsFromConfigure(const fileName: U_String): Boolean;
 procedure ReadAIConfig; overload;
 procedure ReadAIConfig(ini: THashTextEngine); overload;
-procedure WriteAIConfig;
-
+procedure WriteAIConfig; overload;
+procedure WriteAIConfig(ini: THashTextEngine); overload;
+procedure WriteAIConfig(config_file: U_String); overload;
+// XML support
 procedure Build_XML_Dataset(xslFile, Name, comment, body: SystemString; build_output: TMemoryStream64);
 procedure Build_XML_Style(build_output: TMemoryStream64);
+// draw share line
 procedure DrawSPLine(sp_desc: TVec2List; bp, ep: Integer; closeLine: Boolean; Color: TDEColor; d: TDrawEngine); overload;
 procedure DrawSPLine(sp_desc: TArrayVec2; bp, ep: Integer; closeLine: Boolean; Color: TDEColor; d: TDrawEngine); overload;
+// draw face shape
 procedure DrawFaceSP(sp_desc: TVec2List; Color: TDEColor; d: TDrawEngine); overload;
 procedure DrawFaceSP(sp_desc: TArrayVec2; Color: TDEColor; d: TDrawEngine); overload;
-
-{$ENDREGION 'global'}
+{$ENDREGION 'API functions'}
 
 implementation
 
-uses
-{$IFDEF parallel}
-{$IFDEF FPC}
-  mtprocs,
-{$ELSE FPC}
-  Threading,
-{$ENDIF FPC}
-{$ENDIF parallel}
-  SyncObjs, DoStatusIO, Math;
-
-var
-  AI_Configure_Path: U_String;
+uses DoStatusIO, Math;
 
 procedure Init_AI_Common;
 begin
@@ -518,23 +536,40 @@ begin
   AI_Configure_Path := System.IOUtils.TPath.GetDocumentsPath;
   AI_Work_Path := System.IOUtils.TPath.GetLibraryPath;
 {$ENDIF FPC}
+  // product ID
+  AI_ProductID := '';
+  // key
+  AI_UserKey := '';
+
+  // auth server
+  AI_Key_Server_Host := 'zpascal.net';
+  AI_Key_Server_Port := 7988;
+
+  // engine
+  AI_Engine_Library := 'zAI_x64.dll';
+
+  // parallel
+  AI_Parallel_Count := CpuCount * 2;
+
+  // Integrate toolkit
+  AI_TrainingTool := umlCombineFileName(AI_Work_Path, 'TrainingTool.exe');
+  AI_PackageTool := umlCombineFileName(AI_Work_Path, 'FilePackageTool.exe');
+  AI_ModelTool := umlCombineFileName(AI_Work_Path, 'Z_AI_Model.exe');
+  AI_MPEGSplitTool := umlCombineFileName(AI_Work_Path, 'MPEGFileSplit.exe');
+  AI_MPEGEncodeTool := umlCombineFileName(AI_Work_Path, 'MPEGEncodeTool.exe');
+  AI_PNGConverTool := umlCombineFileName(AI_Work_Path, 'ImgFmtConver2PNG.exe');
+  AI_TIFConverTool := umlCombineFileName(AI_Work_Path, 'ImgFmtConver2TIF.exe');
+
+  // Integrate training server
+  AI_TrainingServer := '127.0.0.1';
+
+  // toolchain Root directory.
+  AI_SearchDirectory := AI_Work_Path;
+
   if IsMobile then
       AI_CFG_FILE := C_AI_Conf
   else
       AI_CFG_FILE := WhereFileFromConfigure(C_AI_Conf);
-
-  AI_ProductID := '';
-  AI_UserKey := '';
-  AI_Key_Server_Host := 'zpascal.net';
-  AI_Key_Server_Port := 7988;
-
-  AI_Engine_Library := 'zAI_x64.dll';
-  AI_Parallel_Count := CpuCount;
-
-  AI_TrainingTool := 'TrainingTool.exe';
-  AI_PackageTool := 'FilePackageTool.exe';
-  AI_ModelTool := 'Z_AI_Model.exe';
-  AI_TrainingServer := '127.0.0.1';
 
   AI_Configure_ReadyDone := False;
 
@@ -547,10 +582,12 @@ var
 begin
   f := umlGetFileName(fileName);
 
-  if umlFileExists(umlCombineFileName(AI_Configure_Path, f)) then
-      Result := umlCombineFileName(AI_Configure_Path, f)
-  else if umlFileExists(umlCombineFileName(AI_Work_Path, f)) then
+  if umlFileExists(umlCombineFileName(AI_Work_Path, f)) then
       Result := umlCombineFileName(AI_Work_Path, f)
+  else if (AI_SearchDirectory.Exists(['/', '\'])) and (umlFileExists(umlCombineFileName(AI_SearchDirectory, f))) then
+      Result := umlCombineFileName(AI_SearchDirectory, f)
+  else if umlFileExists(umlCombineFileName(AI_Configure_Path, f)) then
+      Result := umlCombineFileName(AI_Configure_Path, f)
   else if umlFileExists(umlCombineFileName(umlCurrentPath, f)) then
       Result := umlCombineFileName(umlCurrentPath, f)
   else
@@ -584,9 +621,8 @@ end;
 procedure ReadAIConfig(ini: THashTextEngine);
   function r_ai(Name, fn: U_String): U_String;
   begin
-    Result := ini.GetDefaultValue('AI', Name, fn);
-    if not umlExistsChar(Result, '/\') then
-        Result := WhereFileFromConfigure(Result);
+    Result.Text := ini.GetDefaultValue('AI', Name, fn);
+    Result := WhereFileFromConfigure(Result);
   end;
 
 begin
@@ -595,10 +631,16 @@ begin
   AI_Key_Server_Host := ini.GetDefaultValue('Auth', 'Server', AI_Key_Server_Host);
   AI_Key_Server_Port := ini.GetDefaultValue('Auth', 'Port', AI_Key_Server_Port);
 
+  AI_SearchDirectory := ini.GetDefaultValue('FileIO', 'SearchDirectory', AI_SearchDirectory);
+
   AI_Engine_Library := r_ai('Engine', AI_Engine_Library);
   AI_TrainingTool := r_ai('TrainingTool', AI_TrainingTool);
   AI_PackageTool := r_ai('PackageTool', AI_PackageTool);
   AI_ModelTool := r_ai('ModelTool', AI_ModelTool);
+  AI_MPEGSplitTool := r_ai('MPEGSplitTool', AI_MPEGSplitTool);
+  AI_MPEGEncodeTool := r_ai('MPEGEncodeTool', AI_MPEGEncodeTool);
+  AI_PNGConverTool := r_ai('PNGConverTool', AI_PNGConverTool);
+  AI_TIFConverTool := r_ai('TIFConverTool', AI_TIFConverTool);
 
   AI_Parallel_Count := ini.GetDefaultValue('AI', 'Parallel', AI_Parallel_Count);
   AI_TrainingServer := ini.GetDefaultValue('AI', 'TrainingServer', AI_TrainingServer);
@@ -607,45 +649,52 @@ begin
 end;
 
 procedure WriteAIConfig;
-var
-  ini: THashTextEngine;
+begin
+  WriteAIConfig(AI_CFG_FILE);
+end;
+
+procedure WriteAIConfig(ini: THashTextEngine);
   procedure w_ai(Name, fn: U_String);
   begin
-    if umlExistsChar(fn, '/\') then
-      begin
-        if WhereFileFromConfigure(fn).Same(fn) then
-            ini.SetDefaultValue('AI', Name, umlGetFileName(fn))
-        else
-            ini.SetDefaultValue('AI', Name, fn);
-      end
-    else if FileExistsFromConfigure(fn) then
-        ini.SetDefaultValue('AI', Name, umlGetFileName(fn))
-    else
-        ini.SetDefaultValue('AI', Name, fn);
+    if fn.L > 0 then
+        ini.SetDefaultValue('AI', Name, umlGetFileName(fn));
   end;
 
 begin
-  ini := THashTextEngine.Create;
-
   ini.SetDefaultValue('Auth', 'ProductID', AI_ProductID);
   ini.SetDefaultValue('Auth', 'Key', AI_UserKey);
   ini.SetDefaultValue('Auth', 'Server', AI_Key_Server_Host);
   ini.SetDefaultValue('Auth', 'Port', AI_Key_Server_Port);
 
+  ini.SetDefaultValue('FileIO', 'SearchDirectory', AI_SearchDirectory);
+
   w_ai('Engine', AI_Engine_Library);
   w_ai('TrainingTool', AI_TrainingTool);
   w_ai('PackageTool', AI_PackageTool);
   w_ai('ModelTool', AI_ModelTool);
+  w_ai('MPEGSplitTool', AI_MPEGSplitTool);
+  w_ai('MPEGEncodeTool', AI_MPEGEncodeTool);
+  w_ai('PNGConverTool', AI_PNGConverTool);
+  w_ai('TIFConverTool', AI_TIFConverTool);
 
   ini.SetDefaultValue('AI', 'Parallel', AI_Parallel_Count);
   ini.SetDefaultValue('AI', 'TrainingServer', AI_TrainingServer);
+end;
+
+procedure WriteAIConfig(config_file: U_String);
+var
+  ini: THashTextEngine;
+begin
+  ini := THashTextEngine.Create;
+
+  WriteAIConfig(ini);
 
   try
-    ini.SaveToFile(AI_CFG_FILE);
-    DoStatus('write Z-AI configure "%s"', [AI_CFG_FILE.Text]);
+    ini.SaveToFile(config_file);
+    DoStatus('write Z-AI configure "%s"', [config_file.Text]);
   except
     TCoreClassThread.Sleep(100);
-    WriteAIConfig;
+    WriteAIConfig(config_file);
   end;
   disposeObject(ini);
 end;
@@ -666,7 +715,7 @@ const
 var
   vt: THashStringList;
   s_out: SystemString;
-  l: TPascalStringList;
+  L: TPascalStringList;
 begin
   vt := THashStringList.Create;
   vt['xsl'] := xslFile;
@@ -675,10 +724,10 @@ begin
   vt['body'] := body;
   vt.ProcessMacro(XML_Dataset, '%', '%', s_out);
   disposeObject(vt);
-  l := TPascalStringList.Create;
-  l.Text := s_out;
-  l.SaveToStream(build_output);
-  disposeObject(l);
+  L := TPascalStringList.Create;
+  L.Text := s_out;
+  L.SaveToStream(build_output);
+  disposeObject(L);
 end;
 
 procedure Build_XML_Style(build_output: TMemoryStream64);
@@ -760,12 +809,12 @@ const
     '</xsl:stylesheet>'#13#10;
 
 var
-  l: TPascalStringList;
+  L: TPascalStringList;
 begin
-  l := TPascalStringList.Create;
-  l.Text := XML_Style;
-  l.SaveToStream(build_output);
-  disposeObject(l);
+  L := TPascalStringList.Create;
+  L.Text := XML_Style;
+  L.SaveToStream(build_output);
+  disposeObject(L);
 end;
 
 procedure DrawSPLine(sp_desc: TVec2List; bp, ep: Integer; closeLine: Boolean; Color: TDEColor; d: TDrawEngine);
@@ -852,7 +901,7 @@ begin
   inherited Destroy;
 end;
 
-procedure TAI_DetectorDefine.SaveToStream(stream: TMemoryStream64; RasterSave_: TRasterSave);
+procedure TAI_DetectorDefine.SaveToStream(stream: TMemoryStream64; RasterSave_: TRasterSaveFormat);
 var
   de: TDataFrameEngine;
   m64: TMemoryStream64;
@@ -879,7 +928,7 @@ end;
 
 procedure TAI_DetectorDefine.SaveToStream(stream: TMemoryStream64);
 begin
-  SaveToStream(stream, TRasterSave.rsRGB);
+  SaveToStream(stream, TRasterSaveFormat.rsRGB);
 end;
 
 procedure TAI_DetectorDefine.LoadFromStream(stream: TMemoryStream64);
@@ -910,7 +959,7 @@ begin
   disposeObject(de);
 end;
 
-procedure TSegmentationColorList.DoSegColor(Color: TRColor; var Classify: TSegClassify);
+procedure TSegmentationColorList.DoGetPixelSegClassify(X, Y: Integer; Color: TRColor; var Classify: TMorphologyClassify);
 var
   ID: WORD;
 begin
@@ -972,7 +1021,7 @@ begin
   inherited Clear;
 end;
 
-procedure TSegmentationColorList.AddColor(const Token: TPascalString; const Color: TRColor);
+procedure TSegmentationColorList.AddColor(const Token: U_String; const Color: TRColor);
 var
   p: PSegmentationColor;
 begin
@@ -987,6 +1036,20 @@ begin
   inherited Add(p);
 end;
 
+procedure TSegmentationColorList.Assign(source: TSegmentationColorList);
+var
+  i: Integer;
+  p: PSegmentationColor;
+begin
+  Clear;
+  for i := 0 to source.Count - 1 do
+    begin
+      new(p);
+      p^ := source[i]^;
+      inherited Add(p);
+    end;
+end;
+
 function TSegmentationColorList.IsIgnoredBorder(const c: TRColor): Boolean;
 begin
   Result := c = RColor($FF, $FF, $FF, $FF);
@@ -997,7 +1060,7 @@ begin
   Result := ID = $FFFF;
 end;
 
-function TSegmentationColorList.IsIgnoredBorder(const Token: TPascalString): Boolean;
+function TSegmentationColorList.IsIgnoredBorder(const Token: U_String): Boolean;
 begin
   Result := Token.Same('ignored border');
 end;
@@ -1054,8 +1117,8 @@ begin
   Result := False;
 end;
 
-function TSegmentationColorList.GetIDColorAndToken(const ID: WORD; const def_color: TRColor; const def_token: TPascalString;
-  var output_color: TRColor; var output_token: TPascalString): Boolean;
+function TSegmentationColorList.GetIDColorAndToken(const ID: WORD; const def_color: TRColor; const def_token: U_String;
+  var output_color: TRColor; var output_token: U_String): Boolean;
 var
   i: Integer;
 begin
@@ -1072,7 +1135,7 @@ begin
   Result := False;
 end;
 
-function TSegmentationColorList.GetColorToken(const c: TRColor; const def: TPascalString): TPascalString;
+function TSegmentationColorList.GetColorToken(const c: TRColor; const def: U_String): U_String;
 var
   i: Integer;
 begin
@@ -1085,12 +1148,12 @@ begin
       end;
 end;
 
-function TSegmentationColorList.GetColorToken(const c: TRColor): TPascalString;
+function TSegmentationColorList.GetColorToken(const c: TRColor): U_String;
 begin
   Result := GetColorToken(c, '');
 end;
 
-function TSegmentationColorList.GetTokenColor(const Token: TPascalString; const def: TRColor): TRColor;
+function TSegmentationColorList.GetTokenColor(const Token: U_String; const def: TRColor): TRColor;
 var
   i: Integer;
 begin
@@ -1103,59 +1166,61 @@ begin
       end;
 end;
 
-function TSegmentationColorList.GetTokenColor(const Token: TPascalString): TRColor;
+function TSegmentationColorList.GetTokenColor(const Token: U_String): TRColor;
 begin
   Result := GetTokenColor(Token, RColor(0, 0, 0, 0));
 end;
 
-procedure TSegmentationColorList.BuildLabelViewer(input, output: TMemoryRaster; LabColor, BoxColor: TRColor);
+procedure TSegmentationColorList.BuildViewer(input, output, SegDataOutput: TMemoryRaster; LabColor: TRColor;
+  ConvolutionOperations: array of TBinaryzationOperation; ConvWidth, ConvHeight, MaxClassifyCount, MinGranularity: Integer);
 var
-  s: TColorSegmentation;
+  seg: TMorphologySegmentation;
   i: Integer;
-  pool: TSegPool;
+  pool: TMorphologyPool;
   id_color: TRColor;
-  id_token: TPascalString;
-  R: TRect;
-  tmp: TMemoryRaster;
+  id_token: U_String;
+  pt_: TVec2;
+  geo: T2DPolygonGraph;
 begin
-  s := TColorSegmentation.Create(input);
-  s.OnSegColor := {$IFDEF FPC}@{$ENDIF FPC}DoSegColor;
-  s.BuildSegmentation;
-  s.RemoveNoise(500);
-  s.MergeOverlapSegmentation;
+  if input = nil then
+      exit;
+  if output = nil then
+      exit;
+  seg := TMorphologySegmentation.Create;
+  seg.OnGetPixelSegClassify := {$IFDEF FPC}@{$ENDIF FPC}DoGetPixelSegClassify;
+  seg.BuildSegmentation(input, ConvolutionOperations, ConvWidth, ConvHeight, MaxClassifyCount, MinGranularity);
+  seg.RemoveNoise(MinGranularity);
 
-  tmp := NewRaster();
-  tmp.SetSize(output.Width, output.Height, RColor(0, 0, 0, 0));
-  for i := 0 to s.Count - 1 do
+  if SegDataOutput <> nil then
     begin
-      pool := s[i];
+      SegDataOutput.SetSize(seg.Width, seg.Height, RColor(0, 0, 0));
+      SegDataOutput.OpenAgg;
+      SegDataOutput.Agg.LineWidth := 2;
+    end;
+
+  output.OpenAgg;
+  output.Agg.LineWidth := 1;
+  for i := 0 to seg.Count - 1 do
+    begin
+      pool := seg[i];
 
       if GetIDColorAndToken(pool.Classify, RColor(0, 0, 0, $FF), '', id_color, id_token) then
         begin
-          R := pool.BoundsRect;
-          pool.FillTo(tmp, id_color);
-        end;
-    end;
-  tmp.FillNoneBGColorBorder(RColor(0, 0, 0, 0), RColor($FF, 0, 0), 5);
-  FastBlur(tmp, 3, tmp.BoundsRect);
-  tmp.ProjectionTo(output, tmp.BoundsV2Rect4, output.BoundsV2Rect4, True, 0.8);
-  disposeObject(tmp);
+          geo := pool.BuildConvolutionGeometry(1.0);
+          output.DrawPolygon(geo, SetRColorAlpha(id_color, $FF), SetRColorAlpha(id_color, $FF));
+          output.DrawPolygonCross(geo, 5, SetRColorAlpha(id_color, $FF), SetRColorAlpha(id_color, $FF));
 
-  for i := 0 to s.Count - 1 do
-    begin
-      pool := s[i];
+          if SegDataOutput <> nil then
+              pool.DrawTo(SegDataOutput, SetRColorAlpha(id_color, $FF));
 
-      if GetIDColorAndToken(pool.Classify, RColor(0, 0, 0, $FF), '', id_color, id_token) then
-        begin
-          R := pool.BoundsRect;
-          output.DrawText(id_token, R.Left + 7, R.Top + 7, 14, RColor(0, 0, 0, $7F));
-          output.DrawText(id_token, R.Left + 5, R.Top + 5, 14, LabColor);
-          output.DrawRect(RectAdd(RectV2(R), Vec2(2, 2)), RColor(0, 0, 0, $7F));
-          output.DrawRect(R, BoxColor);
+          pt_ := geo.Surround.Centroid;
+          output.DrawText(id_token, round(pt_[0]) + 2, round(pt_[1]) + 2, 14, RColor(0, 0, 0));
+          output.DrawText(id_token, round(pt_[0]), round(pt_[1]), 14, LabColor);
+          disposeObject(geo);
         end;
     end;
 
-  disposeObject(s);
+  disposeObject(seg);
 end;
 
 procedure TSegmentationColorList.SaveToStream(stream: TCoreClassStream);
@@ -1206,7 +1271,7 @@ begin
   disposeObject(d);
 end;
 
-procedure TSegmentationColorList.SaveToFile(fileName: TPascalString);
+procedure TSegmentationColorList.SaveToFile(fileName: U_String);
 var
   fs: TMemoryStream64;
 begin
@@ -1216,7 +1281,7 @@ begin
   disposeObject(fs);
 end;
 
-procedure TSegmentationColorList.LoadFromFile(fileName: TPascalString);
+procedure TSegmentationColorList.LoadFromFile(fileName: U_String);
 var
   fs: TMemoryStream64;
 begin
@@ -1230,9 +1295,9 @@ end;
 procedure TSegmentationMasks.MergePixelToRaster(segMask: PSegmentationMask; colors: TSegmentationColorList);
 var
   fg: TRColor;
-{$IFDEF parallel}
+{$IFDEF Parallel}
 {$IFDEF FPC}
-  procedure Nested_ParallelFor(pass: PtrInt; Data: Pointer; Item: TMultiThreadProcItem);
+  procedure Nested_ParallelFor(pass: Integer);
   var
     i: Integer;
   begin
@@ -1241,7 +1306,7 @@ var
           MaskMergeRaster[i, pass] := fg;
   end;
 {$ENDIF FPC}
-{$ELSE parallel}
+{$ELSE Parallel}
   procedure DoFor;
   var
     pass: Integer;
@@ -1252,7 +1317,7 @@ var
         if segMask^.Raster[i, pass] = segMask^.FrontColor then
             MaskMergeRaster[i, pass] := fg;
   end;
-{$ENDIF parallel}
+{$ENDIF Parallel}
 
 
 begin
@@ -1262,11 +1327,11 @@ begin
   if fg = 0 then
       exit;
 
-{$IFDEF parallel}
+{$IFDEF Parallel}
 {$IFDEF FPC}
-  ProcThreadPool.DoParallelLocalProc(@Nested_ParallelFor, 0, segMask^.Raster.Height - 1);
+  FPCParallelFor(@Nested_ParallelFor, 0, segMask^.Raster.Height - 1);
 {$ELSE FPC}
-  TParallel.for(0, segMask^.Raster.Height - 1, procedure(pass: Integer)
+  DelphiParallelFor(0, segMask^.Raster.Height - 1, procedure(pass: Integer)
     var
       i: Integer;
     begin
@@ -1275,9 +1340,9 @@ begin
             MaskMergeRaster[i, pass] := fg;
     end);
 {$ENDIF FPC}
-{$ELSE parallel}
+{$ELSE Parallel}
   DoFor;
-{$ENDIF parallel}
+{$ENDIF Parallel}
 end;
 
 constructor TSegmentationMasks.Create(OwnerImage_: TAI_Image);
@@ -1403,13 +1468,13 @@ begin
   disposeObject(d);
 end;
 
-procedure TSegmentationMasks.BuildSegmentationMask(Width, Height: Integer; polygon: T2DPolygon; buildBG_color, buildFG_color: TRColor; Token: TPascalString);
+procedure TSegmentationMasks.BuildSegmentationMask(Width, Height: Integer; polygon: T2DPolygon; buildBG_color, buildFG_color: TRColor; Token: U_String);
 var
   p: PSegmentationMask;
   R: TRectV2;
-{$IFDEF parallel}
+{$IFDEF Parallel}
 {$IFDEF FPC}
-  procedure Nested_ParallelFor(pass: PtrInt; Data: Pointer; Item: TMultiThreadProcItem);
+  procedure Nested_ParallelFor(pass: Integer);
   var
     i: Integer;
   begin
@@ -1418,7 +1483,7 @@ var
           p^.Raster.Pixel[i, pass] := p^.FrontColor;
   end;
 {$ENDIF FPC}
-{$ELSE parallel}
+{$ELSE Parallel}
   procedure DoFor;
   var
     pass, i: Integer;
@@ -1430,7 +1495,7 @@ var
               p^.Raster.Pixel[i, pass] := p^.FrontColor;
       end;
   end;
-{$ENDIF parallel}
+{$ENDIF Parallel}
 
 
 begin
@@ -1442,11 +1507,11 @@ begin
   p^.Raster.SetSize(Width, Height, p^.BackgroundColor);
   R := polygon.BoundBox();
 
-{$IFDEF parallel}
+{$IFDEF Parallel}
 {$IFDEF FPC}
-  ProcThreadPool.DoParallelLocalProc(@Nested_ParallelFor, 0, Height - 1);
+  FPCParallelFor(@Nested_ParallelFor, 0, Height - 1);
 {$ELSE}
-  TParallel.for(0, Height - 1, procedure(pass: Integer)
+  DelphiParallelFor(0, Height - 1, procedure(pass: Integer)
     var
       i: Integer;
     begin
@@ -1457,17 +1522,17 @@ begin
 {$ENDIF FPC}
 {$ELSE}
   DoFor();
-{$ENDIF parallel}
+{$ENDIF Parallel}
   Add(p);
 end;
 
-procedure TSegmentationMasks.BuildSegmentationMask(Width, Height: Integer; polygon: T2DPolygonGraph; buildBG_color, buildFG_color: TRColor; Token: TPascalString);
+procedure TSegmentationMasks.BuildSegmentationMask(Width, Height: Integer; polygon: T2DPolygonGraph; buildBG_color, buildFG_color: TRColor; Token: U_String);
 var
   p: PSegmentationMask;
   R: TRectV2;
-{$IFDEF parallel}
+{$IFDEF Parallel}
 {$IFDEF FPC}
-  procedure Nested_ParallelFor(pass: PtrInt; Data: Pointer; Item: TMultiThreadProcItem);
+  procedure Nested_ParallelFor(pass: Integer);
   var
     i: Integer;
   begin
@@ -1476,7 +1541,7 @@ var
           p^.Raster.Pixel[i, pass] := p^.FrontColor;
   end;
 {$ENDIF FPC}
-{$ELSE parallel}
+{$ELSE Parallel}
   procedure DoFor;
   var
     pass, i: Integer;
@@ -1488,7 +1553,7 @@ var
               p^.Raster.Pixel[i, pass] := p^.FrontColor;
       end;
   end;
-{$ENDIF parallel}
+{$ENDIF Parallel}
 
 
 begin
@@ -1500,11 +1565,11 @@ begin
   p^.Raster.SetSize(Width, Height, p^.BackgroundColor);
   R := polygon.BoundBox();
 
-{$IFDEF parallel}
+{$IFDEF Parallel}
 {$IFDEF FPC}
-  ProcThreadPool.DoParallelLocalProc(@Nested_ParallelFor, 0, Height - 1);
+  FPCParallelFor(@Nested_ParallelFor, 0, Height - 1);
 {$ELSE}
-  TParallel.for(0, Height - 1, procedure(pass: Integer)
+  DelphiParallelFor(0, Height - 1, procedure(pass: Integer)
     var
       i: Integer;
     begin
@@ -1515,11 +1580,11 @@ begin
 {$ENDIF FPC}
 {$ELSE}
   DoFor();
-{$ENDIF parallel}
+{$ENDIF Parallel}
   Add(p);
 end;
 
-procedure TSegmentationMasks.BuildSegmentationMask(Width, Height: Integer; sour: TMemoryRaster; sampler_FG_Color, buildBG_color, buildFG_color: TRColor; Token: TPascalString);
+procedure TSegmentationMasks.BuildSegmentationMask(Width, Height: Integer; sour: TMemoryRaster; sampler_FG_Color, buildBG_color, buildFG_color: TRColor; Token: U_String);
 var
   p: PSegmentationMask;
   i, j: Integer;
@@ -1572,60 +1637,62 @@ begin
   FOP_RT.UserObject := Self;
 
   // condition on image
-  FOP_RT.RegOpM('Width', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_GetWidth);
-  FOP_RT.RegOpM('Height', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_GetHeight);
-  FOP_RT.RegOpM('Det', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_GetDetector);
-  FOP_RT.RegOpM('Detector', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_GetDetector);
-  FOP_RT.RegOpM('DetNum', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_GetDetector);
+  FOP_RT.RegOpM('Width', 'Width(): Image Width', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_GetWidth)^.Category := 'AI Image';
+  FOP_RT.RegOpM('Height', 'Height(): Image Height', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_GetHeight)^.Category := 'AI Image';
+  FOP_RT.RegOpM('Det', 'Det(): Detector define of Count', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_GetDetector)^.Category := 'AI Image';
+  FOP_RT.RegOpM('Detector', 'Detector(): Detector define of Count', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_GetDetector)^.Category := 'AI Image';
+  FOP_RT.RegOpM('DetNum', 'DetNum(): Detector define of Count', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_GetDetector)^.Category := 'AI Image';
 
   // condition on detector
-  FOP_RT.RegOpM('Label', {$IFDEF FPC}@{$ENDIF FPC}OP_Detector_GetLabel);
-  FOP_RT.RegOpM('GetLabel', {$IFDEF FPC}@{$ENDIF FPC}OP_Detector_GetLabel);
+  FOP_RT.RegOpM('Label', 'Label(): Label Name', {$IFDEF FPC}@{$ENDIF FPC}OP_Detector_GetLabel)^.Category := 'AI Image';
+  FOP_RT.RegOpM('GetLabel', 'GetLabel(): Label Name', {$IFDEF FPC}@{$ENDIF FPC}OP_Detector_GetLabel)^.Category := 'AI Image';
 
   // process on image
-  FOP_RT.RegOpM('Delete', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_Delete);
+  FOP_RT.RegOpM('Delete', 'Delete(): Delete image', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_Delete)^.Category := 'AI Image';
 
-  FOP_RT.RegOpM('Scale', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_Scale);
-  FOP_RT.RegOpM('ReductMemory', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_Scale);
+  FOP_RT.RegOpM('Scale', 'Scale(k:Float): scale image', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_Scale)^.Category := 'AI Image';
+  FOP_RT.RegOpM('ReductMemory', 'ReductMemory(k:Float): scale image', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_Scale)^.Category := 'AI Image';
 
-  FOP_RT.RegOpM('SwapRB', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_SwapRB);
-  FOP_RT.RegOpM('SwapBR', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_SwapRB);
+  FOP_RT.RegOpM('SwapRB', 'SwapRB(): swap red blue channel', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_SwapRB)^.Category := 'AI Image';
+  FOP_RT.RegOpM('SwapBR', 'SwapRB(): swap red blue channel', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_SwapRB)^.Category := 'AI Image';
 
-  FOP_RT.RegOpM('Gray', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_Gray);
-  FOP_RT.RegOpM('Grayscale', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_Gray);
+  FOP_RT.RegOpM('Gray', 'Gray(): Convert image to grayscale', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_Gray)^.Category := 'AI Image';
+  FOP_RT.RegOpM('Grayscale', 'Grayscale(): Convert image to grayscale', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_Gray)^.Category := 'AI Image';
 
-  FOP_RT.RegOpM('Sharpen', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_Sharpen);
+  FOP_RT.RegOpM('Sharpen', 'Sharpen(): Convert image to Sharpen', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_Sharpen)^.Category := 'AI Image';
 
-  FOP_RT.RegOpM('HistogramEqualize', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_HistogramEqualize);
-  FOP_RT.RegOpM('he', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_HistogramEqualize);
-  FOP_RT.RegOpM('NiceColor', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_HistogramEqualize);
+  FOP_RT.RegOpM('HistogramEqualize', 'HistogramEqualize(): Convert image to HistogramEqualize', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_HistogramEqualize)^.Category := 'AI Image';
+  FOP_RT.RegOpM('he', 'he(): Convert image to HistogramEqualize', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_HistogramEqualize)^.Category := 'AI Image';
+  FOP_RT.RegOpM('NiceColor', 'NiceColor(): Convert image to HistogramEqualize', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_HistogramEqualize)^.Category := 'AI Image';
 
-  FOP_RT.RegOpM('RemoveRedEye', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_RemoveRedEyes);
-  FOP_RT.RegOpM('RemoveRedEyes', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_RemoveRedEyes);
-  FOP_RT.RegOpM('RedEyes', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_RemoveRedEyes);
-  FOP_RT.RegOpM('RedEye', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_RemoveRedEyes);
+  FOP_RT.RegOpM('RemoveRedEye', 'RemoveRedEye(): Remove image red eye', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_RemoveRedEyes)^.Category := 'AI Image';
+  FOP_RT.RegOpM('RemoveRedEyes', 'RemoveRedEyes(): Remove image red eye', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_RemoveRedEyes)^.Category := 'AI Image';
+  FOP_RT.RegOpM('RedEyes', 'RedEyes(): Remove image red eye', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_RemoveRedEyes)^.Category := 'AI Image';
+  FOP_RT.RegOpM('RedEye', 'RedEye(): Remove image red eye', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_RemoveRedEyes)^.Category := 'AI Image';
 
-  FOP_RT.RegOpM('Sepia', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_Sepia);
-  FOP_RT.RegOpM('Blur', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_Blur);
+  FOP_RT.RegOpM('Sepia', 'Sepia(): Convert image to Sepia', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_Sepia)^.Category := 'AI Image';
+  FOP_RT.RegOpM('Blur', 'Blur(): Convert image to Blur', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_Blur)^.Category := 'AI Image';
 
-  FOP_RT.RegOpM('CalibrateRotate', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_CalibrateRotate);
-  FOP_RT.RegOpM('DocumentAlignment', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_CalibrateRotate);
-  FOP_RT.RegOpM('DocumentAlign', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_CalibrateRotate);
-  FOP_RT.RegOpM('DocAlign', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_CalibrateRotate);
-  FOP_RT.RegOpM('AlignDoc', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_CalibrateRotate);
+  FOP_RT.RegOpM('CalibrateRotate', 'CalibrateRotate(): Using Hough transform to calibrate rotation', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_CalibrateRotate)^.Category := 'AI Image';
+  FOP_RT.RegOpM('DocumentAlignment', 'DocumentAlignment(): Using Hough transform to calibrate rotation', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_CalibrateRotate)^.Category := 'AI Image';
+  FOP_RT.RegOpM('DocumentAlign', 'DocumentAlign(): Using Hough transform to calibrate rotation', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_CalibrateRotate)^.Category := 'AI Image';
+  FOP_RT.RegOpM('DocAlign', 'DocAlign(): Using Hough transform to calibrate rotation', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_CalibrateRotate)^.Category := 'AI Image';
+  FOP_RT.RegOpM('AlignDoc', 'AlignDoc(): Using Hough transform to calibrate rotation', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_CalibrateRotate)^.Category := 'AI Image';
 
   // process on detector
-  FOP_RT.RegOpM('SetLab', {$IFDEF FPC}@{$ENDIF FPC}OP_Detector_SetLabel);
-  FOP_RT.RegOpM('SetLabel', {$IFDEF FPC}@{$ENDIF FPC}OP_Detector_SetLabel);
-  FOP_RT.RegOpM('DefLab', {$IFDEF FPC}@{$ENDIF FPC}OP_Detector_SetLabel);
-  FOP_RT.RegOpM('DefLabel', {$IFDEF FPC}@{$ENDIF FPC}OP_Detector_SetLabel);
-  FOP_RT.RegOpM('DefineLabel', {$IFDEF FPC}@{$ENDIF FPC}OP_Detector_SetLabel);
-  FOP_RT.RegOpM('ClearDetector', {$IFDEF FPC}@{$ENDIF FPC}OP_Detector_ClearDetector);
-  FOP_RT.RegOpM('ClearDet', {$IFDEF FPC}@{$ENDIF FPC}OP_Detector_ClearDetector);
-  FOP_RT.RegOpM('KillDetector', {$IFDEF FPC}@{$ENDIF FPC}OP_Detector_ClearDetector);
-  FOP_RT.RegOpM('KillDet', {$IFDEF FPC}@{$ENDIF FPC}OP_Detector_ClearDetector);
-  FOP_RT.RegOpM('DeleteDetector', {$IFDEF FPC}@{$ENDIF FPC}OP_Detector_DeleteDetector);
-  FOP_RT.RegOpM('DeleteRect', {$IFDEF FPC}@{$ENDIF FPC}OP_Detector_DeleteDetector);
+  FOP_RT.RegOpM('SetLab', 'SetLab(newLabel name): new Label name', {$IFDEF FPC}@{$ENDIF FPC}OP_Detector_SetLabel)^.Category := 'AI Image';
+  FOP_RT.RegOpM('SetLabel', 'SetLabel(newLabel name): new Label name', {$IFDEF FPC}@{$ENDIF FPC}OP_Detector_SetLabel)^.Category := 'AI Image';
+  FOP_RT.RegOpM('DefLab', 'DefLab(newLabel name): new Label name', {$IFDEF FPC}@{$ENDIF FPC}OP_Detector_SetLabel)^.Category := 'AI Image';
+  FOP_RT.RegOpM('DefLabel', 'DefLabel(newLabel name): new Label name', {$IFDEF FPC}@{$ENDIF FPC}OP_Detector_SetLabel)^.Category := 'AI Image';
+  FOP_RT.RegOpM('DefineLabel', 'DefineLabel(newLabel name): new Label name', {$IFDEF FPC}@{$ENDIF FPC}OP_Detector_SetLabel)^.Category := 'AI Image';
+
+  FOP_RT.RegOpM('ClearDetector', 'ClearDetector(): clean detector box', {$IFDEF FPC}@{$ENDIF FPC}OP_Detector_ClearDetector)^.Category := 'AI Image';
+  FOP_RT.RegOpM('ClearDet', 'ClearDet(): clean detector box', {$IFDEF FPC}@{$ENDIF FPC}OP_Detector_ClearDetector)^.Category := 'AI Image';
+  FOP_RT.RegOpM('KillDetector', 'KillDetector(): clean detector box', {$IFDEF FPC}@{$ENDIF FPC}OP_Detector_ClearDetector)^.Category := 'AI Image';
+  FOP_RT.RegOpM('KillDet', 'KillDet(): clean detector box', {$IFDEF FPC}@{$ENDIF FPC}OP_Detector_ClearDetector)^.Category := 'AI Image';
+
+  FOP_RT.RegOpM('DeleteDetector', 'DeleteDetector(Maximum reserved box, x-scale, y-scale): delete detector box', {$IFDEF FPC}@{$ENDIF FPC}OP_Detector_DeleteDetector)^.Category := 'AI Image';
+  FOP_RT.RegOpM('DeleteRect', 'DeleteRect(Maximum reserved box, x-scale, y-scale): delete detector box', {$IFDEF FPC}@{$ENDIF FPC}OP_Detector_DeleteDetector)^.Category := 'AI Image';
 
   // external image processor
   if Assigned(On_Script_RegisterProc) then
@@ -1858,15 +1925,15 @@ var
     Result := CompareValue(d1, d2);
   end;
 
-  procedure QuickSortList(var SortList: TDetArry; l, R: Integer);
+  procedure QuickSortList(var SortList: TDetArry; L, R: Integer);
   var
     i, j: Integer;
     p, t: TAI_DetectorDefine;
   begin
     repeat
-      i := l;
+      i := L;
       j := R;
-      p := SortList[(l + R) shr 1];
+      p := SortList[(L + R) shr 1];
       repeat
         while ListSortCompare(SortList[i], p) < 0 do
             inc(i);
@@ -1884,9 +1951,9 @@ var
             dec(j);
           end;
       until i > j;
-      if l < j then
-          QuickSortList(SortList, l, j);
-      l := i;
+      if L < j then
+          QuickSortList(SortList, L, j);
+      L := i;
     until i >= R;
   end;
 
@@ -1938,6 +2005,7 @@ begin
   DetectorDefineList := TEditorDetectorDefineList.Create;
   SegmentationMaskList := TSegmentationMasks.Create(Self);
   Raster := NewRaster();
+  FileInfo := '';
   FOP_RT := nil;
   FOP_RT_RunDeleted := False;
 end;
@@ -1962,7 +2030,11 @@ begin
   if RSeri <> nil then
       UnserializedMemory(RSeri);
 
-  Result := EvaluateExpressionValue(False, ScriptStyle, exp, FOP_RT);
+  try
+      Result := EvaluateExpressionValue(False, ScriptStyle, exp, FOP_RT);
+  except
+      Result := False;
+  end;
 
   if Result then
       DoStatusNoLn(' = yes.')
@@ -1981,7 +2053,11 @@ begin
   if RSeri <> nil then
       UnserializedMemory(RSeri);
 
-  Result := EvaluateExpressionValue(False, ScriptStyle, exp, FOP_RT);
+  try
+      Result := EvaluateExpressionValue(False, ScriptStyle, exp, FOP_RT);
+  except
+      Result := False;
+  end;
 
   if RSeri <> nil then
       SerializedAndRecycleMemory(RSeri);
@@ -1990,8 +2066,7 @@ end;
 function TAI_Image.GetExpFunctionList: TPascalStringList;
 begin
   CheckAndRegOPRT;
-  Result := TPascalStringList.Create;
-  FOP_RT.ProcList.GetNameList(Result);
+  Result := FOP_RT.GetAllProcDescription();
 end;
 
 procedure TAI_Image.RemoveDetectorFromRect(edge: TGeoFloat; R: TRectV2);
@@ -2139,11 +2214,13 @@ begin
           segMask := SegmentationMaskList[i];
           if segMask^.Token = '' then
             begin
+              nm := NewRaster();
               nm.Assign(segMask^.Raster);
               nm.ColorReplace(segMask^.BackgroundColor, RColor(0, 0, 0, 0));
               nm.ColorReplace(segMask^.FrontColor, RColor(Color));
               FastBlur(nm, 3, nm.BoundsRect);
               nm.ProjectionTo(output, nm.BoundsV2Rect4, output.BoundsV2Rect4, True, 0.5);
+              disposeObject(nm);
               Result := True;
             end;
         end;
@@ -2180,7 +2257,7 @@ begin
     end;
 end;
 
-procedure TAI_Image.SaveToStream(stream: TMemoryStream64; SaveImg: Boolean; RasterSave_: TRasterSave);
+procedure TAI_Image.SaveToStream(stream: TMemoryStream64; SaveImg: Boolean; RasterSave_: TRasterSaveFormat);
 var
   de: TDataFrameEngine;
   m64: TMemoryStream64;
@@ -2213,6 +2290,8 @@ begin
   de.WriteStream(m64);
   disposeObject(m64);
 
+  de.WriteString(FileInfo);
+
   de.EncodeTo(stream, True);
 
   disposeObject(de);
@@ -2220,7 +2299,7 @@ end;
 
 procedure TAI_Image.SaveToStream(stream: TMemoryStream64);
 begin
-  SaveToStream(stream, True, TRasterSave.rsRGB);
+  SaveToStream(stream, True, TRasterSaveFormat.rsRGB);
 end;
 
 procedure TAI_Image.LoadFromStream(stream: TMemoryStream64; LoadImg: Boolean);
@@ -2229,6 +2308,7 @@ var
   m64: TMemoryStream64;
   i, c: Integer;
   DetDef: TAI_DetectorDefine;
+  rObj: TDataFrameBase;
 begin
   de := TDataFrameEngine.Create;
   de.DecodeFrom(stream);
@@ -2267,6 +2347,13 @@ begin
       m64.Position := 0;
       SegmentationMaskList.LoadFromStream(m64);
       disposeObject(m64);
+    end;
+
+  if de.Reader.NotEnd then
+    begin
+      rObj := de.Reader.Read();
+      if rObj is TDataFrameString then
+          FileInfo := umlStringOf(TDataFrameString(rObj).Buffer);
     end;
 
   disposeObject(de);
@@ -2311,15 +2398,15 @@ begin
     end;
 
   for i := 0 to SegmentationMaskList.Count - 1 do
-      SegmentationMaskList[i]^.Raster.NoLineScale(f);
+      SegmentationMaskList[i]^.Raster.NonlinearScale(f);
 end;
 
-function TAI_Image.ExistsDetectorToken(Token: TPascalString): Boolean;
+function TAI_Image.ExistsDetectorToken(Token: U_String): Boolean;
 begin
   Result := GetDetectorTokenCount(Token) > 0;
 end;
 
-function TAI_Image.GetDetectorTokenCount(Token: TPascalString): Integer;
+function TAI_Image.GetDetectorTokenCount(Token: U_String): Integer;
 var
   i: Integer;
 begin
@@ -2536,9 +2623,9 @@ var
   rp: TRectPacking;
   displaySampler: Integer;
 
-{$IFDEF parallel}
+{$IFDEF Parallel}
 {$IFDEF FPC}
-  procedure FPC_ParallelFor(pass: PtrInt; Data: Pointer; Item: TMultiThreadProcItem);
+  procedure FPC_ParallelFor(pass: Integer);
   var
     mr: TMemoryRaster;
   begin
@@ -2549,7 +2636,7 @@ var
     UnLockObject(rp);
   end;
 {$ENDIF FPC}
-{$ELSE parallel}
+{$ELSE Parallel}
   procedure DoFor;
   var
     pass: Integer;
@@ -2562,7 +2649,7 @@ var
         rp.Add(nil, mr, mr.BoundsRectV2);
       end;
   end;
-{$ENDIF parallel}
+{$ENDIF Parallel}
   procedure BuildOutput_;
   var
     i: Integer;
@@ -2572,7 +2659,7 @@ var
     DoStatus('build output.');
     d := TDrawEngine.Create;
     d.Options := [];
-    output.SetSize(Round(rp.MaxWidth), Round(rp.MaxHeight));
+    output.SetSize(round(rp.MaxWidth), round(rp.MaxHeight));
     FillBlackGrayBackgroundTexture(output, 32);
 
     d.Rasterization.SetWorkMemory(output);
@@ -2585,7 +2672,7 @@ var
       end;
 
     d.BeginCaptureShadow(Vec2(3, 3), 0.9);
-    d.DrawText(PFormat('display pictures %d/%d ', [displaySampler, Count - 1]), 36, RectEdge(d.ScreenRect, -10), DEColor(1, 1, 1, 1), False);
+    d.DrawText(PFormat('picture:|color(0.5,1,0.5)|%d||/|(color(0,1,0))|%d ', [displaySampler + 1, Count]), 24, RectEdge(d.ScreenRect, -10), DEColor(1, 1, 1, 1), False);
     d.EndCaptureShadow;
 
     DoStatus('draw imageList.');
@@ -2617,11 +2704,11 @@ begin
 
   displaySampler := ifThen(maxSampler <= 0, Count - 1, Min(maxSampler, Count - 1));
 
-{$IFDEF parallel}
+{$IFDEF Parallel}
 {$IFDEF FPC}
-  ProcThreadPool.DoParallelLocalProc(@FPC_ParallelFor, 0, displaySampler);
+  FPCParallelFor(@FPC_ParallelFor, 0, displaySampler);
 {$ELSE FPC}
-  TParallel.for(0, displaySampler, procedure(pass: Integer)
+  DelphiParallelFor(0, displaySampler, procedure(pass: Integer)
     var
       mr: TMemoryRaster;
     begin
@@ -2632,9 +2719,9 @@ begin
       UnLockObject(rp);
     end);
 {$ENDIF FPC}
-{$ELSE parallel}
+{$ELSE Parallel}
   DoFor;
-{$ENDIF parallel}
+{$ENDIF Parallel}
   rp.Build;
   BuildOutput_;
   FreeTemp_;
@@ -2740,7 +2827,7 @@ begin
   for i := 0 to imgList.Count - 1 do
     begin
       m64 := TMemoryStream64.Create;
-      imgList[i].SaveToStream(m64, True, TRasterSave.rsRGB);
+      imgList[i].SaveToStream(m64, True, TRasterSaveFormat.rsRGB);
 
       imgData := TAI_Image.Create(Self);
       m64.Position := 0;
@@ -2821,12 +2908,13 @@ begin
 end;
 
 procedure TAI_ImageList.LoadFromStream(stream: TCoreClassStream; LoadImg: Boolean);
-var
+(*
+  var
   de: TDataFrameEngine;
   i, j, c: Integer;
   m64: TMemoryStream64;
   imgData: TAI_Image;
-begin
+  begin
   Clear;
   de := TDataFrameEngine.Create;
   de.DecodeFrom(stream);
@@ -2834,17 +2922,94 @@ begin
   c := de.Reader.ReadInteger;
 
   for i := 0 to c - 1 do
-    begin
-      m64 := TMemoryStream64.Create;
-      de.Reader.ReadStream(m64);
-      m64.Position := 0;
-      imgData := TAI_Image.Create(Self);
-      imgData.LoadFromStream(m64, LoadImg);
-      disposeObject(m64);
-      Add(imgData);
-    end;
+  begin
+  m64 := TMemoryStream64.Create;
+  de.Reader.ReadStream(m64);
+  m64.Position := 0;
+  imgData := TAI_Image.Create(Self);
+  imgData.LoadFromStream(m64, LoadImg);
+  disposeObject(m64);
+  Add(imgData);
+  end;
 
   disposeObject(de);
+  end;
+*)
+type
+  TPrepareData = record
+    stream: TMemoryStream64;
+    imgData: TAI_Image;
+  end;
+var
+  tmpBuffer: array of TPrepareData;
+
+  procedure PrepareData();
+  var
+    de: TDataFrameEngine;
+    i, c: Integer;
+  begin
+    de := TDataFrameEngine.Create;
+    de.DecodeFrom(stream);
+    c := de.Reader.ReadInteger;
+    SetLength(tmpBuffer, c);
+
+    for i := 0 to c - 1 do
+      begin
+        tmpBuffer[i].stream := TMemoryStream64.Create;
+        de.Reader.ReadStream(tmpBuffer[i].stream);
+        tmpBuffer[i].stream.Position := 0;
+        tmpBuffer[i].imgData := TAI_Image.Create(Self);
+        Add(tmpBuffer[i].imgData);
+      end;
+    disposeObject(de);
+  end;
+
+  procedure FreePrepareData();
+  var
+    i: Integer;
+  begin
+    for i := 0 to length(tmpBuffer) - 1 do
+        disposeObject(tmpBuffer[i].stream);
+    SetLength(tmpBuffer, 0);
+  end;
+
+{$IFDEF Parallel}
+{$IFDEF FPC}
+  procedure Nested_ParallelFor(pass: Integer);
+  begin
+    tmpBuffer[pass].imgData.LoadFromStream(tmpBuffer[pass].stream);
+  end;
+{$ENDIF FPC}
+{$ELSE Parallel}
+  procedure DoFor;
+  var
+    pass: Integer;
+  begin
+    for pass := 0 to length(tmpBuffer) - 1 do
+      begin
+        tmpBuffer[pass].imgData.LoadFromStream(tmpBuffer[pass].stream);
+      end;
+  end;
+{$ENDIF Parallel}
+
+
+begin
+  Clear();
+  PrepareData();
+
+{$IFDEF Parallel}
+{$IFDEF FPC}
+  FPCParallelFor(@Nested_ParallelFor, 0, length(tmpBuffer) - 1);
+{$ELSE FPC}
+  DelphiParallelFor(0, length(tmpBuffer) - 1, procedure(pass: Integer)
+    begin
+      tmpBuffer[pass].imgData.LoadFromStream(tmpBuffer[pass].stream);
+    end);
+{$ENDIF FPC}
+{$ELSE Parallel}
+  DoFor;
+{$ENDIF Parallel}
+  FreePrepareData();
 end;
 
 procedure TAI_ImageList.LoadFromStream(stream: TCoreClassStream);
@@ -2908,7 +3073,7 @@ begin
   rp.Build;
 
   de := TDrawEngine.Create;
-  de.SetSize(Round(rp.MaxWidth), Round(rp.MaxHeight));
+  de.SetSize(round(rp.MaxWidth), round(rp.MaxHeight));
   de.FillBox(de.ScreenRect, DEColor(0, 0, 0, 0));
 
   for i := 0 to rp.Count - 1 do
@@ -2939,10 +3104,10 @@ end;
 
 procedure TAI_ImageList.SaveToStream(stream: TCoreClassStream; SaveImg, Compressed: Boolean);
 begin
-  SaveToStream(stream, SaveImg, Compressed, TRasterSave.rsRGB);
+  SaveToStream(stream, SaveImg, Compressed, TRasterSaveFormat.rsRGB);
 end;
 
-procedure TAI_ImageList.SaveToStream(stream: TCoreClassStream; SaveImg, Compressed: Boolean; RasterSave_: TRasterSave);
+procedure TAI_ImageList.SaveToStream(stream: TCoreClassStream; SaveImg, Compressed: Boolean; RasterSave_: TRasterSaveFormat);
 var
   de: TDataFrameEngine;
   m64: TMemoryStream64;
@@ -2974,7 +3139,7 @@ begin
   disposeObject(fs);
 end;
 
-procedure TAI_ImageList.SaveToFile(fileName: SystemString; SaveImg, Compressed: Boolean; RasterSave_: TRasterSave);
+procedure TAI_ImageList.SaveToFile(fileName: SystemString; SaveImg, Compressed: Boolean; RasterSave_: TRasterSaveFormat);
 var
   fs: TReliableFileStream;
 begin
@@ -2988,7 +3153,7 @@ var
   i, j: Integer;
   imgData: TAI_Image;
   DetDef: TAI_DetectorDefine;
-  n: TPascalString;
+  n: U_String;
   Raster: TMemoryRaster;
   hList: THashObjectList;
   mrList: TMemoryRasterList;
@@ -3028,7 +3193,7 @@ begin
         begin
           Raster := mrList[j];
           m64 := TMemoryStream64.Create;
-          Raster.SaveToJpegRGBStream(m64, 80);
+          Raster.SaveToJpegYCbCrStream(m64, 80);
           fn := umlCombineFileName(dn, PFormat('%s.jpg', [umlStreamMD5String(m64).Text]));
           m64.SaveToFile(fn);
           disposeObject(m64);
@@ -3044,7 +3209,7 @@ var
   i, j: Integer;
   imgData: TAI_Image;
   DetDef: TAI_DetectorDefine;
-  n: TPascalString;
+  n: U_String;
   Raster: TMemoryRaster;
   hList: THashObjectList;
   mrList: TMemoryRasterList;
@@ -3082,7 +3247,7 @@ begin
         begin
           Raster := mrList[j];
           m64 := TMemoryStream64.Create;
-          Raster.SaveToJpegRGBStream(m64, 80);
+          Raster.SaveToJpegYCbCrStream(m64, 80);
           fn := umlCombineFileName(dn, PFormat('%s.jpg', [umlStreamMD5String(m64).Text]));
           m64.SaveToFile(fn);
           disposeObject(m64);
@@ -3108,7 +3273,7 @@ begin
       imgData := Items[i];
 
       m64 := TMemoryStream64.Create;
-      imgData.Raster.SaveToJpegRGBStream(m64, 90);
+      imgData.Raster.SaveToJpegYCbCrStream(m64, 90);
       Prefix := umlStreamMD5String(m64);
       m64.SaveToFile(umlCombineFileName(outputPath, Prefix + '.jpg'));
       disposeObject(m64);
@@ -3130,7 +3295,7 @@ procedure TAI_ImageList.Build_XML(TokenFilter: SystemString; includeLabel, inclu
         Result := PFormat('%d', [num]);
   end;
 
-  procedure SaveFileInfo(fn: TPascalString);
+  procedure SaveFileInfo(fn: U_String);
   begin
     if BuildFileList <> nil then
       if BuildFileList.ExistsValue(fn) < 0 then
@@ -3162,7 +3327,7 @@ begin
       m64 := TMemoryStream64.Create;
       if usedJpeg then
         begin
-          imgData.Raster.SaveToJpegRGBStream(m64, 80);
+          imgData.Raster.SaveToJpegYCbCrStream(m64, 80);
           m5 := umlStreamMD5(m64);
           n := umlCombineFileName(output_path, Prefix + umlMD5ToStr(m5) + '.jpg');
         end
@@ -3200,7 +3365,7 @@ begin
                       v_p := DetDef.Part[k];
                       body.Add(PFormat(
                         '    <part name='#39'%s'#39' x='#39'%d'#39' y='#39'%d'#39'/>',
-                        [num_2(k), Round(v_p^[0]), Round(v_p^[1])]));
+                        [num_2(k), round(v_p^[0]), round(v_p^[1])]));
                     end;
                 end;
 
@@ -3367,15 +3532,22 @@ begin
         begin
           DetDef := imgData.DetectorDefineList[j];
           if DetDef.Token <> '' then
-            if not DetDef.PrepareRaster.Empty then
-              begin
-                mr := NewRaster();
-                mr.ZoomFrom(DetDef.PrepareRaster, SS_width, SS_height);
-                mr.UserToken := DetDef.Token;
-                if not hList.Exists(DetDef.Token) then
-                    hList.FastAdd(DetDef.Token, TMemoryRasterList.Create);
-                TMemoryRasterList(hList[DetDef.Token]).Add(mr);
-              end;
+            begin
+              if DetDef.PrepareRaster.Empty then
+                begin
+                  mr := DetDef.Owner.Raster.BuildAreaOffsetScaleSpace(DetDef.R, SS_width, SS_height);
+                end
+              else
+                begin
+                  mr := NewRaster();
+                  mr.ZoomFrom(DetDef.PrepareRaster, SS_width, SS_height);
+                end;
+
+              mr.UserToken := DetDef.Token;
+              if not hList.Exists(DetDef.Token) then
+                  hList.FastAdd(DetDef.Token, TMemoryRasterList.Create);
+              TMemoryRasterList(hList[DetDef.Token]).Add(mr);
+            end;
         end;
     end;
 
@@ -3463,7 +3635,7 @@ begin
     begin
       imgData := Items[i];
       for j := 0 to imgData.DetectorDefineList.Count - 1 do
-          inc(Result, imgData.DetectorDefineList[i].Part.Count);
+          inc(Result, imgData.DetectorDefineList[j].Part.Count);
     end;
 end;
 
@@ -3548,12 +3720,12 @@ begin
   disposeObject(hList);
 end;
 
-function TAI_ImageList.ExistsDetectorToken(Token: TPascalString): Boolean;
+function TAI_ImageList.ExistsDetectorToken(Token: U_String): Boolean;
 begin
   Result := GetDetectorTokenCount(Token) > 0;
 end;
 
-function TAI_ImageList.GetDetectorTokenCount(Token: TPascalString): Integer;
+function TAI_ImageList.GetDetectorTokenCount(Token: U_String): Integer;
 var
   i: Integer;
 begin
@@ -3739,18 +3911,22 @@ begin
           DetDef := imgData.DetectorDefineList[j];
           if DetDef.Token <> '' then
             begin
-              if not DetDef.PrepareRaster.Empty then
+              if DetDef.PrepareRaster.Empty then
+                begin
+                  mr := DetDef.Owner.Raster.BuildAreaOffsetScaleSpace(DetDef.R, SS_width, SS_height);
+                end
+              else
                 begin
                   mr := NewRaster();
                   mr.ZoomFrom(DetDef.PrepareRaster, SS_width, SS_height);
-
-                  LockObject(hList);
-                  mr.UserToken := DetDef.Token;
-                  if not hList.Exists(DetDef.Token) then
-                      hList.FastAdd(DetDef.Token, TMemoryRasterList.Create);
-                  TMemoryRasterList(hList[DetDef.Token]).Add(mr);
-                  UnLockObject(hList);
                 end;
+
+              LockObject(hList);
+              mr.UserToken := DetDef.Token;
+              if not hList.Exists(DetDef.Token) then
+                  hList.FastAdd(DetDef.Token, TMemoryRasterList.Create);
+              TMemoryRasterList(hList[DetDef.Token]).Add(mr);
+              UnLockObject(hList);
             end;
         end;
     end;
@@ -3884,20 +4060,26 @@ begin
           if DetDef.Token <> '' then
             begin
               DetDef.PrepareRaster.UnserializedMemory(RSeri);
-              if not DetDef.PrepareRaster.Empty then
+
+              if DetDef.PrepareRaster.Empty then
+                begin
+                  mr := DetDef.Owner.Raster.BuildAreaOffsetScaleSpace(DetDef.R, SS_width, SS_height);
+                end
+              else
                 begin
                   mr := NewRaster();
                   mr.ZoomFrom(DetDef.PrepareRaster, SS_width, SS_height);
-                  DetDef.PrepareRaster.RecycleMemory;
-                  mr.SerializedAndRecycleMemory(RSeri);
-
-                  LockObject(hList);
-                  mr.UserToken := DetDef.Token;
-                  if not hList.Exists(DetDef.Token) then
-                      hList.FastAdd(DetDef.Token, TMemoryRasterList.Create);
-                  TMemoryRasterList(hList[DetDef.Token]).Add(mr);
-                  UnLockObject(hList);
                 end;
+
+              DetDef.PrepareRaster.RecycleMemory;
+              mr.SerializedAndRecycleMemory(RSeri);
+
+              LockObject(hList);
+              mr.UserToken := DetDef.Token;
+              if not hList.Exists(DetDef.Token) then
+                  hList.FastAdd(DetDef.Token, TMemoryRasterList.Create);
+              TMemoryRasterList(hList[DetDef.Token]).Add(mr);
+              UnLockObject(hList);
             end;
         end;
     end;
@@ -3977,7 +4159,7 @@ begin
 end;
 
 procedure TAI_ImageMatrix.SearchAndAddImageList(RSeri: TRasterSerialized; rootPath, filter: SystemString; includeSubdir, LoadImg: Boolean);
-  procedure ProcessImg(fn, Prefix: TPascalString);
+  procedure ProcessImg(fn, Prefix: U_String);
   var
     imgList: TAI_ImageList;
   begin
@@ -3990,7 +4172,7 @@ procedure TAI_ImageMatrix.SearchAndAddImageList(RSeri: TRasterSerialized; rootPa
     Add(imgList);
   end;
 
-  procedure ProcessPath(ph, Prefix: TPascalString);
+  procedure ProcessPath(ph, Prefix: U_String);
   var
     fl, dl: TPascalStringList;
     i: Integer;
@@ -4078,12 +4260,12 @@ begin
   ImportImageListAsFragment(nil, imgList, RemoveSource);
 end;
 
-procedure TAI_ImageMatrix.SaveToStream(stream: TCoreClassStream; SaveImg: Boolean; RasterSave_: TRasterSave);
+procedure TAI_ImageMatrix.SaveToStream(stream: TCoreClassStream; SaveImg: Boolean; RasterSave_: TRasterSaveFormat);
 type
   PSaveRec = ^TSaveRec;
 
   TSaveRec = record
-    fn: TPascalString;
+    fn: U_String;
     m64: TMemoryStream64;
   end;
 
@@ -4093,9 +4275,9 @@ var
   PrepareSave: array of TSaveRec;
   FinishSave: array of PSaveRec;
 
-{$IFDEF parallel}
+{$IFDEF Parallel}
 {$IFDEF FPC}
-  procedure fpc_Prepare_Save_ParallelFor(pass: PtrInt; Data: Pointer; Item: TMultiThreadProcItem);
+  procedure fpc_Prepare_Save_ParallelFor(pass: Integer);
   var
     p: PSaveRec;
   begin
@@ -4109,7 +4291,7 @@ var
     FinishSave[pass] := p;
   end;
 {$ENDIF FPC}
-{$ELSE parallel}
+{$ELSE Parallel}
   procedure Prepare_Save();
   var
     i: Integer;
@@ -4128,7 +4310,7 @@ var
       end;
   end;
 
-{$ENDIF parallel}
+{$ENDIF Parallel}
   procedure Save();
   var
     i: Integer;
@@ -4157,11 +4339,11 @@ begin
   SetLength(PrepareSave, Count);
   SetLength(FinishSave, Count);
 
-{$IFDEF parallel}
+{$IFDEF Parallel}
 {$IFDEF FPC}
-  ProcThreadPool.DoParallelLocalProc(@fpc_Prepare_Save_ParallelFor, 0, Count - 1);
+  FPCParallelFor(@fpc_Prepare_Save_ParallelFor, 0, Count - 1);
 {$ELSE FPC}
-  TParallel.for(0, Count - 1, procedure(pass: Integer)
+  DelphiParallelFor(0, Count - 1, procedure(pass: Integer)
     var
       p: PSaveRec;
     begin
@@ -4175,9 +4357,9 @@ begin
       FinishSave[pass] := p;
     end);
 {$ENDIF FPC}
-{$ELSE parallel}
+{$ELSE Parallel}
   Prepare_Save();
-{$ENDIF parallel}
+{$ENDIF Parallel}
   Save();
   disposeObject(dbEng);
   DoStatus('Save Image Matrix done.');
@@ -4185,7 +4367,7 @@ end;
 
 procedure TAI_ImageMatrix.SaveToStream(stream: TCoreClassStream);
 begin
-  SaveToStream(stream, True, TRasterSave.rsRGB);
+  SaveToStream(stream, True, TRasterSaveFormat.rsRGB);
 end;
 
 procedure TAI_ImageMatrix.LoadFromStream(stream: TCoreClassStream);
@@ -4193,7 +4375,7 @@ type
   PLoadRec = ^TLoadRec;
 
   TLoadRec = record
-    fn: TPascalString;
+    fn: U_String;
     m64: TMemoryStream64;
     imgList: TAI_ImageList;
   end;
@@ -4222,9 +4404,9 @@ var
     PrepareLoadBuffer.Add(p);
   end;
 
-{$IFDEF parallel}
+{$IFDEF Parallel}
 {$IFDEF FPC}
-  procedure Load_ParallelFor(pass: PtrInt; Data: Pointer; Item: TMultiThreadProcItem);
+  procedure Load_ParallelFor(pass: Integer);
   var
     p: PLoadRec;
   begin
@@ -4237,7 +4419,7 @@ var
     dispose(p);
   end;
 {$ENDIF FPC}
-{$ELSE parallel}
+{$ELSE Parallel}
   procedure Load_For();
   var
     i: Integer;
@@ -4254,7 +4436,7 @@ var
         dispose(p);
       end;
   end;
-{$ENDIF parallel}
+{$ENDIF Parallel}
 
 
 begin
@@ -4271,11 +4453,11 @@ begin
     end;
   disposeObject(dbEng);
 
-{$IFDEF parallel}
+{$IFDEF Parallel}
 {$IFDEF FPC}
-  ProcThreadPool.DoParallelLocalProc(@Load_ParallelFor, 0, PrepareLoadBuffer.Count - 1);
+  FPCParallelFor(@Load_ParallelFor, 0, PrepareLoadBuffer.Count - 1);
 {$ELSE FPC}
-  TParallel.for(0, PrepareLoadBuffer.Count - 1, procedure(pass: Integer)
+  DelphiParallelFor(0, PrepareLoadBuffer.Count - 1, procedure(pass: Integer)
     var
       p: PLoadRec;
     begin
@@ -4288,14 +4470,14 @@ begin
       dispose(p);
     end);
 {$ENDIF FPC}
-{$ELSE parallel}
+{$ELSE Parallel}
   Load_For();
-{$ENDIF parallel}
+{$ENDIF Parallel}
   disposeObject(PrepareLoadBuffer);
   DoStatus('Load Image Matrix done.');
 end;
 
-procedure TAI_ImageMatrix.SaveToFile(fileName: SystemString; SaveImg: Boolean; RasterSave_: TRasterSave);
+procedure TAI_ImageMatrix.SaveToFile(fileName: SystemString; SaveImg: Boolean; RasterSave_: TRasterSaveFormat);
 var
   fs: TCoreClassFileStream;
 begin
@@ -4307,7 +4489,7 @@ end;
 
 procedure TAI_ImageMatrix.SaveToFile(fileName: SystemString);
 begin
-  SaveToFile(fileName, True, TRasterSave.rsRGB);
+  SaveToFile(fileName, True, TRasterSaveFormat.rsRGB);
 end;
 
 procedure TAI_ImageMatrix.LoadFromFile(fileName: SystemString);
@@ -4315,7 +4497,7 @@ var
   fs: TCoreClassFileStream;
 begin
   DoStatus('loading Image Matrix: %s', [fileName]);
-  fs := TCoreClassFileStream.Create(fileName, fmOpenRead or fmShareDenyWrite);
+  fs := TCoreClassFileStream.Create(fileName, fmOpenRead or fmShareDenyNone);
   LoadFromStream(fs);
   disposeObject(fs);
 end;
@@ -4385,7 +4567,7 @@ procedure TAI_ImageMatrix.Build_XML(TokenFilter: SystemString; includeLabel, inc
         Result := PFormat('%d', [num]);
   end;
 
-  procedure SaveFileInfo(fn: TPascalString);
+  procedure SaveFileInfo(fn: U_String);
   begin
     if BuildFileList <> nil then
         BuildFileList.Add(fn);
@@ -4411,7 +4593,7 @@ procedure TAI_ImageMatrix.Build_XML(TokenFilter: SystemString; includeLabel, inc
 
         if usedJpeg then
           begin
-            imgData.Raster.SaveToJpegRGBStream(m64, 80);
+            imgData.Raster.SaveToJpegYCbCrStream(m64, 80);
             m5 := umlStreamMD5(m64);
             n := umlCombineFileName(output_path, Prefix + umlMD5ToStr(m5) + '.jpg');
           end
@@ -4449,7 +4631,7 @@ procedure TAI_ImageMatrix.Build_XML(TokenFilter: SystemString; includeLabel, inc
                         v_p := DetDef.Part[k];
                         body.Add(PFormat(
                           '    <part name='#39'%s'#39' x='#39'%d'#39' y='#39'%d'#39'/>',
-                          [num_2(k), Round(v_p^[0]), Round(v_p^[1])]));
+                          [num_2(k), round(v_p^[0]), round(v_p^[1])]));
                       end;
                   end;
 
@@ -4530,7 +4712,7 @@ begin
     end;
 end;
 
-function TAI_ImageMatrix.FindImageList(FileInfo: TPascalString): TAI_ImageList;
+function TAI_ImageMatrix.FindImageList(FileInfo: U_String): TAI_ImageList;
 var
   i: Integer;
 begin
@@ -4630,12 +4812,12 @@ begin
   disposeObject(hList);
 end;
 
-function TAI_ImageMatrix.ExistsDetectorToken(Token: TPascalString): Boolean;
+function TAI_ImageMatrix.ExistsDetectorToken(Token: U_String): Boolean;
 begin
   Result := GetDetectorTokenCount(Token) > 0;
 end;
 
-function TAI_ImageMatrix.GetDetectorTokenCount(Token: TPascalString): Integer;
+function TAI_ImageMatrix.GetDetectorTokenCount(Token: U_String): Integer;
 var
   i: Integer;
 begin
@@ -4710,14 +4892,14 @@ function TAI_ImageMatrix.ExtractDetectorDefineAsSnapshotProjection(SS_width, SS_
 var
   hList: THashObjectList;
 
-{$IFDEF parallel}
+{$IFDEF Parallel}
 {$IFDEF FPC}
-  procedure Nested_ParallelFor(pass: PtrInt; Data: Pointer; Item: TMultiThreadProcItem);
+  procedure Nested_ParallelFor(pass: Integer);
   begin
     BuildSnapshotProjection_HashList(SS_width, SS_height, Items[pass], hList);
   end;
 {$ENDIF FPC}
-{$ELSE parallel}
+{$ELSE Parallel}
   procedure DoFor;
   var
     pass: Integer;
@@ -4725,7 +4907,7 @@ var
     for pass := 0 to Count - 1 do
         BuildSnapshotProjection_HashList(SS_width, SS_height, Items[pass], hList);
   end;
-{$ENDIF parallel}
+{$ENDIF Parallel}
   procedure runDone;
   var
     i, j: Integer;
@@ -4751,18 +4933,18 @@ var
 begin
   DoStatus('prepare dataset.');
   hList := THashObjectList.Create(True);
-{$IFDEF parallel}
+{$IFDEF Parallel}
 {$IFDEF FPC}
-  ProcThreadPool.DoParallelLocalProc(@Nested_ParallelFor, 0, Count - 1);
+  FPCParallelFor(@Nested_ParallelFor, 0, Count - 1);
 {$ELSE FPC}
-  TParallel.for(0, Count - 1, procedure(pass: Integer)
+  DelphiParallelFor(0, Count - 1, procedure(pass: Integer)
     begin
       BuildSnapshotProjection_HashList(SS_width, SS_height, Items[pass], hList);
     end);
 {$ENDIF FPC}
-{$ELSE parallel}
+{$ELSE Parallel}
   DoFor;
-{$ENDIF parallel}
+{$ENDIF Parallel}
   runDone;
   disposeObject(hList);
 end;
@@ -4771,14 +4953,14 @@ function TAI_ImageMatrix.ExtractDetectorDefineAsSnapshot: TMemoryRaster2DArray;
 var
   hList: THashObjectList;
 
-{$IFDEF parallel}
+{$IFDEF Parallel}
 {$IFDEF FPC}
-  procedure Nested_ParallelFor(pass: PtrInt; Data: Pointer; Item: TMultiThreadProcItem);
+  procedure Nested_ParallelFor(pass: Integer);
   begin
     BuildSnapshot_HashList(Items[pass], hList);
   end;
 {$ENDIF FPC}
-{$ELSE parallel}
+{$ELSE Parallel}
   procedure DoFor;
   var
     pass: Integer;
@@ -4786,7 +4968,7 @@ var
     for pass := 0 to Count - 1 do
         BuildSnapshot_HashList(Items[pass], hList);
   end;
-{$ENDIF parallel}
+{$ENDIF Parallel}
   procedure runDone;
   var
     i, j: Integer;
@@ -4812,18 +4994,18 @@ var
 begin
   DoStatus('prepare dataset.');
   hList := THashObjectList.Create(True);
-{$IFDEF parallel}
+{$IFDEF Parallel}
 {$IFDEF FPC}
-  ProcThreadPool.DoParallelLocalProc(@Nested_ParallelFor, 0, Count - 1);
+  FPCParallelFor(@Nested_ParallelFor, 0, Count - 1);
 {$ELSE FPC}
-  TParallel.for(0, Count - 1, procedure(pass: Integer)
+  DelphiParallelFor(0, Count - 1, procedure(pass: Integer)
     begin
       BuildSnapshot_HashList(Items[pass], hList);
     end);
 {$ENDIF FPC}
-{$ELSE parallel}
+{$ELSE Parallel}
   DoFor;
-{$ENDIF parallel}
+{$ENDIF Parallel}
   runDone;
   disposeObject(hList);
 end;
@@ -4832,14 +5014,14 @@ function TAI_ImageMatrix.ExtractDetectorDefineAsPrepareRaster(SS_width, SS_heigh
 var
   hList: THashObjectList;
 
-{$IFDEF parallel}
+{$IFDEF Parallel}
 {$IFDEF FPC}
-  procedure Nested_ParallelFor(pass: PtrInt; Data: Pointer; Item: TMultiThreadProcItem);
+  procedure Nested_ParallelFor(pass: Integer);
   begin
     BuildDefinePrepareRaster_HashList(SS_width, SS_height, Items[pass], hList);
   end;
 {$ENDIF FPC}
-{$ELSE parallel}
+{$ELSE Parallel}
   procedure DoFor;
   var
     pass: Integer;
@@ -4847,7 +5029,7 @@ var
     for pass := 0 to Count - 1 do
         BuildDefinePrepareRaster_HashList(SS_width, SS_height, Items[pass], hList);
   end;
-{$ENDIF parallel}
+{$ENDIF Parallel}
   procedure runDone;
   var
     i, j: Integer;
@@ -4873,18 +5055,18 @@ var
 begin
   DoStatus('prepare dataset.');
   hList := THashObjectList.Create(True);
-{$IFDEF parallel}
+{$IFDEF Parallel}
 {$IFDEF FPC}
-  ProcThreadPool.DoParallelLocalProc(@Nested_ParallelFor, 0, Count - 1);
+  FPCParallelFor(@Nested_ParallelFor, 0, Count - 1);
 {$ELSE FPC}
-  TParallel.for(0, Count - 1, procedure(pass: Integer)
+  DelphiParallelFor(0, Count - 1, procedure(pass: Integer)
     begin
       BuildDefinePrepareRaster_HashList(SS_width, SS_height, Items[pass], hList);
     end);
 {$ENDIF FPC}
-{$ELSE parallel}
+{$ELSE Parallel}
   DoFor;
-{$ENDIF parallel}
+{$ENDIF Parallel}
   runDone;
   disposeObject(hList);
 end;
@@ -4893,14 +5075,14 @@ function TAI_ImageMatrix.ExtractDetectorDefineAsScaleSpace(SS_width, SS_height: 
 var
   hList: THashObjectList;
 
-{$IFDEF parallel}
+{$IFDEF Parallel}
 {$IFDEF FPC}
-  procedure Nested_ParallelFor(pass: PtrInt; Data: Pointer; Item: TMultiThreadProcItem);
+  procedure Nested_ParallelFor(pass: Integer);
   begin
     BuildScaleSpace_HashList(SS_width, SS_height, Items[pass], hList);
   end;
 {$ENDIF FPC}
-{$ELSE parallel}
+{$ELSE Parallel}
   procedure DoFor;
   var
     pass: Integer;
@@ -4908,7 +5090,7 @@ var
     for pass := 0 to Count - 1 do
         BuildScaleSpace_HashList(SS_width, SS_height, Items[pass], hList);
   end;
-{$ENDIF parallel}
+{$ENDIF Parallel}
   procedure runDone;
   var
     i, j: Integer;
@@ -4934,28 +5116,28 @@ var
 begin
   DoStatus('prepare dataset.');
   hList := THashObjectList.Create(True);
-{$IFDEF parallel}
+{$IFDEF Parallel}
 {$IFDEF FPC}
-  ProcThreadPool.DoParallelLocalProc(@Nested_ParallelFor, 0, Count - 1);
+  FPCParallelFor(@Nested_ParallelFor, 0, Count - 1);
 {$ELSE FPC}
-  TParallel.for(0, Count - 1, procedure(pass: Integer)
+  DelphiParallelFor(0, Count - 1, procedure(pass: Integer)
     begin
       BuildScaleSpace_HashList(SS_width, SS_height, Items[pass], hList);
     end);
 {$ENDIF FPC}
-{$ELSE parallel}
+{$ELSE Parallel}
   DoFor;
-{$ENDIF parallel}
+{$ENDIF Parallel}
   runDone;
   disposeObject(hList);
 end;
 
-procedure TAI_ImageMatrix.LargeScale_SaveToStream(RSeri: TRasterSerialized; stream: TCoreClassStream; RasterSave_: TRasterSave);
+procedure TAI_ImageMatrix.LargeScale_SaveToStream(RSeri: TRasterSerialized; stream: TCoreClassStream; RasterSave_: TRasterSaveFormat);
 type
   PSaveRec = ^TSaveRec;
 
   TSaveRec = record
-    fn: TPascalString;
+    fn: U_String;
     m64: TMemoryStream64;
   end;
 
@@ -4965,9 +5147,9 @@ var
   PrepareSave: array of TSaveRec;
   FinishSave: array of PSaveRec;
 
-{$IFDEF parallel}
+{$IFDEF Parallel}
 {$IFDEF FPC}
-  procedure fpc_Prepare_Save_ParallelFor(pass: PtrInt; Data: Pointer; Item: TMultiThreadProcItem);
+  procedure fpc_Prepare_Save_ParallelFor(pass: Integer);
   var
     p: PSaveRec;
   begin
@@ -4982,7 +5164,7 @@ var
     FinishSave[pass] := p;
   end;
 {$ENDIF FPC}
-{$ELSE parallel}
+{$ELSE Parallel}
   procedure Prepare_Save();
   var
     i: Integer;
@@ -5002,7 +5184,7 @@ var
       end;
   end;
 
-{$ENDIF parallel}
+{$ENDIF Parallel}
   procedure Save();
   var
     i: Integer;
@@ -5031,11 +5213,11 @@ begin
   SetLength(PrepareSave, Count);
   SetLength(FinishSave, Count);
 
-{$IFDEF parallel}
+{$IFDEF Parallel}
 {$IFDEF FPC}
-  ProcThreadPool.DoParallelLocalProc(@fpc_Prepare_Save_ParallelFor, 0, Count - 1);
+  FPCParallelFor(@fpc_Prepare_Save_ParallelFor, 0, Count - 1);
 {$ELSE FPC}
-  TParallel.for(0, Count - 1, procedure(pass: Integer)
+  DelphiParallelFor(0, Count - 1, procedure(pass: Integer)
     var
       p: PSaveRec;
     begin
@@ -5050,9 +5232,9 @@ begin
       FinishSave[pass] := p;
     end);
 {$ENDIF FPC}
-{$ELSE parallel}
+{$ELSE Parallel}
   Prepare_Save();
-{$ENDIF parallel}
+{$ENDIF Parallel}
   Save();
   disposeObject(dbEng);
   DoStatus('Save Image Matrix done.');
@@ -5060,7 +5242,7 @@ end;
 
 procedure TAI_ImageMatrix.LargeScale_SaveToStream(RSeri: TRasterSerialized; stream: TCoreClassStream);
 begin
-  LargeScale_SaveToStream(RSeri, stream, TRasterSave.rsRGB);
+  LargeScale_SaveToStream(RSeri, stream, TRasterSaveFormat.rsRGB);
 end;
 
 procedure TAI_ImageMatrix.LargeScale_LoadFromStream(RSeri: TRasterSerialized; stream: TCoreClassStream);
@@ -5068,7 +5250,7 @@ type
   PLoadRec = ^TLoadRec;
 
   TLoadRec = record
-    fn: TPascalString;
+    fn: U_String;
     itmHnd: TItemHandle;
     imgList: TAI_ImageList;
   end;
@@ -5092,9 +5274,9 @@ var
     PrepareLoadBuffer.Add(p);
   end;
 
-{$IFDEF parallel}
+{$IFDEF Parallel}
 {$IFDEF FPC}
-  procedure Load_ParallelFor(pass: PtrInt; Data: Pointer; Item: TMultiThreadProcItem);
+  procedure Load_ParallelFor(pass: Integer);
   var
     p: PLoadRec;
     m64: TMemoryStream64;
@@ -5114,7 +5296,7 @@ var
     dispose(p);
   end;
 {$ENDIF FPC}
-{$ELSE parallel}
+{$ELSE Parallel}
   procedure Load_For();
   var
     i: Integer;
@@ -5138,7 +5320,7 @@ var
         dispose(p);
       end;
   end;
-{$ENDIF parallel}
+{$ENDIF Parallel}
 
 
 begin
@@ -5155,11 +5337,11 @@ begin
     end;
 
   Critical := TCritical.Create;
-{$IFDEF parallel}
+{$IFDEF Parallel}
 {$IFDEF FPC}
-  ProcThreadPool.DoParallelLocalProc(@Load_ParallelFor, 0, PrepareLoadBuffer.Count - 1);
+  FPCParallelFor(@Load_ParallelFor, 0, PrepareLoadBuffer.Count - 1);
 {$ELSE FPC}
-  TParallel.for(0, PrepareLoadBuffer.Count - 1, procedure(pass: Integer)
+  DelphiParallelFor(0, PrepareLoadBuffer.Count - 1, procedure(pass: Integer)
     var
       p: PLoadRec;
       m64: TMemoryStream64;
@@ -5179,16 +5361,16 @@ begin
       dispose(p);
     end);
 {$ENDIF FPC}
-{$ELSE parallel}
+{$ELSE Parallel}
   Load_For();
-{$ENDIF parallel}
+{$ENDIF Parallel}
   disposeObject(Critical);
   disposeObject(PrepareLoadBuffer);
   disposeObject(dbEng);
   DoStatus('Load Image Matrix done.');
 end;
 
-procedure TAI_ImageMatrix.LargeScale_SaveToFile(RSeri: TRasterSerialized; fileName: SystemString; RasterSave_: TRasterSave);
+procedure TAI_ImageMatrix.LargeScale_SaveToFile(RSeri: TRasterSerialized; fileName: SystemString; RasterSave_: TRasterSaveFormat);
 var
   fs: TCoreClassFileStream;
 begin
@@ -5200,7 +5382,7 @@ end;
 
 procedure TAI_ImageMatrix.LargeScale_SaveToFile(RSeri: TRasterSerialized; fileName: SystemString);
 begin
-  LargeScale_SaveToFile(RSeri, fileName, TRasterSave.rsRGB);
+  LargeScale_SaveToFile(RSeri, fileName, TRasterSaveFormat.rsRGB);
 end;
 
 procedure TAI_ImageMatrix.LargeScale_LoadFromFile(RSeri: TRasterSerialized; fileName: SystemString);
@@ -5208,7 +5390,7 @@ var
   fs: TCoreClassFileStream;
 begin
   DoStatus('loading Image Matrix: %s', [fileName]);
-  fs := TCoreClassFileStream.Create(fileName, fmOpenRead or fmShareDenyWrite);
+  fs := TCoreClassFileStream.Create(fileName, fmOpenRead or fmShareDenyNone);
   LargeScale_LoadFromStream(RSeri, fs);
   disposeObject(fs);
 end;
@@ -5217,14 +5399,14 @@ function TAI_ImageMatrix.LargeScale_ExtractDetectorDefineAsSnapshotProjection(RS
 var
   hList: THashObjectList;
 
-{$IFDEF parallel}
+{$IFDEF Parallel}
 {$IFDEF FPC}
-  procedure Nested_ParallelFor(pass: PtrInt; Data: Pointer; Item: TMultiThreadProcItem);
+  procedure Nested_ParallelFor(pass: Integer);
   begin
     BuildSnapshotProjection_HashList(SS_width, SS_height, Items[pass], RSeri, hList);
   end;
 {$ENDIF FPC}
-{$ELSE parallel}
+{$ELSE Parallel}
   procedure DoFor;
   var
     pass: Integer;
@@ -5232,7 +5414,7 @@ var
     for pass := 0 to Count - 1 do
         BuildSnapshotProjection_HashList(SS_width, SS_height, Items[pass], RSeri, hList);
   end;
-{$ENDIF parallel}
+{$ENDIF Parallel}
   procedure runDone;
   var
     i, j: Integer;
@@ -5258,18 +5440,18 @@ var
 begin
   DoStatus('prepare dataset.');
   hList := THashObjectList.Create(True);
-{$IFDEF parallel}
+{$IFDEF Parallel}
 {$IFDEF FPC}
-  ProcThreadPool.DoParallelLocalProc(@Nested_ParallelFor, 0, Count - 1);
+  FPCParallelFor(@Nested_ParallelFor, 0, Count - 1);
 {$ELSE FPC}
-  TParallel.for(0, Count - 1, procedure(pass: Integer)
+  DelphiParallelFor(0, Count - 1, procedure(pass: Integer)
     begin
       BuildSnapshotProjection_HashList(SS_width, SS_height, Items[pass], RSeri, hList);
     end);
 {$ENDIF FPC}
-{$ELSE parallel}
+{$ELSE Parallel}
   DoFor;
-{$ENDIF parallel}
+{$ENDIF Parallel}
   runDone;
   disposeObject(hList);
 end;
@@ -5278,14 +5460,14 @@ function TAI_ImageMatrix.LargeScale_ExtractDetectorDefineAsSnapshot(RSeri: TRast
 var
   hList: THashObjectList;
 
-{$IFDEF parallel}
+{$IFDEF Parallel}
 {$IFDEF FPC}
-  procedure Nested_ParallelFor(pass: PtrInt; Data: Pointer; Item: TMultiThreadProcItem);
+  procedure Nested_ParallelFor(pass: Integer);
   begin
     BuildSnapshot_HashList(Items[pass], RSeri, hList);
   end;
 {$ENDIF FPC}
-{$ELSE parallel}
+{$ELSE Parallel}
   procedure DoFor;
   var
     pass: Integer;
@@ -5293,7 +5475,7 @@ var
     for pass := 0 to Count - 1 do
         BuildSnapshot_HashList(Items[pass], RSeri, hList);
   end;
-{$ENDIF parallel}
+{$ENDIF Parallel}
   procedure runDone;
   var
     i, j: Integer;
@@ -5319,18 +5501,18 @@ var
 begin
   DoStatus('prepare dataset.');
   hList := THashObjectList.Create(True);
-{$IFDEF parallel}
+{$IFDEF Parallel}
 {$IFDEF FPC}
-  ProcThreadPool.DoParallelLocalProc(@Nested_ParallelFor, 0, Count - 1);
+  FPCParallelFor(@Nested_ParallelFor, 0, Count - 1);
 {$ELSE FPC}
-  TParallel.for(0, Count - 1, procedure(pass: Integer)
+  DelphiParallelFor(0, Count - 1, procedure(pass: Integer)
     begin
       BuildSnapshot_HashList(Items[pass], RSeri, hList);
     end);
 {$ENDIF FPC}
-{$ELSE parallel}
+{$ELSE Parallel}
   DoFor;
-{$ENDIF parallel}
+{$ENDIF Parallel}
   runDone;
   disposeObject(hList);
 end;
@@ -5339,14 +5521,14 @@ function TAI_ImageMatrix.LargeScale_ExtractDetectorDefineAsPrepareRaster(RSeri: 
 var
   hList: THashObjectList;
 
-{$IFDEF parallel}
+{$IFDEF Parallel}
 {$IFDEF FPC}
-  procedure Nested_ParallelFor(pass: PtrInt; Data: Pointer; Item: TMultiThreadProcItem);
+  procedure Nested_ParallelFor(pass: Integer);
   begin
     BuildDefinePrepareRaster_HashList(SS_width, SS_height, Items[pass], RSeri, hList);
   end;
 {$ENDIF FPC}
-{$ELSE parallel}
+{$ELSE Parallel}
   procedure DoFor;
   var
     pass: Integer;
@@ -5354,7 +5536,7 @@ var
     for pass := 0 to Count - 1 do
         BuildDefinePrepareRaster_HashList(SS_width, SS_height, Items[pass], RSeri, hList);
   end;
-{$ENDIF parallel}
+{$ENDIF Parallel}
   procedure runDone;
   var
     i, j: Integer;
@@ -5380,18 +5562,18 @@ var
 begin
   DoStatus('prepare dataset.');
   hList := THashObjectList.Create(True);
-{$IFDEF parallel}
+{$IFDEF Parallel}
 {$IFDEF FPC}
-  ProcThreadPool.DoParallelLocalProc(@Nested_ParallelFor, 0, Count - 1);
+  FPCParallelFor(@Nested_ParallelFor, 0, Count - 1);
 {$ELSE FPC}
-  TParallel.for(0, Count - 1, procedure(pass: Integer)
+  DelphiParallelFor(0, Count - 1, procedure(pass: Integer)
     begin
       BuildDefinePrepareRaster_HashList(SS_width, SS_height, Items[pass], RSeri, hList);
     end);
 {$ENDIF FPC}
-{$ELSE parallel}
+{$ELSE Parallel}
   DoFor;
-{$ENDIF parallel}
+{$ENDIF Parallel}
   runDone;
   disposeObject(hList);
 end;
@@ -5400,14 +5582,14 @@ function TAI_ImageMatrix.LargeScale_ExtractDetectorDefineAsScaleSpace(RSeri: TRa
 var
   hList: THashObjectList;
 
-{$IFDEF parallel}
+{$IFDEF Parallel}
 {$IFDEF FPC}
-  procedure Nested_ParallelFor(pass: PtrInt; Data: Pointer; Item: TMultiThreadProcItem);
+  procedure Nested_ParallelFor(pass: Integer);
   begin
     BuildScaleSpace_HashList(SS_width, SS_height, Items[pass], RSeri, hList);
   end;
 {$ENDIF FPC}
-{$ELSE parallel}
+{$ELSE Parallel}
   procedure DoFor;
   var
     pass: Integer;
@@ -5415,7 +5597,7 @@ var
     for pass := 0 to Count - 1 do
         BuildScaleSpace_HashList(SS_width, SS_height, Items[pass], RSeri, hList);
   end;
-{$ENDIF parallel}
+{$ENDIF Parallel}
   procedure runDone;
   var
     i, j: Integer;
@@ -5441,18 +5623,18 @@ var
 begin
   DoStatus('prepare dataset.');
   hList := THashObjectList.Create(True);
-{$IFDEF parallel}
+{$IFDEF Parallel}
 {$IFDEF FPC}
-  ProcThreadPool.DoParallelLocalProc(@Nested_ParallelFor, 0, Count - 1);
+  FPCParallelFor(@Nested_ParallelFor, 0, Count - 1);
 {$ELSE FPC}
-  TParallel.for(0, Count - 1, procedure(pass: Integer)
+  DelphiParallelFor(0, Count - 1, procedure(pass: Integer)
     begin
       BuildScaleSpace_HashList(SS_width, SS_height, Items[pass], RSeri, hList);
     end);
 {$ENDIF FPC}
-{$ELSE parallel}
+{$ELSE Parallel}
   DoFor;
-{$ENDIF parallel}
+{$ENDIF Parallel}
   runDone;
   disposeObject(hList);
 end;

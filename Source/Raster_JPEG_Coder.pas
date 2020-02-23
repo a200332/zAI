@@ -1248,7 +1248,7 @@ begin
         inc(FRstIndex);
         FMcuIndex := FRstIndex * FInfo.FRestartInterval;
         ResetDecoder;
-        S.Seek(2, soFromCurrent);
+        S.Seek(2, TSeekOrigin.soCurrent);
         FBitReader.Reload;
       end;
   end; // case
@@ -1281,7 +1281,7 @@ begin
             end;
           mkEOI:
             begin
-              S.Seek(-2, soFromCurrent);
+              S.Seek(-2, TSeekOrigin.soCurrent);
               Break;
             end;
           else

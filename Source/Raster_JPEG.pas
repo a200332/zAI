@@ -287,7 +287,7 @@ begin
   FImage.OnUpdate := {$IFDEF FPC}@{$ENDIF FPC}ImageUpdate;
   FImage.OnDebugOut := {$IFDEF FPC}@{$ENDIF FPC}ImageDebug;
   FImage.OnCreateMap := {$IFDEF FPC}@{$ENDIF FPC}ImageCreateMap;
-  FImage.DCTCodingMethod := dmAccurate;
+  FImage.DCTCodingMethod := dmFast;
   FUseTiledDrawing := False;
   FQuiet := True;
 end;

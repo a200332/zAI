@@ -634,7 +634,7 @@ type
 
   TAbstractCrossConnection = class(TCrossData, ICrossConnection)
   public const
-    SND_BUF_SIZE = 32768;
+    SND_BUF_SIZE = 16384;
   private
     FPeerAddr: string;
     FPeerPort: Word;
