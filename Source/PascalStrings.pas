@@ -54,6 +54,8 @@ type
     procedure SetBytes(const Value: TBytes);
     function GetPlatformBytes: TBytes;
     procedure SetPlatformBytes(const Value: TBytes);
+    function GetANSI: TBytes;
+    procedure SetANSI(const Value: TBytes);
     function GetLast: SystemChar;
     procedure SetLast(const Value: SystemChar);
     function GetFirst: SystemChar;
@@ -153,6 +155,7 @@ type
     property LowerChar[index: Integer]: SystemChar read GetLowerChar write SetLowerChar;
     property Bytes: TBytes read GetBytes write SetBytes;                         // UTF8
     property PlatformBytes: TBytes read GetPlatformBytes write SetPlatformBytes; // system default
+    property ANSI: TBytes read GetANSI write SetANSI;                            // Ansi Bytes
     function BOMBytes: TBytes;
   end;
 
@@ -1357,6 +1360,18 @@ begin
   buff[index - 1] := Value;
 end;
 
+function TPascalString.GetBytes: TBytes;
+begin
+  SetLength(Result, 0);
+  if length(buff) = 0 then
+      Exit;
+{$IFDEF FPC}
+  Result := SysUtils.TEncoding.UTF8.GetBytes(Text);
+{$ELSE}
+  Result := SysUtils.TEncoding.UTF8.GetBytes(buff);
+{$ENDIF}
+end;
+
 procedure TPascalString.SetBytes(const Value: TBytes);
 begin
   SetLength(buff, 0);
@@ -1369,15 +1384,15 @@ begin
   end;
 end;
 
-function TPascalString.GetBytes: TBytes;
+function TPascalString.GetPlatformBytes: TBytes;
 begin
   SetLength(Result, 0);
   if length(buff) = 0 then
       Exit;
 {$IFDEF FPC}
-  Result := SysUtils.TEncoding.UTF8.GetBytes(Text);
+  Result := SysUtils.TEncoding.Default.GetBytes(Text);
 {$ELSE}
-  Result := SysUtils.TEncoding.UTF8.GetBytes(buff);
+  Result := SysUtils.TEncoding.Default.GetBytes(buff);
 {$ENDIF}
 end;
 
@@ -1393,16 +1408,28 @@ begin
   end;
 end;
 
-function TPascalString.GetPlatformBytes: TBytes;
+function TPascalString.GetANSI: TBytes;
 begin
   SetLength(Result, 0);
   if length(buff) = 0 then
       Exit;
 {$IFDEF FPC}
-  Result := SysUtils.TEncoding.Default.GetBytes(Text);
+  Result := SysUtils.TEncoding.ANSI.GetBytes(Text);
 {$ELSE}
-  Result := SysUtils.TEncoding.Default.GetBytes(buff);
+  Result := SysUtils.TEncoding.ANSI.GetBytes(buff);
 {$ENDIF}
+end;
+
+procedure TPascalString.SetANSI(const Value: TBytes);
+begin
+  SetLength(buff, 0);
+  if length(Value) = 0 then
+      Exit;
+  try
+      Text := SysUtils.TEncoding.ANSI.GetString(Value);
+  except
+      SetLength(buff, 0);
+  end;
 end;
 
 function TPascalString.GetLast: SystemChar;

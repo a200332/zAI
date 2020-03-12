@@ -126,7 +126,7 @@ begin
     end;
 
   dt := GetTimeTick;
-  mr := BuildMatchInfoView(mi, Min((ft1.width + ft2.width) * 0.05, 5), False);
+  mr := BuildMatchInfoView(mi, Min((ft1.width + ft2.width) * 0.05, 3), True);
   DoStatus('生成特征分析视图所花费的时间:%dms ', [GetTimeTick - dt]);
 
   if mr <> nil then
@@ -157,7 +157,7 @@ begin
   ft1 := TFeature.CreateWithRasterClip(ort1, nvl);
   ft1.LinkRaster := ort1;
   DisposeObject(t1);
-  t1 := ft1.CreateFeatureViewer((ort1.width + ort1.Height) * 0.5 * 0.005, RasterColorF(1, 0, 0, 0.5)) as TDETexture;
+  t1 := ft1.CreateFeatureViewer((ort1.width + ort1.Height) * 0.5 * 0.005, RasterColorF(1, 0, 0, 0.2)) as TDETexture;
 end;
 
 procedure TGaussPyramidsForm.Button5Click(Sender: TObject);
@@ -195,7 +195,7 @@ begin
   ft2 := TFeature.CreateWithRasterClip(ort2, nvl);
   ft2.LinkRaster := ort2;
   DisposeObject(t2);
-  t2 := ft2.CreateFeatureViewer((ort2.width + ort2.Height) * 0.5 * 0.005, RasterColorF(1, 1, 0, 0.5)) as TDETexture;
+  t2 := ft2.CreateFeatureViewer((ort2.width + ort2.Height) * 0.5 * 0.005, RasterColorF(1, 1, 0, 0.2)) as TDETexture;
 end;
 
 constructor TGaussPyramidsForm.Create(AOwner: TComponent);

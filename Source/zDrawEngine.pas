@@ -787,6 +787,7 @@ type
     function GetTextSize(const buff: TDArraySegmentionText): TDEVec; overload;
     function GetTextSizeR(const Text: SystemString; Size: TDEFloat): TDERect; overload;
     function GetTextSizeR(const buff: TDArraySegmentionText): TDERect; overload;
+    function ComputeScaleTextSize(const t: SystemString; Size: TDEFloat; MaxSiz: TDEVec): TDEFloat;
 
     { scroll text and UI }
     property MaxScrollText: Integer read FMaxScrollText write FMaxScrollText;
@@ -1101,6 +1102,7 @@ function DEColor(const r, g, b, a: TDEFloat): TDEColor; overload;
 function DEColor(const r, g, b: TDEFloat): TDEColor; overload;
 function DEColor(const c: TDEColor; const alpha: TDEFloat): TDEColor; overload;
 function DEColor(const c: TVec3; const alpha: TDEFloat): TDEColor; overload;
+function DEColor(const c: TRasterColor): TDEColor; overload;
 function DEColor2RasterColor(const c: TDEColor): TRasterColor;
 
 function DColor2RColor(const c: TDEColor): TRasterColor;
@@ -1216,6 +1218,11 @@ begin
   Result[1] := c[1];
   Result[2] := c[2];
   Result[3] := alpha;
+end;
+
+function DEColor(const c: TRasterColor): TDEColor;
+begin
+  RColor2F(c, Result[0], Result[1], Result[2], Result[3]);
 end;
 
 function DEColor2RasterColor(const c: TDEColor): TRasterColor;
@@ -4537,6 +4544,21 @@ begin
   Result[1] := GetTextSize(buff);
 end;
 
+function TDrawEngine.ComputeScaleTextSize(const t: SystemString; Size: TDEFloat; MaxSiz: TDEVec): TDEFloat;
+var
+  l: TDEFloat;
+  lsiz: TVec2;
+begin
+  l := Size;
+  lsiz := GetTextSize(t, l);
+  // compute scale
+  if lsiz[0] > MaxSiz[0] then
+      l := l * (MaxSiz[0] / lsiz[0])
+  else if lsiz[1] > MaxSiz[1] then
+      l := l * (MaxSiz[1] / lsiz[1]);
+  Result := l;
+end;
+
 procedure TDrawEngine.ClearScrollText;
 var
   i: Integer;
@@ -5306,6 +5328,7 @@ end;
 procedure TDrawEngine.DrawLabelBox(lab: SystemString; labSiz: TDEFloat; labColor: TDEColor;
   box: TDERect; boxColor: TDEColor; boxLineWidth: TDEFloat);
 var
+  l: TDEFloat;
   r, lr: TDERect;
   lsiz, bsiz: TVec2;
 begin
@@ -5313,15 +5336,28 @@ begin
   DrawBox(r, boxColor, boxLineWidth);
   if lab = '' then
       exit;
-  lsiz := GetTextSize(lab, labSiz);
+  l := labSiz;
+  lsiz := GetTextSize(lab, l);
   bsiz := RectSize(r);
   if (lsiz[0] < bsiz[0]) and (lsiz[1] < bsiz[1]) then
     begin
       lr[0] := r[0];
       lr[1] := Vec2Add(lr[0], lsiz);
-      FillBox(lr, boxColor);
-      DrawText(lab, labSiz, lr, labColor, False);
+    end
+  else
+    begin
+      // compute font scale size
+      if lsiz[0] > bsiz[0] * 0.8 then
+          l := l * (bsiz[0] * 0.8 / lsiz[0])
+      else
+          l := l * (bsiz[1] * 0.8 / lsiz[1]);
+      lsiz := GetTextSize(lab, l);
+      lr[0] := r[0];
+      lr[1] := Vec2Add(lr[0], lsiz);
     end;
+
+  FillBox(lr, boxColor);
+  DrawText(lab, l, lr, labColor, False);
 end;
 
 procedure TDrawEngine.DrawLabelBoxInScene(lab: SystemString; labSiz: TDEFloat; labColor: TDEColor;

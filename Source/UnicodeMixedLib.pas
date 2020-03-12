@@ -669,10 +669,11 @@ type
   TArrayRawByte = array [0 .. MaxInt - 1] of Byte;
   PArrayRawByte = ^TArrayRawByte;
 
-function umlCompareRawByteString(const s1: RawByteString; const s2: PArrayRawByte): Boolean; overload;
-function umlCompareRawByteString(const s1: PArrayRawByte; const s2: RawByteString): Boolean; overload;
-procedure umlSetRawByte(const sour: RawByteString; const dest: PArrayRawByte); overload;
-procedure umlSetRawByte(const dest: PArrayRawByte; const sour: RawByteString); overload;
+function umlCompareByteString(const s1: TPascalString; const s2: PArrayRawByte): Boolean; overload;
+function umlCompareByteString(const s2: PArrayRawByte; const s1: TPascalString): Boolean; overload;
+procedure umlSetByteString(const sour: TPascalString; const dest: PArrayRawByte); overload;
+procedure umlSetByteString(const dest: PArrayRawByte; const sour: TPascalString); overload;
+function umlGetByteString(const sour: PArrayRawByte; const L: Integer): TPascalString;
 
 procedure SaveMemory(p: Pointer; siz: NativeInt; DestFile: TPascalString);
 
@@ -6597,24 +6598,53 @@ end;
 {$IFDEF RangeCheck}{$R-}{$ENDIF}
 
 
-function umlCompareRawByteString(const s1: RawByteString; const s2: PArrayRawByte): Boolean;
+function umlCompareByteString(const s1: TPascalString; const s2: PArrayRawByte): Boolean;
+var
+  tmp: TBytes;
+  i: Integer;
 begin
-  Result := CompareMemory(@s1[1], @s2^[0], length(s1));
+  SetLength(tmp, s1.L);
+  for i := 0 to s1.L - 1 do
+      tmp[i] := Byte(s1.buff[i]);
+
+  Result := CompareMemory(@tmp[0], @s2^[0], s1.L);
 end;
 
-function umlCompareRawByteString(const s1: PArrayRawByte; const s2: RawByteString): Boolean;
+function umlCompareByteString(const s2: PArrayRawByte; const s1: TPascalString): Boolean;
+var
+  tmp: TBytes;
+  i: Integer;
 begin
-  Result := CompareMemory(@s2[1], @s1^[0], length(s2));
+  SetLength(tmp, s1.L);
+  for i := 0 to s1.L - 1 do
+      tmp[i] := Byte(s1.buff[i]);
+
+  Result := CompareMemory(@tmp[0], @s2^[0], s1.L);
 end;
 
-procedure umlSetRawByte(const sour: RawByteString; const dest: PArrayRawByte);
+procedure umlSetByteString(const sour: TPascalString; const dest: PArrayRawByte);
+var
+  i: Integer;
 begin
-  CopyPtr(@sour[1], @dest^[0], length(sour));
+  for i := 0 to sour.L - 1 do
+      dest^[i] := Byte(sour.buff[i]);
 end;
 
-procedure umlSetRawByte(const dest: PArrayRawByte; const sour: RawByteString);
+procedure umlSetByteString(const dest: PArrayRawByte; const sour: TPascalString);
+var
+  i: Integer;
 begin
-  CopyPtr(@sour[1], @dest^[0], length(sour));
+  for i := 0 to sour.L - 1 do
+      dest^[i] := Byte(sour.buff[i]);
+end;
+
+function umlGetByteString(const sour: PArrayRawByte; const L: Integer): TPascalString;
+var
+  i: Integer;
+begin
+  Result.L := L;
+  for i := 0 to L - 1 do
+      Result.buff[i] := SystemChar(sour^[i]);
 end;
 
 {$IFDEF RangeCheck}{$R+}{$ENDIF}

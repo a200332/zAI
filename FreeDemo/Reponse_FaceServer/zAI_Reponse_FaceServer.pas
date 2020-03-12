@@ -569,8 +569,8 @@ begin
           // 开始重建人脸新模型的线性向量数据库，这个数据库是基于TLearn引擎工作的
           DoStatus('rebuild face vector.');
           Face_Learn.Clear;
-          // Metric_ResNet_SaveDetectorDefineToLearnEngine 是自动化的将FaceDB中所有人脸，全部构建成TLearn的数据
-          Metric.Metric_ResNet_SaveDetectorDefineToLearnEngine(Metric_Resnet_Hnd, False, FaceDB, Face_Learn);
+          // Metric_ResNet_SaveToLearnEngine 是自动化的将FaceDB中所有人脸，全部构建成TLearn的数据
+          Metric.Metric_ResNet_SaveToLearnEngine(Metric_Resnet_Hnd, False, FaceDB, Face_Learn);
           // TLearn的数据库构建完成后，需要重新训练一下TLearn
           Face_Learn.Training();
           // 现在我们再TLearn的数据保存了，便于下次启动时使用

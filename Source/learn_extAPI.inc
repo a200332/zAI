@@ -805,7 +805,7 @@ begin
       Source.read(dest[j][0], w);
 end;
 
-function LDA(const M: TLMatrix; const cv: TLVec; const Nclass: TLInt; var sInfo: SystemString; var output: TLMatrix): Boolean;
+function LDA(const M: TLMatrix; const cv: TLVec; const Nclass: TLInt; var sInfo: TPascalString; var output: TLMatrix): Boolean;
 var
   rInfo: TLInt;
   buff: TLMatrix;
@@ -837,7 +837,7 @@ begin
   Result := rInfo in [1, 2];
 end;
 
-function LDA(const M: TLMatrix; const cv: TLVec; const Nclass: TLInt; var sInfo: SystemString; var output: TLVec): Boolean;
+function LDA(const M: TLMatrix; const cv: TLVec; const Nclass: TLInt; var sInfo: TPascalString; var output: TLVec): Boolean;
 var
   rInfo: TLInt;
   buff: TLMatrix;

@@ -2851,8 +2851,8 @@ begin
       Result := False;
       exit;
     end;
-  Item_.CurrentBlockSeekPOS := 0;
-  Item_.CurrentFileSeekPOS := Item_.CurrentItemBlock.DataPosition;
+  Item_.CurrentBlockSeekPOS := Item_.CurrentItemBlock.Size;
+  Item_.CurrentFileSeekPOS := Item_.CurrentItemBlock.DataPosition + Item_.CurrentItemBlock.Size;
   Item_.State := DB_Item_ok;
   Result := True;
 end;

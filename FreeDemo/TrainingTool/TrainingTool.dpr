@@ -67,7 +67,7 @@ end;
 procedure Run;
 var
   aiEng, inputfile, paramfile, outputfile: SystemString;
-  gpu_id, keep, recymem: SystemString;
+  gpu_id, keep, recymem, hintinfo: SystemString;
   n: SystemString;
   i: Integer;
   doneOpen: Boolean;
@@ -81,6 +81,7 @@ begin
   gpu_id := '';
   keep := '';
   recymem := '';
+  hintinfo := '';
   doneOpen := False;
 
   for i := 1 to ParamCount do
@@ -104,6 +105,8 @@ begin
           keep := umlDeleteFirstStr(n, ': ')
       else if umlMultipleMatch(['-memory:*', '/memory:*', '-memory *'], n) then
           recymem := umlDeleteFirstStr(n, ': ')
+      else if umlMultipleMatch(['-hint:*', '/hint:*', '-hint *'], n) then
+          hintinfo := umlDeleteFirstStr(n, ': ')
       else if umlMultipleMatch(['-doneOpen', '/doneOpen', '-doneOpen'], n) then
           doneOpen := True;
     end;
@@ -125,6 +128,12 @@ begin
 
   if recymem <> '' then
       zAI.LargeScaleTrainingMemoryRecycleTime := umlStrToInt(recymem, 0);
+
+  if hintinfo <> '' then
+    begin
+      DoStatus(hintinfo);
+      TCompute.Sleep(2000);
+    end;
 
   if umlFileExists(inputfile) then
     begin

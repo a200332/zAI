@@ -40,7 +40,7 @@ type
 
   TLearnMemory = record
     m_in, m_out: TLVec;
-    token: SystemString;
+    token: TPascalString;
   end;
 
   PLearnMemory = ^TLearnMemory;
@@ -63,7 +63,7 @@ type
     FClassifier: Boolean;
     FHideLayerDepth: THideLayerDepth;
     FLastTrainMaxInValue, FLastTrainMaxOutValue: TLFloat;
-    FInfo: SystemString;
+    FInfo: TPascalString;
     FIsTraining: Boolean;
     FTrainingThreadRuning: Boolean;
     FUserData: Pointer;
@@ -103,7 +103,7 @@ type
     property InSize: TLInt read FInSize;
     property OutSize: TLInt read FOutSize;
     property LearnType: TLearnType read FLearnType;
-    property Info: SystemString read FInfo;
+    property Info: TPascalString read FInfo;
     property TrainingThreadRuning: Boolean read FTrainingThreadRuning;
     function GetMemorySource(const index: TLInt): PLearnMemory;
     property MemorySource[const index: TLInt]: PLearnMemory read GetMemorySource; default;
@@ -115,17 +115,17 @@ type
     property UserObject: TCoreClassObject read FUserObject write FUserObject;
 
     { * sampler * }
-    procedure AddMemory(const f_In, f_Out: TLVec; f_token: SystemString); overload;
-    procedure AddMemory(const f_In: TLVec; f_token: SystemString); overload;
+    procedure AddMemory(const f_In, f_Out: TLVec; f_token: TPascalString); overload;
+    procedure AddMemory(const f_In: TLVec; f_token: TPascalString); overload;
     procedure AddMemory(const f_In, f_Out: TLVec); overload;
-    procedure AddMemory(const s_In, s_Out: SystemString); overload;
-    procedure AddMemory(const s_In, s_Out, s_token: SystemString); overload;
+    procedure AddMemory(const s_In, s_Out: TPascalString); overload;
+    procedure AddMemory(const s_In, s_Out, s_token: TPascalString); overload;
     procedure AddMemory(const s: TPascalString); overload;
     procedure AddSampler(const f_In, f_Out: TLVec); overload;
-    procedure AddSampler(const s_In, s_Out: SystemString); overload;
+    procedure AddSampler(const s_In, s_Out: TPascalString); overload;
     procedure AddSampler(const s: TPascalString); overload;
     procedure AddMatrix(const m_in: TLMatrix; const f_Out: TLVec); overload;
-    procedure AddMatrix(const m_in: TLMatrix; const f_Out: TLVec; const f_token: SystemString); overload;
+    procedure AddMatrix(const m_in: TLMatrix; const f_Out: TLVec; const f_token: TPascalString); overload;
 
     { * kdtree * }
     procedure AddKDTree(kd: TKDTreeDataList);
@@ -144,40 +144,42 @@ type
     procedure WaitTraining;
 
     // token
-    function SearchToken(const v: TLVec): SystemString;
-    function SearchOutVecToken(const v: TLVec): SystemString;
+    function SearchToken(const v: TLVec): TPascalString;
+    function SearchOutVecToken(const v: TLVec): TPascalString;
+    function FindTokenIndex(const token_: TPascalString): Integer;
 
     // data input/output
     function Process(const p_in, p_out: PLVec): Boolean; overload;
-    function Process(const ProcessIn: PLVec): SystemString; overload;
-    function Process(const ProcessIn: TLVec): SystemString; overload;
-    function Process(const ProcessIn: TPascalString): SystemString; overload;
+    function Process(const ProcessIn: PLVec): TPascalString; overload;
+    function Process(const ProcessIn: TLVec): TPascalString; overload;
+    function Process(const ProcessIn: TPascalString): TPascalString; overload;
     function ProcessMatrix(const p_in: PLMatrix; const p_out: PLVec): Boolean; overload;
-    function ProcessToken(const ProcessIn: PLVec): SystemString; overload;
+    function ProcessToken(const ProcessIn: PLVec): TPascalString; overload;
+    function ProcessToken(const ProcessIn: TLVec): TPascalString; overload;
 
     // result max value
     function ProcessMax(const ProcessIn: TLVec): TLFloat; overload;
     function ProcessMax(const ProcessIn: TLMatrix): TLFloat; overload;
-    function ProcessMaxToken(const ProcessIn: TLVec): SystemString; overload;
-    function ProcessMaxToken(const ProcessIn: TLMatrix): SystemString; overload;
+    function ProcessMaxToken(const ProcessIn: TLVec): TPascalString; overload;
+    function ProcessMaxToken(const ProcessIn: TLMatrix): TPascalString; overload;
 
     // result max index
     function ProcessMaxIndex(const ProcessIn: TLVec): TLInt; overload;
     function ProcessMaxIndex(const ProcessIn: TLMatrix): TLInt; overload;
-    function ProcessMaxIndexToken(const ProcessIn: TLVec): SystemString; overload;
-    function ProcessMaxIndexToken(const ProcessIn: TLMatrix): SystemString; overload;
+    function ProcessMaxIndexToken(const ProcessIn: TLVec): TPascalString; overload;
+    function ProcessMaxIndexToken(const ProcessIn: TLMatrix): TPascalString; overload;
 
     // result min value
     function ProcessMin(const ProcessIn: TLVec): TLFloat; overload;
     function ProcessMin(const ProcessIn: TLMatrix): TLFloat; overload;
-    function ProcessMinToken(const ProcessIn: TLVec): SystemString; overload;
-    function ProcessMinToken(const ProcessIn: TLMatrix): SystemString; overload;
+    function ProcessMinToken(const ProcessIn: TLVec): TPascalString; overload;
+    function ProcessMinToken(const ProcessIn: TLMatrix): TPascalString; overload;
 
     // result min index
     function ProcessMinIndex(const ProcessIn: TLVec): TLInt; overload;
     function ProcessMinIndex(const ProcessIn: TLMatrix): TLInt; overload;
-    function ProcessMinIndexToken(const ProcessIn: TLVec): SystemString; overload;
-    function ProcessMinIndexToken(const ProcessIn: TLMatrix): SystemString; overload;
+    function ProcessMinIndexToken(const ProcessIn: TLVec): TPascalString; overload;
+    function ProcessMinIndexToken(const ProcessIn: TLMatrix): TPascalString; overload;
 
     // result first value
     function ProcessFV(const ProcessIn: TLVec): TLFloat; overload;
@@ -209,16 +211,16 @@ type
     procedure SaveToStream(stream: TCoreClassStream);
     procedure LoadFromStream(stream: TCoreClassStream);
 
-    procedure SaveToFile(FileName: SystemString);
-    procedure LoadFromFile(FileName: SystemString);
+    procedure SaveToFile(FileName: TPascalString);
+    procedure LoadFromFile(FileName: TPascalString);
 
 {$IFNDEF FPC}
     { * json store support * }
     procedure SaveToJsonStream(stream: TCoreClassStream);
     procedure LoadFromJsonStream(stream: TCoreClassStream);
 
-    procedure SaveToJsonFile(FileName: SystemString);
-    procedure LoadFromJsonFile(FileName: SystemString);
+    procedure SaveToJsonFile(FileName: TPascalString);
+    procedure LoadFromJsonFile(FileName: TPascalString);
 {$ENDIF FPC}
   end;
 
@@ -296,8 +298,8 @@ procedure LSaveMatrix(var Source: TLBMatrix; dest: TCoreClassStream); overload;
 procedure LLoadMatrix(Source: TCoreClassStream; var dest: TLBMatrix); overload;
 
 { * linear discriminant analysis support * }
-function LDA(const M: TLMatrix; const cv: TLVec; const Nclass: TLInt; var sInfo: SystemString; var output: TLMatrix): Boolean; overload;
-function LDA(const M: TLMatrix; const cv: TLVec; const Nclass: TLInt; var sInfo: SystemString; var output: TLVec): Boolean; overload;
+function LDA(const M: TLMatrix; const cv: TLVec; const Nclass: TLInt; var sInfo: TPascalString; var output: TLMatrix): Boolean; overload;
+function LDA(const M: TLMatrix; const cv: TLVec; const Nclass: TLInt; var sInfo: TPascalString; var output: TLVec): Boolean; overload;
 
 { * principal component analysis support * }
 

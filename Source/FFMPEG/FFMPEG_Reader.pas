@@ -32,7 +32,6 @@ type
   private
     FVideoSource: TPascalString;
     FWorkOnGPU: Boolean;
-    src_filename: RawByteString;
     FormatCtx: PAVFormatContext;
     videoCodecCtx: PAVCodecContext;
     audioCodecCtx: PAVCodecContext;

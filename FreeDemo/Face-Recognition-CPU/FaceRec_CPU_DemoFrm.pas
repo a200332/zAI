@@ -134,7 +134,7 @@ begin
             DoStatus('Learn引擎正在学习Face度量', []);
             L_Engine.Clear;
             tk := GetTimeTick();
-            AI.Metric_ResNet_SaveDetectorDefineToLearnEngine(mdnn_hnd, False, imgL, L_Engine);
+            AI.Metric_ResNet_SaveToLearnEngine(mdnn_hnd, False, imgL, L_Engine);
             L_Engine.Training;
             DoStatus('学习Face度量，Learn记忆了 %d 张面部度量，耗时:%dms', [L_Engine.Count, GetTimeTick() - tk]);
             DoStatus('保存度量化记忆库 "%s"', [L_fn.Text]);
@@ -185,12 +185,7 @@ begin
             face_rect := RectMul(AI.Face_RectV2(face_hnd, i), 0.5);
 
             // 画框体
-            d.DrawCorner(TV2Rect4.Init(face_rect, 0), DEColor(1, 0.5, 0.5, 1), 20, 5);
-
-            // 画标签
-            d.BeginCaptureShadow(Vec2(1, 1), 0.9);
-            d.DrawText(PFormat('%s', [face_token]), d.Rasterization.Memory.Font.FontSize, face_rect, DEColor(1, 0, 0, 1), False);
-            d.EndCaptureShadow;
+            d.DrawLabelBox(face_token, d.Rasterization.Memory.Font.FontSize, DEColor(1, 1, 1, 1), face_rect, DEColor(1, 0.5, 0.5), 5);
           end;
         d.Flush;
 

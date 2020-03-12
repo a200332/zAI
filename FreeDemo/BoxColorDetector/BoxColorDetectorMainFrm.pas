@@ -108,7 +108,7 @@ begin
   }
   d := TDrawEngine.Create;
   d.Rasterization.Memory.SetSize(raster.Width, raster.Height, RColor(0, 0, 0));
-  d.Rasterization.UsedAgg := False;
+  d.Rasterization.UsedAgg := True;
   d.SetSize;
   d.ViewOptions := [];
 
@@ -132,7 +132,7 @@ begin
       dcol := RColor2DColor(RandomRColor($7F));
       d.DrawBox(r, dcol, 1);
       n := Format('%d*%d', [RoundWidth(r), RoundHeight(r)]);
-      d.DrawText(n, 10, r, dcol, True);
+      d.DrawLabelBox(n, 16, DEColor(1, 1, 1, 1), r, dcol, 2);
     end;
   d.Flush;
 
@@ -188,9 +188,8 @@ begin
     begin
       r := rl[i];
       dcol := RColor2DColor(RandomRColor($7F));
-      d.DrawBox(r, dcol, 1);
       n := Format('%d*%d', [RoundWidth(r), RoundHeight(r)]);
-      d.DrawText(n, 10, r, dcol, True);
+      d.DrawLabelBox(n, 16, DEColor(1, 1, 1, 1), r, dcol, 2);
     end;
   d.Flush;
 

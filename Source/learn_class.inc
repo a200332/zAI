@@ -459,11 +459,6 @@ procedure TLearn.Clear;
 var
   i: TLInt;
   p: PLearnMemory;
-  p_k: PLearnKDT;
-  p_f: PDecisionForest;
-  p_logit: PLogitModel;
-  p_n: PMultiLayerPerceptron;
-  p_e: PMLPEnsemble;
 begin
   WaitTraining;
 
@@ -500,7 +495,7 @@ begin
   Result := PLearnMemory(FMemorySource[index]);
 end;
 
-procedure TLearn.AddMemory(const f_In, f_Out: TLVec; f_token: SystemString);
+procedure TLearn.AddMemory(const f_In, f_Out: TLVec; f_token: TPascalString);
 var
   p: PLearnMemory;
   i: TLInt;
@@ -525,15 +520,23 @@ begin
   CopyPtr(@f_In[0], @(p^.m_in[0]), FInSize * SizeOf(TLFloat));
   SetLength(p^.m_out, FOutSize);
   CopyPtr(@f_Out[0], @(p^.m_out[0]), FOutSize * SizeOf(TLFloat));
-  p^.token := f_token;
+  p^.token := umlTrimSpace(f_token);
 
   FMemorySource.Add(p);
 end;
 
-procedure TLearn.AddMemory(const f_In: TLVec; f_token: SystemString);
+procedure TLearn.AddMemory(const f_In: TLVec; f_token: TPascalString);
 var
+  i: Integer;
   f_Out: TLVec;
 begin
+  i := FindTokenIndex(f_token);
+  if i >= 0 then
+    begin
+      AddMemory(f_In, MemorySource[i]^.m_out, f_token);
+      exit;
+    end;
+
   f_Out := LVec(FOutSize);
   LSetVec(f_Out, Count);
   AddMemory(f_In, f_Out, f_token);
@@ -545,7 +548,7 @@ begin
   AddMemory(f_In, f_Out, LVec(f_Out));
 end;
 
-procedure TLearn.AddMemory(const s_In, s_Out, s_token: SystemString);
+procedure TLearn.AddMemory(const s_In, s_Out, s_token: TPascalString);
 var
   f_In, f_Out: TLVec;
 begin
@@ -556,8 +559,16 @@ begin
   SetLength(f_Out, 0);
 end;
 
-procedure TLearn.AddMemory(const s_In, s_Out: SystemString);
+procedure TLearn.AddMemory(const s_In, s_Out: TPascalString);
+var
+  i: Integer;
 begin
+  i := FindTokenIndex(s_Out);
+  if i >= 0 then
+    begin
+      AddMemory(LVec(s_In), MemorySource[i]^.m_out, s_Out);
+      exit;
+    end;
   AddMemory(s_In, s_Out, s_Out);
 end;
 
@@ -565,18 +576,32 @@ procedure TLearn.AddMemory(const s: TPascalString);
 var
   s_In, s_Out: TPascalString;
   v: TLVec;
+  i: Integer;
 begin
-  s_In := umlGetFirstStr(s, '=');
-  s_Out := umlGetLastStr(s, '=');
-  if s_Out.Exists(',') or umlIsNumber(s_Out) then
-      AddMemory(s_In.Text, s_Out.Text)
-  else
+  s_In := umlTrimSpace(umlGetFirstStr(s, '='));
+  s_Out := umlTrimSpace(umlDeleteFirstStr(s, '='));
+
+  i := FindTokenIndex(s_Out);
+  if i >= 0 then
     begin
-      v := LVec(FOutSize);
-      LSetVec(v, Count);
-      AddMemory(s_In.Text, LVec(v), s_Out.Text);
-      SetLength(v, 0);
+      AddMemory(LVec(s_In), MemorySource[i]^.m_out, s_Out);
+      exit;
     end;
+
+  if s_Out.Exists(',') or umlIsNumber(s_Out) then
+    begin
+      v := LVec(s_Out);
+      if (length(v) = FOutSize) and (not FClassifier) then
+        begin
+          AddMemory(s_In.Text, s_Out.Text);
+          exit;
+        end;
+    end;
+
+  v := LVec(FOutSize);
+  LSetVec(v, Count);
+  AddMemory(s_In, LVec(v), s_Out);
+  SetLength(v, 0);
 end;
 
 procedure TLearn.AddSampler(const f_In, f_Out: TLVec);
@@ -584,7 +609,7 @@ begin
   AddMemory(f_In, f_Out);
 end;
 
-procedure TLearn.AddSampler(const s_In, s_Out: SystemString);
+procedure TLearn.AddSampler(const s_In, s_Out: TPascalString);
 begin
   AddMemory(s_In, s_Out);
 end;
@@ -603,7 +628,7 @@ begin
   SetLength(f_In, 0);
 end;
 
-procedure TLearn.AddMatrix(const m_in: TLMatrix; const f_Out: TLVec; const f_token: SystemString);
+procedure TLearn.AddMatrix(const m_in: TLMatrix; const f_Out: TLVec; const f_token: TPascalString);
 var
   f_In: TLVec;
 begin
@@ -704,13 +729,13 @@ begin
   if FIsTraining then
     begin
       FInfo := 'wait Training';
-      Exit;
+      exit;
     end;
 
   if FMemorySource.Count <= 0 then
     begin
       FInfo := 'Out Training set invailed';
-      Exit;
+      exit;
     end;
 
   FIsTraining := True;
@@ -752,9 +777,9 @@ begin
           BuildInternalData;
           p_f := PDecisionForest(FLearnData);
           if FClassifier then
-              DFBuildRandomDecisionForest(buff, length(buff), FInSize, Max(1, Round(FLastTrainMaxOutValue) + 1), 100, 1, rInfo, p_f^, DFRep)
+              DFBuildRandomDecisionForest(buff, length(buff), FInSize, Max(1, Round(FLastTrainMaxOutValue) + 1), Max(TrainDepth, 50), 1, rInfo, p_f^, DFRep)
           else
-              DFBuildRandomDecisionForest(buff, length(buff), FInSize, 1, 100, 1, rInfo, p_f^, DFRep);
+              DFBuildRandomDecisionForest(buff, length(buff), FInSize, 1, Max(TrainDepth, 50), 1, rInfo, p_f^, DFRep);
 
           FreeInternalData;
           case rInfo of
@@ -988,14 +1013,27 @@ begin
       CheckThreadSynchronize(1);
 end;
 
-function TLearn.SearchToken(const v: TLVec): SystemString;
+function TLearn.SearchToken(const v: TLVec): TPascalString;
 begin
   Result := FKDToken.SearchToken(v);
 end;
 
-function TLearn.SearchOutVecToken(const v: TLVec): SystemString;
+function TLearn.SearchOutVecToken(const v: TLVec): TPascalString;
 begin
   Result := FKDToken.SearchToken(v);
+end;
+
+function TLearn.FindTokenIndex(const token_: TPascalString): Integer;
+var
+  i: Integer;
+begin
+  for i := 0 to Count - 1 do
+    if token_.Same(@MemorySource[i]^.token) then
+      begin
+        Result := i;
+        exit;
+      end;
+  Result := -1;
 end;
 
 function TLearn.Process(const p_in, p_out: PLVec): Boolean;
@@ -1004,18 +1042,19 @@ var
   i: TLInt;
   r, rmax: TLFloat;
   List: TLIVec;
+  tmp: TLVec;
 begin
   Result := False;
   try
     if FIsTraining or FTrainingThreadRuning then
       begin
         FInfo := 'wait training';
-        Exit;
+        exit;
       end;
     if length(p_in^) <> FInSize then
       begin
         FInfo := 'input length error';
-        Exit;
+        exit;
       end;
 
     case FLearnType of
@@ -1061,9 +1100,17 @@ begin
         begin
           if length(PLogitModel(FLearnData)^.w) > 0 then
             begin
-              SetLength(p_out^, Max(2, Round(FLastTrainMaxOutValue) + 1));
-
-              MNLProcess(PLogitModel(FLearnData)^, p_in^, p_out^);
+              if FClassifier then
+                begin
+                  SetLength(p_out^, Max(2, Round(FLastTrainMaxOutValue) + 1));
+                  MNLProcess(PLogitModel(FLearnData)^, p_in^, p_out^);
+                end
+              else
+                begin
+                  SetLength(tmp, Max(2, Round(FLastTrainMaxOutValue) + 1));
+                  MNLProcess(PLogitModel(FLearnData)^, p_in^, tmp);
+                  p_out^ := MemorySource[LMaxVecIndex(tmp)]^.m_out;
+                end;
               FInfo := 'successed';
               Result := True;
             end;
@@ -1097,22 +1144,22 @@ begin
   end;
 end;
 
-function TLearn.Process(const ProcessIn: PLVec): SystemString;
+function TLearn.Process(const ProcessIn: PLVec): TPascalString;
 var
   ProcessOut: TLVec;
 begin
   Result := '';
   if not Process(ProcessIn, @ProcessOut) then
-      Exit;
+      exit;
   Result := LVec(ProcessOut, True);
 end;
 
-function TLearn.Process(const ProcessIn: TLVec): SystemString;
+function TLearn.Process(const ProcessIn: TLVec): TPascalString;
 begin
   Result := Process(PLVec(@ProcessIn));
 end;
 
-function TLearn.Process(const ProcessIn: TPascalString): SystemString;
+function TLearn.Process(const ProcessIn: TPascalString): TPascalString;
 begin
   Result := Process(TKDTree.Vec(ProcessIn.Text));
 end;
@@ -1126,16 +1173,21 @@ begin
   SetLength(f_In, 0);
 end;
 
-function TLearn.ProcessToken(const ProcessIn: PLVec): SystemString;
+function TLearn.ProcessToken(const ProcessIn: PLVec): TPascalString;
 var
   ProcessOut: TLVec;
 begin
   Result := '';
   if not Process(ProcessIn, @ProcessOut) then
-      Exit;
+      exit;
   Result := SearchOutVecToken(ProcessOut);
   if Result = '' then
       Result := LVec(ProcessOut, True);
+end;
+
+function TLearn.ProcessToken(const ProcessIn: TLVec): TPascalString;
+begin
+  Result := ProcessToken(PLVec(@ProcessIn));
 end;
 
 function TLearn.ProcessMax(const ProcessIn: TLVec): TLFloat;
@@ -1145,7 +1197,7 @@ var
 begin
   Result := 0;
   if not Process(@ProcessIn, @ProcessOut) then
-      Exit;
+      exit;
 
   Result := ProcessOut[0];
 
@@ -1166,7 +1218,7 @@ begin
   SetLength(f_In, 0);
 end;
 
-function TLearn.ProcessMaxToken(const ProcessIn: TLVec): SystemString;
+function TLearn.ProcessMaxToken(const ProcessIn: TLVec): TPascalString;
 begin
   if FClassifier then
       Result := ProcessMaxIndexToken(ProcessIn)
@@ -1174,7 +1226,7 @@ begin
       Result := '';
 end;
 
-function TLearn.ProcessMaxToken(const ProcessIn: TLMatrix): SystemString;
+function TLearn.ProcessMaxToken(const ProcessIn: TLMatrix): TPascalString;
 begin
   if FClassifier then
       Result := ProcessMaxIndexToken(ProcessIn)
@@ -1190,7 +1242,7 @@ var
 begin
   Result := -1;
   if not Process(@ProcessIn, @ProcessOut) then
-      Exit;
+      exit;
 
   K := ProcessOut[0];
   Result := 0;
@@ -1215,14 +1267,12 @@ begin
   SetLength(f_In, 0);
 end;
 
-function TLearn.ProcessMaxIndexToken(const ProcessIn: TLVec): SystemString;
+function TLearn.ProcessMaxIndexToken(const ProcessIn: TLVec): TPascalString;
 var
   i: TLInt;
   p: PKDTree_Source;
 begin
   Result := '';
-  if not FClassifier then
-      Exit;
   i := ProcessMaxIndex(ProcessIn);
   if (i >= 0) and (i < FKDToken.Count) then
     begin
@@ -1231,7 +1281,7 @@ begin
     end;
 end;
 
-function TLearn.ProcessMaxIndexToken(const ProcessIn: TLMatrix): SystemString;
+function TLearn.ProcessMaxIndexToken(const ProcessIn: TLMatrix): TPascalString;
 var
   f_In: TLVec;
 begin
@@ -1247,7 +1297,7 @@ var
 begin
   Result := 0;
   if not Process(@ProcessIn, @ProcessOut) then
-      Exit;
+      exit;
 
   Result := ProcessOut[0];
 
@@ -1268,7 +1318,7 @@ begin
   SetLength(f_In, 0);
 end;
 
-function TLearn.ProcessMinToken(const ProcessIn: TLVec): SystemString;
+function TLearn.ProcessMinToken(const ProcessIn: TLVec): TPascalString;
 begin
   if FClassifier then
       Result := ProcessMinIndexToken(ProcessIn)
@@ -1276,7 +1326,7 @@ begin
       Result := '';
 end;
 
-function TLearn.ProcessMinToken(const ProcessIn: TLMatrix): SystemString;
+function TLearn.ProcessMinToken(const ProcessIn: TLMatrix): TPascalString;
 begin
   if FClassifier then
       Result := ProcessMinIndexToken(ProcessIn)
@@ -1292,7 +1342,7 @@ var
 begin
   Result := -1;
   if not Process(@ProcessIn, @ProcessOut) then
-      Exit;
+      exit;
 
   K := ProcessOut[0];
   Result := 0;
@@ -1317,14 +1367,12 @@ begin
   SetLength(f_In, 0);
 end;
 
-function TLearn.ProcessMinIndexToken(const ProcessIn: TLVec): SystemString;
+function TLearn.ProcessMinIndexToken(const ProcessIn: TLVec): TPascalString;
 var
   i: TLInt;
   p: PKDTree_Source;
 begin
   Result := '';
-  if not FClassifier then
-      Exit;
   i := ProcessMinIndex(ProcessIn);
   if (i >= 0) and (i < FKDToken.Count) then
     begin
@@ -1333,7 +1381,7 @@ begin
     end;
 end;
 
-function TLearn.ProcessMinIndexToken(const ProcessIn: TLMatrix): SystemString;
+function TLearn.ProcessMinIndexToken(const ProcessIn: TLMatrix): TPascalString;
 var
   f_In: TLVec;
 begin
@@ -1348,7 +1396,7 @@ var
 begin
   Result := 0;
   if not Process(@ProcessIn, @ProcessOut) then
-      Exit;
+      exit;
 
   Result := ProcessOut[0];
 
@@ -1375,7 +1423,7 @@ var
 begin
   Result := 0;
   if not Process(@ProcessIn, @ProcessOut) then
-      Exit;
+      exit;
 
   Result := ProcessOut[length(ProcessOut) - 1];
 
@@ -1404,7 +1452,7 @@ begin
   if Count <= 0 then
     begin
       Result := -1;
-      Exit;
+      exit;
     end;
 
   K := PearsonCorrelation(ProcessIn, GetMemorySource(0)^.m_in, FInSize);
@@ -1490,12 +1538,12 @@ var
   i: TLInt;
 begin
   if Count <= 0 then
-      Exit;
+      exit;
   if Count = 1 then
     begin
       SetLength(List, 1);
       List[0] := 0;
-      Exit;
+      exit;
     end;
   SetLength(buff, Count);
   SetLength(buffPtr, Count);
@@ -1528,7 +1576,7 @@ begin
   if Count <= 0 then
     begin
       Result := -1;
-      Exit;
+      exit;
     end;
 
   K := SpearmanRankCorrelation(ProcessIn, GetMemorySource(0)^.m_in, FInSize);
@@ -1614,12 +1662,12 @@ var
   i: TLInt;
 begin
   if Count <= 0 then
-      Exit;
+      exit;
   if Count = 1 then
     begin
       SetLength(List, 1);
       List[0] := 0;
-      Exit;
+      exit;
     end;
   SetLength(buff, Count);
   SetLength(buffPtr, Count);
@@ -1652,7 +1700,7 @@ begin
   if Count <= 0 then
     begin
       Result := -1;
-      Exit;
+      exit;
     end;
 
   if length(ProcessIn) <> FInSize then
@@ -1739,14 +1787,14 @@ var
 begin
   if Count <= 0 then
     begin
-      Exit;
+      exit;
     end;
 
   if Count < 2 then
     begin
       SetLength(List, 1);
       List[0] := 0;
-      Exit;
+      exit;
     end;
 
   SetLength(buff, Count);
@@ -1917,7 +1965,7 @@ begin
   if df.Reader.IsEnd then
     begin
       Training;
-      Exit;
+      exit;
     end;
 
   m64 := TMemoryStream64.Create;
@@ -1929,7 +1977,7 @@ begin
   if df.Reader.IsEnd then
     begin
       Training;
-      Exit;
+      exit;
     end;
 
   case FLearnType of
@@ -2028,7 +2076,7 @@ begin
   DisposeObject(de);
 end;
 
-procedure TLearn.SaveToFile(FileName: SystemString);
+procedure TLearn.SaveToFile(FileName: TPascalString);
 var
   fs: TCoreClassFileStream;
 begin
@@ -2040,14 +2088,14 @@ begin
   end;
 end;
 
-procedure TLearn.LoadFromFile(FileName: SystemString);
+procedure TLearn.LoadFromFile(FileName: TPascalString);
 var
   fs: TCoreClassFileStream;
 begin
   try
       fs := TCoreClassFileStream.Create(FileName, fmOpenRead or fmShareDenyWrite);
   except
-      Exit;
+      exit;
   end;
 
   try
@@ -2086,7 +2134,7 @@ begin
   DisposeObject(de);
 end;
 
-procedure TLearn.SaveToJsonFile(FileName: SystemString);
+procedure TLearn.SaveToJsonFile(FileName: TPascalString);
 var
   fs: TCoreClassFileStream;
 begin
@@ -2098,14 +2146,14 @@ begin
   end;
 end;
 
-procedure TLearn.LoadFromJsonFile(FileName: SystemString);
+procedure TLearn.LoadFromJsonFile(FileName: TPascalString);
 var
   fs: TCoreClassFileStream;
 begin
   try
       fs := TCoreClassFileStream.Create(FileName, fmOpenRead or fmShareDenyWrite);
   except
-      Exit;
+      exit;
   end;
 
   try

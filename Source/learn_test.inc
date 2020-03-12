@@ -4329,6 +4329,8 @@ begin
   TestGaussKronrodQuadrature(False);
   DoStatus('Begin Gauss Quadrature');
   TestGaussQuadrature(False);
+  DoStatus('Begin ExpressionToMatrix');
+  ExpressionToMatrixTest;
   DoStatus('Begin Learn Engine');
   // Regression test
   for LV := 0 to 2 do
@@ -4474,8 +4476,6 @@ begin
 
         disposeObject(lr);
       end;
-
-  ExpressionToMatrixTest;
 
   DoStatus('all learn test finish!');
 end;

@@ -551,9 +551,9 @@ type
     procedure SaveToStream(stream: TCoreClassStream); overload; virtual;                        // published,32bit bitmap
     procedure SaveToBmp32Stream(stream: TCoreClassStream);                                      // published,32bit bitmap,include alpha
     procedure SaveToBmp24Stream(stream: TCoreClassStream);                                      // published,24bit bitmap,no alpha
-    procedure SaveToZLibCompressStream(stream: TCoreClassStream);                               // custom,24bit no alpha
-    procedure SaveToDeflateCompressStream(stream: TCoreClassStream);                            // custom,24bit no alpha
-    procedure SaveToBRRCCompressStream(stream: TCoreClassStream);                               // custom,24bit no alpha
+    procedure SaveToZLibCompressStream(stream: TCoreClassStream);                               // custom,32bit include alpha
+    procedure SaveToDeflateCompressStream(stream: TCoreClassStream);                            // custom,32bit include alpha
+    procedure SaveToBRRCCompressStream(stream: TCoreClassStream);                               // custom,32bit include alpha
     procedure SaveToJpegLS1Stream(stream: TCoreClassStream);                                    // published,jls8bit
     procedure SaveToJpegLS3Stream(stream: TCoreClassStream);                                    // published,jls24bit
     procedure SaveToYV12Stream(stream: TCoreClassStream);                                       // custom,no alpha
@@ -577,10 +577,10 @@ type
     { save file format }
     procedure SaveToBmp32File(fn: SystemString);                             // published,32bit bitmap,include alpha
     procedure SaveToBmp24File(fn: SystemString);                             // published,24bit bitmap,no alpha
-    procedure SaveToFile(fn: SystemString);                                  // published,32bit bitmap,include alpha
-    procedure SaveToZLibCompressFile(fn: SystemString);                      // custom,24bit no alpha
-    procedure SaveToDeflateCompressFile(fn: SystemString);                   // custom,24bit no alpha
-    procedure SaveToBRRCCompressFile(fn: SystemString);                      // custom,24bit no alpha
+    procedure SaveToFile(fn: SystemString);                                  // save format from ext name .jpg .jpeg .png .bmp .yv12 .jls .hyuv .qyuv .zlib_bmp .deflate_bmp .BRRC_bmp
+    procedure SaveToZLibCompressFile(fn: SystemString);                      // custom,32bit include alpha
+    procedure SaveToDeflateCompressFile(fn: SystemString);                   // custom,32bit include alpha
+    procedure SaveToBRRCCompressFile(fn: SystemString);                      // custom,32bit include alpha
     procedure SaveToJpegLS1File(fn: SystemString);                           // published,jls8bit
     procedure SaveToJpegLS3File(fn: SystemString);                           // published,jls24bit
     procedure SaveToYV12File(fn: SystemString);                              // custom,no alpha

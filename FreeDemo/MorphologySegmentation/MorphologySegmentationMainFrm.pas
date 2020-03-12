@@ -156,7 +156,7 @@ begin
   if RColorDistance(pickColor, RColor(0, 0, 0)) < 0.1 then
       exit;
 
-  if RColorDistance(pickColor, Color) < 0.01 then
+  if RColorDistance(pickColor, Color) < 0.05 then
       Classify := pickColor;
 end;
 

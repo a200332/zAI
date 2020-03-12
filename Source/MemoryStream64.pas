@@ -107,6 +107,8 @@ type
     procedure WriteDouble(const buff: Double);
     procedure WriteCurrency(const buff: Currency);
     procedure WriteString(const buff: TPascalString);
+    procedure WriteANSI(const buff: TPascalString); overload;
+    procedure WriteANSI(const buff: TPascalString; const L: Integer); overload;
     procedure WriteMD5(const buff: TMD5);
 
     // Serialized reader
@@ -124,6 +126,7 @@ type
     function ReadCurrency: Currency;
     function PrepareReadString: Boolean;
     function ReadString: TPascalString;
+    function ReadANSI(L: Integer): TPascalString;
     function ReadMD5: TMD5;
   end;
 
@@ -717,6 +720,30 @@ begin
     end;
 end;
 
+procedure TMemoryStream64.WriteANSI(const buff: TPascalString);
+var
+  b: TBytes;
+begin
+  b := buff.ANSI;
+  if Length(b) > 0 then
+    begin
+      WritePtr(@b[0], Length(b));
+      SetLength(b, 0);
+    end;
+end;
+
+procedure TMemoryStream64.WriteANSI(const buff: TPascalString; const L: Integer);
+var
+  b: TBytes;
+begin
+  b := buff.ANSI;
+  if L > 0 then
+    begin
+      WritePtr(@b[0], L);
+      SetLength(b, 0);
+    end;
+end;
+
 procedure TMemoryStream64.WriteMD5(const buff: TMD5);
 begin
   WritePtr(@buff, 16);
@@ -789,15 +816,28 @@ end;
 
 function TMemoryStream64.ReadString: TPascalString;
 var
-  l: Cardinal;
+  L: Cardinal;
   b: TBytes;
 begin
-  l := ReadUInt32;
-  if l > 0 then
+  L := ReadUInt32;
+  if L > 0 then
     begin
-      SetLength(b, l);
-      ReadPtr(@b[0], l);
+      SetLength(b, L);
+      ReadPtr(@b[0], L);
       Result.Bytes := b;
+      SetLength(b, 0);
+    end;
+end;
+
+function TMemoryStream64.ReadANSI(L: Integer): TPascalString;
+var
+  b: TBytes;
+begin
+  if L > 0 then
+    begin
+      SetLength(b, L);
+      ReadPtr(@b[0], L);
+      Result.ANSI := b;
       SetLength(b, 0);
     end;
 end;
@@ -1117,13 +1157,13 @@ var
 
   procedure BuildOutput;
   var
-    l: Integer;
+    L: Integer;
     siz_: Int64;
     i: Integer;
   begin
-    l := Length(StripArry);
-    dest.write(l, 4);
-    for i := 0 to l - 1 do
+    L := Length(StripArry);
+    dest.write(L, 4);
+    for i := 0 to L - 1 do
       begin
         siz_ := StripArry[i].Size;
         dest.write(siz_, 8);

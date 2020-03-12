@@ -416,7 +416,7 @@ begin
         if CSAMPLER_MODE = TGSamplerMode.gsmColor then
           begin
             RasterColor2F(Source.Pixel[i, j], r, g, b);
-            dest[j, i] := Max(r, Max(g, b));
+            dest[j, i] := umlMax(r, umlMax(g, b));
           end
         else
             dest[j, i] := Source.PixelGrayS[i, j];
@@ -868,7 +868,7 @@ var
     // find dsc1 from feat2
     for j := 0 to pf2_len - 1 do
       begin
-        d := Min(e_sqr(pf1[pass], pf2[j]), next_minf);
+        d := umlMin(e_sqr(pf1[pass], pf2[j]), next_minf);
         if (d < minf) then
           begin
             next_minf := minf;
@@ -876,7 +876,7 @@ var
             m_idx := j;
           end
         else
-            next_minf := Min(next_minf, d);
+            next_minf := umlMin(next_minf, d);
       end;
 
     // bidirectional rejection
@@ -888,8 +888,8 @@ var
     for j := 0 to pf1_len - 1 do
       if j <> pass then
         begin
-          d := Min(e_sqr(pf1[j], pf2[m_idx]), next_minf);
-          next_minf := Min(next_minf, d);
+          d := umlMin(e_sqr(pf1[j], pf2[m_idx]), next_minf);
+          next_minf := umlMin(next_minf, d);
         end;
     if (minf > reject_ratio_sqr * next_minf) then
         Exit;
@@ -921,7 +921,7 @@ var
         // find dsc1 from feat2
         for j := 0 to pf2_len - 1 do
           begin
-            d := Min(e_sqr(pf1[pass], pf2[j]), next_minf);
+            d := umlMin(e_sqr(pf1[pass], pf2[j]), next_minf);
             if (d < minf) then
               begin
                 next_minf := minf;
@@ -929,7 +929,7 @@ var
                 m_idx := j;
               end
             else
-                next_minf := Min(next_minf, d);
+                next_minf := umlMin(next_minf, d);
           end;
 
         /// bidirectional rejection
@@ -941,8 +941,8 @@ var
         for j := 0 to pf1_len - 1 do
           if j <> pass then
             begin
-              d := Min(e_sqr(pf1[j], pf2[m_idx]), next_minf);
-              next_minf := Min(next_minf, d);
+              d := umlMin(e_sqr(pf1[j], pf2[m_idx]), next_minf);
+              next_minf := umlMin(next_minf, d);
             end;
         if (minf > reject_ratio_sqr * next_minf) then
             Continue;
@@ -1010,7 +1010,7 @@ begin
       // find dsc1 from feat2
       for j := 0 to pf2_len - 1 do
         begin
-          d := Min(e_sqr(pf1[pass], pf2[j]), next_minf);
+          d := umlMin(e_sqr(pf1[pass], pf2[j]), next_minf);
           if (d < minf) then
             begin
               next_minf := minf;
@@ -1018,7 +1018,7 @@ begin
               m_idx := j;
             end
           else
-              next_minf := Min(next_minf, d);
+              next_minf := umlMin(next_minf, d);
         end;
 
       // bidirectional rejection
@@ -1030,8 +1030,8 @@ begin
       for j := 0 to pf1_len - 1 do
         if j <> pass then
           begin
-            d := Min(e_sqr(pf1[j], pf2[m_idx]), next_minf);
-            next_minf := Min(next_minf, d);
+            d := umlMin(e_sqr(pf1[j], pf2[m_idx]), next_minf);
+            next_minf := umlMin(next_minf, d);
           end;
       if (minf > reject_ratio_sqr * next_minf) then
           Exit;
@@ -1088,11 +1088,11 @@ begin
       mr2 := FT2.CreateViewer;
     end;
 
-  Result.SetSize(mr1.width + mr2.width, Max(mr1.height, mr2.height), RasterColor(0, 0, 0, 0));
+  Result.SetSize(mr1.width + mr2.width, umlMax(mr1.height, mr2.height), RasterColor(0, 0, 0, 0));
   Result.Draw(0, 0, mr1);
   Result.Draw(mr1.width, 0, mr2);
   Result.OpenAgg;
-  Result.Agg.LineWidth := FeatureDiameter * 0.25;
+  Result.Agg.LineWidth := umlMax(2, FeatureDiameter * 0.25);
 
   bFT1V1 := FT1.FeatureMatchedVec1;
   bFT2V1 := FT2.FeatureMatchedVec1;
@@ -1108,7 +1108,7 @@ begin
   for i := 0 to length(MatchInfo) - 1 do
     begin
       p := @MatchInfo[i];
-      RC := RasterColor(RandomRange(0, 255), RandomRange(0, 255), RandomRange(0, 255), $7F);
+      RC := RandomRColor();
       v1 := Vec2Add(Vec2Mul(p^.d1^.coor, p^.d1^.Owner.FeatureMatchedVec2), p^.d1^.Owner.FeatureMatchedVec1);
       v2 := Vec2Add(Vec2Mul(p^.d2^.coor, p^.d2^.Owner.FeatureMatchedVec2), p^.d2^.Owner.FeatureMatchedVec1);
       Result.FillCircle(v1, FeatureDiameter * 0.5, RC);
@@ -1932,8 +1932,8 @@ var
     for k := CORIENTATION_SMOOTH_COUNT - 1 downto 0 do
       for i := 0 to Orientation_Histogram_Binomial_Num - 1 do
         begin
-          Prev := hist[IfThen(i = 0, Orientation_Histogram_Binomial_Num - 1, i - 1)];
-          Next := hist[IfThen(i = Orientation_Histogram_Binomial_Num - 1, 0, i + 1)];
+          Prev := hist[if_(i = 0, Orientation_Histogram_Binomial_Num - 1, i - 1)];
+          Next := hist[if_(i = Orientation_Histogram_Binomial_Num - 1, 0, i + 1)];
           LMul(hist[i], 0.5);
           LAdd(hist[i], (Prev + Next) * 0.25);
         end;
@@ -1943,10 +1943,10 @@ var
     // choose extreme orientation
     for i := 0 to Orientation_Histogram_Binomial_Num - 1 do
       begin
-        Prev := hist[IfThen(i = 0, Orientation_Histogram_Binomial_Num - 1, i - 1)];
-        Next := hist[IfThen(i = Orientation_Histogram_Binomial_Num - 1, 0, i + 1)];
+        Prev := hist[if_(i = 0, Orientation_Histogram_Binomial_Num - 1, i - 1)];
+        Next := hist[if_(i = Orientation_Histogram_Binomial_Num - 1, 0, i + 1)];
 
-        if (hist[i] > thres) and (hist[i] > Max(Prev, Next)) then
+        if (hist[i] > thres) and (hist[i] > umlMax(Prev, Next)) then
           begin
             // interpolation
             fBinomial := i - 0.5 + (hist[i] - Prev) / (Prev + Next - 2 * hist[i]);
@@ -2135,7 +2135,7 @@ procedure TPyramids.SetRegion(const Clip: TVec2List);
     i: TLInt;
   begin
     for i := 0 to FWidth - 1 do
-        SamplerXY[i + pass * FWidth] := IfThen(Clip.InHere(vec2(i, pass)), 1, 0);
+        SamplerXY[i + pass * FWidth] := if_(Clip.InHere(vec2(i, pass)), 1, 0);
   end;
 {$ENDIF FPC}
 {$ELSE Parallel}
@@ -2145,7 +2145,7 @@ procedure TPyramids.SetRegion(const Clip: TVec2List);
   begin
     for pass := 0 to FHeight - 1 do
       for i := 0 to FWidth - 1 do
-          SamplerXY[i + pass * FWidth] := IfThen(Clip.InHere(vec2(i, pass)), 1, 0);
+          SamplerXY[i + pass * FWidth] := if_(Clip.InHere(vec2(i, pass)), 1, 0);
   end;
 {$ENDIF Parallel}
 
@@ -2162,7 +2162,7 @@ begin
           i: TLInt;
         begin
           for i := 0 to FWidth - 1 do
-              SamplerXY[i + pass * FWidth] := IfThen(Clip.InHere(vec2(i, pass)), 1, 0);
+              SamplerXY[i + pass * FWidth] := if_(Clip.InHere(vec2(i, pass)), 1, 0);
         end);
 {$ENDIF FPC}
 {$ELSE Parallel}
@@ -2428,7 +2428,7 @@ begin
       p := cList[i];
       v2[0] := p^.RealCoor[0] * FWidth;
       v2[1] := p^.RealCoor[1] * FHeight;
-      Result.FillRect(v2, Max(L div 2, 3), COLOR);
+      Result.FillRect(v2, umlMax(L div 2, 3), COLOR);
 
       if p^.OriFinish then
         begin
@@ -2456,7 +2456,7 @@ begin
       p := cList[i];
       v2[0] := p^.RealCoor[0] * RasterViewer.width;
       v2[1] := p^.RealCoor[1] * RasterViewer.height;
-      RasterViewer.FillRect(v2, Max(L div 2, 3), COLOR);
+      RasterViewer.FillRect(v2, umlMax(L div 2, 3), COLOR);
 
       if p^.OriFinish then
         begin
@@ -2485,7 +2485,7 @@ begin
       p := cList[i];
       v2[0] := p^.RealCoor[0] * RasterViewer.width;
       v2[1] := p^.RealCoor[1] * RasterViewer.height;
-      RasterViewer.FillRect(v2, Max(L div 2, 3), COLOR);
+      RasterViewer.FillRect(v2, umlMax(L div 2, 3), COLOR);
 
       if p^.OriFinish then
         begin
@@ -2514,11 +2514,11 @@ procedure TFeature.ComputeDescriptor(const p: PPyramidCoor; var Desc: TDescripto
     for dy := 0 to 1 do
       if between(ybinf + dy, 0, CDESC_HIST_WIDTH) then
         begin
-          w_y := Weight * (IfThen(dy <> 0, ybind, 1 - ybind));
+          w_y := Weight * (if_(dy <> 0, ybind, 1 - ybind));
           for dx := 0 to 1 do
             if between(xbinf + dx, 0, CDESC_HIST_WIDTH) then
               begin
-                w_x := w_y * (IfThen(dx <> 0, xbind, 1 - xbind));
+                w_x := w_y * (if_(dx <> 0, xbind, 1 - xbind));
                 bin_2d_idx := (ybinf + dy) * CDESC_HIST_WIDTH + (xbinf + dx);
                 LAdd(hist[bin_2d_idx, hbinf mod CDESC_HIST_BIN_NUM], w_x * (1 - hbind));
                 LAdd(hist[bin_2d_idx, (hbinf + 1) mod CDESC_HIST_BIN_NUM], w_x * hbind);
@@ -2864,7 +2864,7 @@ begin
     begin
       p := GetFD(i);
       v2 := Vec2Mul(p^.coor, v3);
-      Result.DrawCircle(v2, Max(L div 2, 3) - 1, COLOR);
+      Result.DrawCircle(v2, umlMax(L div 2, 3) - 1, COLOR);
 
       v1[0] := v2[0] + (L) * Cos(p^.Orientation);
       v1[1] := v2[1] + (L) * Sin(p^.Orientation);

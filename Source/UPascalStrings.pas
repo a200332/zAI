@@ -54,6 +54,8 @@ type
     procedure SetBytes(const Value: TBytes);
     function GetPlatformBytes: TBytes;
     procedure SetPlatformBytes(const Value: TBytes);
+    function GetANSI: TBytes;
+    procedure SetANSI(const Value: TBytes);
     function GetLast: USystemChar;
     procedure SetLast(const Value: USystemChar);
     function GetFirst: USystemChar;
@@ -151,10 +153,11 @@ type
     property Len: Integer read GetLen write SetLen;
     property L: Integer read GetLen write SetLen;
     property Chars[index: Integer]: USystemChar read GetChars write SetChars; default;
-    property Bytes: TBytes read GetBytes write SetBytes; // UTF8
     property UpperChar[index: Integer]: USystemChar read GetUpperChar write SetUpperChar;
     property LowerChar[index: Integer]: USystemChar read GetLowerChar write SetLowerChar;
+    property Bytes: TBytes read GetBytes write SetBytes;                         // UTF8
     property PlatformBytes: TBytes read GetPlatformBytes write SetPlatformBytes; // system default
+    property ANSI: TBytes read GetANSI write SetANSI;                            // Ansi Bytes
     function BOMBytes: TBytes;
   end;
 
@@ -1375,6 +1378,18 @@ begin
   buff[index - 1] := Value;
 end;
 
+function TUPascalString.GetBytes: TBytes;
+begin
+  SetLength(Result, 0);
+  if length(buff) = 0 then
+      Exit;
+{$IFDEF FPC}
+  Result := SysUtils.TEncoding.UTF8.GetBytes(buff);
+{$ELSE}
+  Result := SysUtils.TEncoding.UTF8.GetBytes(buff);
+{$ENDIF}
+end;
+
 procedure TUPascalString.SetBytes(const Value: TBytes);
 begin
   SetLength(buff, 0);
@@ -1387,15 +1402,15 @@ begin
   end;
 end;
 
-function TUPascalString.GetBytes: TBytes;
+function TUPascalString.GetPlatformBytes: TBytes;
 begin
   SetLength(Result, 0);
   if length(buff) = 0 then
       Exit;
 {$IFDEF FPC}
-  Result := SysUtils.TEncoding.UTF8.GetBytes(buff);
+  Result := SysUtils.TEncoding.Default.GetBytes(buff);
 {$ELSE}
-  Result := SysUtils.TEncoding.UTF8.GetBytes(buff);
+  Result := SysUtils.TEncoding.Default.GetBytes(buff);
 {$ENDIF}
 end;
 
@@ -1411,16 +1426,28 @@ begin
   end;
 end;
 
-function TUPascalString.GetPlatformBytes: TBytes;
+function TUPascalString.GetANSI: TBytes;
 begin
   SetLength(Result, 0);
   if length(buff) = 0 then
       Exit;
 {$IFDEF FPC}
-  Result := SysUtils.TEncoding.Default.GetBytes(buff);
+  Result := SysUtils.TEncoding.ANSI.GetBytes(Text);
 {$ELSE}
-  Result := SysUtils.TEncoding.Default.GetBytes(buff);
+  Result := SysUtils.TEncoding.ANSI.GetBytes(buff);
 {$ENDIF}
+end;
+
+procedure TUPascalString.SetANSI(const Value: TBytes);
+begin
+  SetLength(buff, 0);
+  if length(Value) = 0 then
+      Exit;
+  try
+      Text := SysUtils.TEncoding.ANSI.GetString(Value);
+  except
+      SetLength(buff, 0);
+  end;
 end;
 
 function TUPascalString.GetLast: USystemChar;

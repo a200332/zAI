@@ -1058,8 +1058,8 @@ type
     function Metric_ResNet_Process(hnd: TMDNN_Handle; RasterArray: TMemoryRasterArray; output: PDouble): Integer; overload;
     function Metric_ResNet_Process(hnd: TMDNN_Handle; RasterArray: TMemoryRasterArray): TLMatrix; overload;
     function Metric_ResNet_Process(hnd: TMDNN_Handle; Raster: TMemoryRaster): TLVec; overload;
-    procedure Metric_ResNet_SaveDetectorDefineToLearnEngine(mdnn_hnd: TMDNN_Handle; Snapshot_: Boolean; imgList: TAI_ImageList; lr: TLearn); overload;
-    procedure Metric_ResNet_SaveDetectorDefineToLearnEngine(mdnn_hnd: TMDNN_Handle; Snapshot_: Boolean; imgMat: TAI_ImageMatrix; lr: TLearn); overload;
+    procedure Metric_ResNet_SaveToLearnEngine(mdnn_hnd: TMDNN_Handle; Snapshot_: Boolean; imgList: TAI_ImageList; lr: TLearn); overload;
+    procedure Metric_ResNet_SaveToLearnEngine(mdnn_hnd: TMDNN_Handle; Snapshot_: Boolean; imgMat: TAI_ImageMatrix; lr: TLearn); overload;
     procedure Metric_ResNet_SaveToKDTree(mdnn_hnd: TMDNN_Handle; Snapshot_: Boolean; imgList: TAI_ImageList; kd: TKDTreeDataList); overload;
     procedure Metric_ResNet_SaveToKDTree(mdnn_hnd: TMDNN_Handle; Snapshot_: Boolean; imgMat: TAI_ImageMatrix; kd: TKDTreeDataList); overload;
     function Metric_ResNet_DebugInfo(hnd: TMDNN_Handle): U_String;
@@ -1118,7 +1118,7 @@ type
     function MMOD_DNN_DebugInfo(hnd: TMMOD_Handle): U_String;
 {$ENDREGION 'MMOD-DNN(DNN+SVM:max-margin object detector)'}
 {$REGION 'ResNet-Image-Classifier'}
-    // ResNet-Image-Classifier training(gpu), corp size 227, max classifier 1000, direct input without XML swap dataset.
+    // ResNet-Image-Classifier training(gpu), crop size 227, max classifier 1000, direct input without XML swap dataset.
     class function Init_RNIC_Train_Parameter(train_sync_file, train_output: U_String): PRNIC_Train_Parameter;
     class procedure Free_RNIC_Train_Parameter(param: PRNIC_Train_Parameter);
     // data prototype
@@ -1131,11 +1131,11 @@ type
     function RNIC_Train(imgMat: TAI_ImageMatrix; param: PRNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): Boolean; overload;
     function RNIC_Train(imgMat: TAI_ImageMatrix; param: PRNIC_Train_Parameter; train_index_output: U_String): Boolean; overload;
     function RNIC_Train_Stream(imgMat: TAI_ImageMatrix; param: PRNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): TMemoryStream64; overload;
-    // LargeScale-ResNet-Image-Classifier training(gpu), corp size 227, max classifier 1000, direct input without XML swap dataset.
+    // LargeScale-ResNet-Image-Classifier training(gpu), crop size 227, max classifier 1000, direct input without XML swap dataset.
     function RNIC_Train(LargeScale_: Boolean; RSeri: TRasterSerialized; imgMat: TAI_ImageMatrix; param: PRNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): Boolean; overload;
     function RNIC_Train(LargeScale_: Boolean; RSeri: TRasterSerialized; imgMat: TAI_ImageMatrix; param: PRNIC_Train_Parameter; train_index_output: U_String): Boolean; overload;
     function RNIC_Train_Stream(LargeScale_: Boolean; RSeri: TRasterSerialized; imgMat: TAI_ImageMatrix; param: PRNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): TMemoryStream64; overload;
-    // ResNet-Image-Classifier api(gpu), corp size 227, max classifier 1000
+    // ResNet-Image-Classifier api(gpu), crop size 227, max classifier 1000
     function RNIC_Open(train_file: U_String): TRNIC_Handle;
     function RNIC_Open_Stream(stream: TMemoryStream64): TRNIC_Handle; overload;
     function RNIC_Open_Stream(train_file: U_String): TRNIC_Handle; overload;
@@ -1146,7 +1146,7 @@ type
     function RNIC_DebugInfo(hnd: TRNIC_Handle): U_String;
 {$ENDREGION 'ResNet-Image-Classifier'}
 {$REGION 'Large-ResNet-Image-Classifier'}
-    // Large-ResNet-Image-Classifier training(gpu), corp size 227, max classifier 10000, direct input without XML swap dataset.
+    // Large-ResNet-Image-Classifier training(gpu), crop size 227, max classifier 10000, direct input without XML swap dataset.
     class function Init_LRNIC_Train_Parameter(train_sync_file, train_output: U_String): PRNIC_Train_Parameter;
     class procedure Free_LRNIC_Train_Parameter(param: PRNIC_Train_Parameter);
     // data prototype
@@ -1159,11 +1159,11 @@ type
     function LRNIC_Train(imgMat: TAI_ImageMatrix; param: PRNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): Boolean; overload;
     function LRNIC_Train(imgMat: TAI_ImageMatrix; param: PRNIC_Train_Parameter; train_index_output: U_String): Boolean; overload;
     function LRNIC_Train_Stream(imgMat: TAI_ImageMatrix; param: PRNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): TMemoryStream64; overload;
-    // LargeScale-Large-ResNet-Image-Classifier training(gpu), corp size 227, max classifier 1000, direct input without XML swap dataset.
+    // LargeScale-Large-ResNet-Image-Classifier training(gpu), crop size 227, max classifier 1000, direct input without XML swap dataset.
     function LRNIC_Train(LargeScale_: Boolean; RSeri: TRasterSerialized; imgMat: TAI_ImageMatrix; param: PRNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): Boolean; overload;
     function LRNIC_Train(LargeScale_: Boolean; RSeri: TRasterSerialized; imgMat: TAI_ImageMatrix; param: PRNIC_Train_Parameter; train_index_output: U_String): Boolean; overload;
     function LRNIC_Train_Stream(LargeScale_: Boolean; RSeri: TRasterSerialized; imgMat: TAI_ImageMatrix; param: PRNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): TMemoryStream64; overload;
-    // Large-ResNet-Image-Classifier api(gpu), corp size 227, max classifier 10000
+    // Large-ResNet-Image-Classifier api(gpu), crop size 227, max classifier 10000
     function LRNIC_Open(train_file: U_String): TLRNIC_Handle;
     function LRNIC_Open_Stream(stream: TMemoryStream64): TLRNIC_Handle; overload;
     function LRNIC_Open_Stream(train_file: U_String): TLRNIC_Handle; overload;
@@ -1586,6 +1586,8 @@ var
   KeepPerformanceOnTraining: TTimeTick;
   LargeScaleTrainingMemoryRecycleTime: TTimeTick;
   IOProcessorActivtedThreadNum: Integer;
+  // build-in database
+  AI_BuildIn_DBEngine: TObjectDataManager;
 
 const
   // The function initializes the state and the mask using the provided rectangle.
@@ -1629,13 +1631,6 @@ var
   AI_Entry_Cache: THashList;
   AI_Status_Critical: TCritical;
   AI_Status_Buffer: TMemoryStream64;
-
-  // build in data
-  build_in_face_shape_memory: Pointer;
-  build_in_face_shape_memory_siz: Int64;
-  build_in_face_detector_memory: Pointer;
-  build_in_face_detector_memory_siz: Int64;
-  found_build_in: TAtomBool;
 
 {$REGION 'back caller'}
 
@@ -1976,12 +1971,21 @@ begin
     end;
 end;
 
+var
+  // build-in face shape
+  build_in_face_shape_memory: Pointer;
+  build_in_face_shape_memory_siz: Int64;
+  // build-in dnn object detector for face
+  build_in_face_detector_memory: Pointer;
+  build_in_face_detector_memory_siz: Int64;
+  // found build-in data
+  found_build_in: TAtomBool;
+
 procedure BuildIn_Thread_Run(Sender: TComputeThread);
 var
   fn: U_String;
   stream: TCoreClassStream;
   m64: TMemoryStream64;
-  dbEng: TObjectDataManager;
   itmHnd: TItemHandle;
   p: Pointer;
 begin
@@ -2017,14 +2021,14 @@ begin
   DisposeObject(stream);
 
   m64.Position := 0;
-  dbEng := TObjectDataManagerOfCache.CreateAsStream(m64, '', DBMarshal.ID, True, False, True);
+  AI_BuildIn_DBEngine := TObjectDataManagerOfCache.CreateAsStream(m64, '', DBMarshal.ID, True, False, True);
 
-  if dbEng.ItemOpen('/', 'build_in_face_shape.dat', itmHnd) then
+  if AI_BuildIn_DBEngine.ItemOpen('/', 'build_in_face_shape.dat', itmHnd) then
     begin
       build_in_face_shape_memory_siz := itmHnd.Item.Size;
       p := GetMemory(build_in_face_shape_memory_siz);
-      dbEng.ItemRead(itmHnd, build_in_face_shape_memory_siz, p^);
-      dbEng.ItemClose(itmHnd);
+      AI_BuildIn_DBEngine.ItemRead(itmHnd, build_in_face_shape_memory_siz, p^);
+      AI_BuildIn_DBEngine.ItemClose(itmHnd);
       build_in_face_shape_memory := p;
 {$IFDEF initializationStatus}
       DoStatus('Z-AI "build_in_face_shape.dat" initialization done.');
@@ -2037,12 +2041,12 @@ begin
 {$ENDIF initializationStatus}
     end;
 
-  if dbEng.ItemOpen('/', 'human_face_detector.svm_dnn_od', itmHnd) then
+  if AI_BuildIn_DBEngine.ItemOpen('/', 'human_face_detector.svm_dnn_od', itmHnd) then
     begin
       build_in_face_detector_memory_siz := itmHnd.Item.Size;
       p := GetMemory(build_in_face_detector_memory_siz);
-      dbEng.ItemRead(itmHnd, build_in_face_detector_memory_siz, p^);
-      dbEng.ItemClose(itmHnd);
+      AI_BuildIn_DBEngine.ItemRead(itmHnd, build_in_face_detector_memory_siz, p^);
+      AI_BuildIn_DBEngine.ItemClose(itmHnd);
       build_in_face_detector_memory := p;
 {$IFDEF initializationStatus}
       DoStatus('Z-AI "human_face_detector.svm_dnn_od" initialization done.');
@@ -2054,8 +2058,6 @@ begin
       DoStatus('Z-AI buildIn "human_face_detector.svm_dnn_od" error.');
 {$ENDIF initializationStatus}
     end;
-
-  DisposeObject(dbEng);
 end;
 
 procedure Init_AI_BuildIn;
@@ -2066,6 +2068,7 @@ begin
   AI_Entry_Cache.AccessOptimization := False;
   AI_Status_Buffer := TMemoryStream64.CustomCreate(1024);
 
+  AI_BuildIn_DBEngine := nil;
   build_in_face_shape_memory := nil;
   build_in_face_shape_memory_siz := 0;
   build_in_face_detector_memory := nil;
@@ -2092,6 +2095,7 @@ begin
   FreeMemory(build_in_face_shape_memory);
   FreeMemory(build_in_face_detector_memory);
   DisposeObjectAndNil(found_build_in);
+  DisposeObjectAndNil(AI_BuildIn_DBEngine);
 end;
 
 function Prepare_AI_Engine(eng: SystemString): PAI_EntryAPI;
@@ -2662,9 +2666,9 @@ begin
 
                       DoStatus('build metric to learn-KDTree.');
                       if umlMultipleMatch('*' + C_ImageMatrix_Ext, inputfile1) then
-                          AI.Metric_ResNet_SaveDetectorDefineToLearnEngine(mdnn_hnd, param.GetDefaultValue('Snapshot', False), inputImgMatrix, learnEng)
+                          AI.Metric_ResNet_SaveToLearnEngine(mdnn_hnd, param.GetDefaultValue('Snapshot', False), inputImgMatrix, learnEng)
                       else
-                          AI.Metric_ResNet_SaveDetectorDefineToLearnEngine(mdnn_hnd, param.GetDefaultValue('Snapshot', False), inputImgList, learnEng);
+                          AI.Metric_ResNet_SaveToLearnEngine(mdnn_hnd, param.GetDefaultValue('Snapshot', False), inputImgList, learnEng);
                       DoStatus('process metric to learn-KDTree done.');
                       AI.Metric_ResNet_Close(mdnn_hnd);
 
@@ -4068,14 +4072,9 @@ begin
   d := TDrawEngine.Create;
   d.ViewOptions := [];
   d.Rasterization.SetWorkMemory(Raster);
+  d.Rasterization.UsedAgg := True;
   for i := 0 to length(od_desc) - 1 do
-    begin
-      d.DrawBox(RectV2(od_desc[i]), color, 2);
-
-      d.BeginCaptureShadow(Vec2(1, 1), 0.9);
-      d.DrawText(PFormat('%f', [od_desc[i].confidence]), 16, RectV2(od_desc[i]), color, False);
-      d.EndCaptureShadow;
-    end;
+      d.DrawLabelBox(PFormat('%f', [od_desc[i].confidence]), 20, DEColor(1, 1, 1, 1), RectV2(od_desc[i]), color, 2);
   d.Flush;
   DisposeObject(d);
 end;
@@ -4088,14 +4087,9 @@ begin
   d := TDrawEngine.Create;
   d.ViewOptions := [];
   d.Rasterization.SetWorkMemory(Raster);
+  d.Rasterization.UsedAgg := True;
   for i := 0 to length(od_desc) - 1 do
-    begin
-      d.DrawBox(RectV2(od_desc[i]), color, 2);
-
-      d.BeginCaptureShadow(Vec2(1, 1), 0.9);
-      d.DrawText(PFormat('%f', [od_desc[i].confidence]), 16, RectV2(od_desc[i]), color, False);
-      d.EndCaptureShadow;
-    end;
+      d.DrawLabelBox(PFormat('%f', [od_desc[i].confidence]), 20, DEColor(1, 1, 1, 1), RectV2(od_desc[i]), color, 2);
   d.Flush;
   DisposeObject(d);
 end;
@@ -4113,12 +4107,10 @@ begin
   d := TDrawEngine.Create;
   d.ViewOptions := [];
   d.Rasterization.SetWorkMemory(Raster);
+  d.Rasterization.UsedAgg := True;
   for i := 0 to length(odm_desc) - 1 do
     begin
-      d.DrawBox(odm_desc[i].R, color, 2);
-      d.BeginCaptureShadow(Vec2(1, 1), 0.9);
-      d.DrawText(PFormat('%s-%f', [odm_desc[i].Token.Text, odm_desc[i].confidence]), 16, odm_desc[i].R, DEColor(1, 1, 1, 1), False);
-      d.EndCaptureShadow;
+      d.DrawLabelBox(PFormat('%s-%f', [odm_desc[i].Token.Text, odm_desc[i].confidence]), 20, DEColor(1, 1, 1, 1), odm_desc[i].R, color, 2);
     end;
   d.Flush;
   DisposeObject(d);
@@ -4135,6 +4127,7 @@ begin
   d := TDrawEngine.Create;
   d.ViewOptions := [];
   d.Rasterization.SetWorkMemory(Raster);
+  d.Rasterization.UsedAgg := True;
   for i := 0 to length(od_desc) - 1 do
     begin
       d.DrawBox(RectV2(od_desc[i]), DEColor(1, 0, 0, 0.9), 2);
@@ -4152,6 +4145,7 @@ var
   i: Integer;
   d: TDrawEngine;
   dt: TTimeTick;
+  n: U_String;
 begin
   dt := GetTimeTick();
   MMOD_Desc := MMOD_DNN_Process(MMOD_hnd, Raster);
@@ -4159,16 +4153,15 @@ begin
   d := TDrawEngine.Create;
   d.ViewOptions := [];
   d.Rasterization.SetWorkMemory(Raster);
+  d.Rasterization.UsedAgg := True;
   for i := 0 to length(MMOD_Desc) - 1 do
     begin
-      d.DrawCorner(TV2Rect4.Init(MMOD_Desc[i].R, 0).Transform(2, 2), DEColor(0, 0, 0), 20, 4);
-      d.DrawCorner(TV2Rect4.Init(MMOD_Desc[i].R, 0), color, 20, 4);
-      d.BeginCaptureShadow(Vec2(1, 1), 0.9);
       if MMOD_Desc[i].Token.Len > 0 then
-          d.DrawText(PFormat('%s|alpha:0.5| %f', [MMOD_Desc[i].Token.Text, MMOD_Desc[i].confidence]), fontSiz, MMOD_Desc[i].R, DEColor(1, 1, 1, 1), False)
+          n := PFormat('%s|alpha:0.5| %f', [MMOD_Desc[i].Token.Text, MMOD_Desc[i].confidence])
       else
-          d.DrawText(PFormat('%f', [MMOD_Desc[i].confidence]), fontSiz, MMOD_Desc[i].R, DEColor(1, 1, 1, 1), False);
-      d.EndCaptureShadow;
+          n := PFormat('%f', [MMOD_Desc[i].confidence]);
+
+      d.DrawLabelBox(n, fontSiz, DEColor(1, 1, 1, 1), MMOD_Desc[i].R, color, 4);
     end;
   d.Flush;
   DisposeObject(d);
@@ -4186,6 +4179,7 @@ var
   i: Integer;
   d: TDrawEngine;
   dt: TTimeTick;
+  n: U_String;
 begin
   dt := GetTimeTick();
   MMOD_Desc := MMOD_DNN_Process(MMOD_hnd, Raster);
@@ -4193,19 +4187,18 @@ begin
   d := TDrawEngine.Create;
   d.ViewOptions := [];
   d.Rasterization.SetWorkMemory(Raster);
+  d.Rasterization.UsedAgg := True;
   Result := 0;
   for i := 0 to length(MMOD_Desc) - 1 do
     begin
       if confidence < abs(MMOD_Desc[i].confidence) then
         begin
-          d.DrawCorner(TV2Rect4.Init(MMOD_Desc[i].R, 0).Transform(2, 2), DEColor(0, 0, 0), 20, 4);
-          d.DrawCorner(TV2Rect4.Init(MMOD_Desc[i].R, 0), color, 20, 4);
-          d.BeginCaptureShadow(Vec2(1, 1), 0.9);
           if MMOD_Desc[i].Token.Len > 0 then
-              d.DrawText(PFormat('%s-%f', [MMOD_Desc[i].Token.Text, MMOD_Desc[i].confidence]), fontSiz, MMOD_Desc[i].R, DEColor(1, 1, 1, 1), False)
+              n := PFormat('%s-%f', [MMOD_Desc[i].Token.Text, MMOD_Desc[i].confidence])
           else
-              d.DrawText(PFormat('%f', [MMOD_Desc[i].confidence]), fontSiz, MMOD_Desc[i].R, DEColor(1, 1, 1, 1), False);
-          d.EndCaptureShadow;
+              n := PFormat('%f', [MMOD_Desc[i].confidence]);
+
+          d.DrawLabelBox(n, fontSiz, DEColor(1, 1, 1, 1), MMOD_Desc[i].R, color, 4);
           inc(Result);
         end;
     end;
@@ -4222,15 +4215,17 @@ function TAI.DrawMMOD(MMOD_Desc: TMMOD_Desc; Raster: TMemoryRaster; color: TDECo
 var
   i: Integer;
   d: TDrawEngine;
+  n: U_String;
 begin
   d := TDrawEngine.Create;
   d.ViewOptions := [];
   d.Rasterization.SetWorkMemory(Raster);
+  d.Rasterization.UsedAgg := True;
   Result := 0;
   for i := 0 to length(MMOD_Desc) - 1 do
     begin
-      d.DrawCorner(TV2Rect4.Init(MMOD_Desc[i].R, 0).Transform(2, 2), DEColor(0, 0, 0), 20, 4);
-      d.DrawCorner(TV2Rect4.Init(MMOD_Desc[i].R, 0), color, 20, 4);
+      n := PFormat('%f', [MMOD_Desc[i].confidence]);
+      d.DrawLabelBox(n, 20, DEColor(RColorInv(RColor(color))), MMOD_Desc[i].R, color, 4);
       inc(Result);
     end;
   d.Flush;
@@ -4251,6 +4246,7 @@ begin
   d := TDrawEngine.Create;
   d.ViewOptions := [];
   d.Rasterization.SetWorkMemory(Raster);
+  d.Rasterization.UsedAgg := True;
 
   for i := 0 to Face_Shape_num(face_hnd) - 1 do
     begin
@@ -4304,6 +4300,7 @@ var
   p: PLearnMemory;
   k: TLFloat;
   face_lab: SystemString;
+  n: U_String;
 begin
   face_hnd := Face_Detector_All(Raster);
   if face_hnd = nil then
@@ -4312,11 +4309,11 @@ begin
   d := TDrawEngine.Create;
   d.ViewOptions := [];
   d.Rasterization.SetWorkMemory(Raster);
+  d.Rasterization.UsedAgg := True;
 
   for i := 0 to Face_Shape_num(face_hnd) - 1 do
     begin
       sp_desc := Face_Shape(face_hnd, i);
-      d.DrawCorner(TV2Rect4.Init(GetSPBound(sp_desc, 0.01), 0), DEColor(lineColor, 0.9), 40, 4);
 
       chip_img := Face_chips(face_hnd, i);
       face_vec := Metric_ResNet_Process(mdnn_hnd, chip_img);
@@ -4331,18 +4328,16 @@ begin
       if k <= faceAccuracy then
         begin
           DrawFaceSP(sp_desc, DEColor(lineColor, 0.5), d);
-          d.BeginCaptureShadow(Vec2(2, 2), 0.9);
-          d.DrawText(PFormat('%s-%f', [face_lab, 1.0 - k]), 16, GetSPBound(sp_desc, 0.01), DEColor(TextColor, 0.9), True);
-          d.EndCaptureShadow;
+          n := PFormat('%s-%f', [face_lab, 1.0 - k]);
           DoStatus(PFormat('%s-%f', [face_lab, 1.0 - k]));
         end
       else
         begin
-          d.BeginCaptureShadow(Vec2(2, 2), 0.9);
-          d.DrawText('no face defined.', 16, GetSPBound(sp_desc, 0.01), DEColor(lineColor, 0.9), True);
-          d.EndCaptureShadow;
+          n := 'no face defined.';
           DoStatus('no face defined.');
         end;
+
+      d.DrawLabelBox(n, 20, TextColor, GetSPBound(sp_desc, 0.01), lineColor, 4);
     end;
 
   d.Flush;
@@ -6782,7 +6777,7 @@ begin
       SetLength(Result, 0);
 end;
 
-procedure TAI.Metric_ResNet_SaveDetectorDefineToLearnEngine(mdnn_hnd: TMDNN_Handle; Snapshot_: Boolean; imgList: TAI_ImageList; lr: TLearn);
+procedure TAI.Metric_ResNet_SaveToLearnEngine(mdnn_hnd: TMDNN_Handle; Snapshot_: Boolean; imgList: TAI_ImageList; lr: TLearn);
 var
   i, j: Integer;
   imgData: TAI_Image;
@@ -6830,12 +6825,12 @@ begin
     end;
 end;
 
-procedure TAI.Metric_ResNet_SaveDetectorDefineToLearnEngine(mdnn_hnd: TMDNN_Handle; Snapshot_: Boolean; imgMat: TAI_ImageMatrix; lr: TLearn);
+procedure TAI.Metric_ResNet_SaveToLearnEngine(mdnn_hnd: TMDNN_Handle; Snapshot_: Boolean; imgMat: TAI_ImageMatrix; lr: TLearn);
 var
   i: Integer;
 begin
   for i := 0 to imgMat.Count - 1 do
-      Metric_ResNet_SaveDetectorDefineToLearnEngine(mdnn_hnd, Snapshot_, imgMat[i], lr);
+      Metric_ResNet_SaveToLearnEngine(mdnn_hnd, Snapshot_, imgMat[i], lr);
 end;
 
 procedure TAI.Metric_ResNet_SaveToKDTree(mdnn_hnd: TMDNN_Handle; Snapshot_: Boolean; imgList: TAI_ImageList; kd: TKDTreeDataList);

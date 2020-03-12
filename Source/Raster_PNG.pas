@@ -98,7 +98,6 @@ type
 
   TCustomChunk = class(TCoreClassPersistent)
   protected
-    function GetChunkNameAsString: RawByteString; virtual; abstract;
     function GetChunkName: TChunkName; virtual; abstract;
     function GetChunkSize: Cardinal; virtual; abstract;
   public
@@ -106,13 +105,11 @@ type
     procedure WriteToStream(Stream: TCoreClassStream); virtual;
 
     property ChunkName: TChunkName read GetChunkName;
-    property ChunkNameAsString: RawByteString read GetChunkNameAsString;
     property ChunkSize: Cardinal read GetChunkSize;
   end;
 
   TCustomDefinedChunk = class(TCustomChunk)
   protected
-    function GetChunkNameAsString: RawByteString; override;
     function GetChunkName: TChunkName; override;
     class function GetClassChunkName: TChunkName; virtual; abstract;
   public
@@ -334,7 +331,7 @@ type
 
   TChunkPngEmbeddedIccProfile = class(TCustomDefinedChunkWithHeader)
   private
-    FProfileName: RawByteString;
+    FProfileName: TPascalString;
     FCompressionMethod: Byte;
   protected
     class function GetClassChunkName: TChunkName; override;
@@ -345,7 +342,7 @@ type
     procedure ReadFromStream(Stream: TCoreClassStream; ChunkSize_: Cardinal); override;
     procedure WriteToStream(Stream: TCoreClassStream); override;
 
-    property ProfileName: RawByteString read FProfileName write FProfileName;
+    property ProfileName: TPascalString read FProfileName write FProfileName;
     property CompressionMethod: Byte read FCompressionMethod write FCompressionMethod;
   end;
 
@@ -568,7 +565,7 @@ type
 
   TChunkPngSuggestedPalette = class(TCustomDefinedChunkWithHeader)
   private
-    FPaletteName: RawByteString;
+    FPaletteName: TPascalString;
     FData: Pointer;
     FCount: TGeoInt;
     FSampleDepth: Byte;
@@ -717,11 +714,11 @@ type
 
   TChunkPngPixelCalibrator = class(TCustomDefinedChunkWithHeader)
   private
-    FCalibratorName: RawByteString;
+    FCalibratorName: TPascalString;
     FOriginalZeroes: array [0 .. 1] of TGeoInt;
     FEquationType: Byte;
     FNumberOfParams: Byte;
-    FUnitName: RawByteString;
+    FUnitName: TPascalString;
   protected
     class function GetClassChunkName: TChunkName; override;
     function GetChunkSize: Cardinal; override;
@@ -731,7 +728,7 @@ type
     procedure ReadFromStream(Stream: TCoreClassStream; ChunkSize_: Cardinal); override;
     procedure WriteToStream(Stream: TCoreClassStream); override;
 
-    property CalibratorName: RawByteString read FCalibratorName write FCalibratorName;
+    property CalibratorName: TPascalString read FCalibratorName write FCalibratorName;
     property OriginalZeroMin: TGeoInt read FOriginalZeroes[0] write FOriginalZeroes[0];
     property OriginalZeroMax: TGeoInt read FOriginalZeroes[1] write FOriginalZeroes[1];
     property EquationType: Byte read FEquationType write FEquationType;
@@ -740,17 +737,17 @@ type
 
   TCustomChunkPngText = class(TCustomDefinedChunkWithHeader)
   private
-    procedure SetKeyword(const Value: RawByteString);
-    procedure SetText(const Value: RawByteString);
+    procedure SetKeyword(const Value: TPascalString);
+    procedure SetText(const Value: TPascalString);
   protected
-    FKeyword: RawByteString;
-    FText: RawByteString;
+    FKeyword: TPascalString;
+    FText: TPascalString;
     procedure AssignTo(Dest: TCoreClassPersistent); override;
     procedure KeywordChanged; virtual;
     procedure TextChanged; virtual;
   public
-    property Keyword: RawByteString read FKeyword write SetKeyword;
-    property Text: RawByteString read FText write SetText;
+    property Keyword: TPascalString read FKeyword write SetKeyword;
+    property Text: TPascalString read FText write SetText;
   end;
 
   TChunkPngText = class(TCustomChunkPngText)
@@ -781,7 +778,7 @@ type
   private
     FCompressionMethod: Byte;
     FCompressionFlag: Byte;
-    FLanguageString: RawByteString;
+    FLanguageString: TPascalString;
     FTranslatedKeyword: U_String;
   protected
     class function GetClassChunkName: TChunkName; override;
@@ -794,7 +791,7 @@ type
 
     property CompressionMethod: Byte read FCompressionMethod write FCompressionMethod;
     property CompressionFlag: Byte read FCompressionFlag write FCompressionFlag;
-    property LanguageString: RawByteString read FLanguageString write FLanguageString;
+    property LanguageString: TPascalString read FLanguageString write FLanguageString;
     property TranslatedKeyword: U_String read FTranslatedKeyword write FTranslatedKeyword;
   end;
 
@@ -806,7 +803,6 @@ type
     FChunkName: TChunkName;
     FDataStream: TMemoryStream64;
     function GetChunkName: TChunkName; override;
-    function GetChunkNameAsString: RawByteString; override;
     function GetChunkSize: Cardinal; override;
     function CalculateChecksum: TGeoInt;
     procedure AssignTo(Dest: TCoreClassPersistent); override;
@@ -1066,7 +1062,7 @@ const
   imNone = 0;
   imAdam7 = 1;
 
-  CPngMagic = #$0D#$0A#$1A#$0A;
+  CPngMagic: TChunkName = ($0D, $0A, $1A, $0A);
   CRowStart: array [0 .. 6] of TGeoInt = (0, 0, 4, 0, 2, 0, 1);
   CColumnStart: array [0 .. 6] of TGeoInt = (0, 4, 0, 2, 0, 1, 0);
   CRowIncrement: array [0 .. 6] of TGeoInt = (8, 8, 8, 4, 4, 2, 2);
@@ -1125,9 +1121,11 @@ const
   RCStrUnsupportedFormat = 'Unsupported Format';
 
 function CompareChunkName(const s1, s2: TChunkName): Boolean; overload; forward;
-function CompareChunkName(const s1: TChunkName; const s2: RawByteString): Boolean; overload; forward;
-function MakeRawByteString(const s: TChunkName): RawByteString; forward;
-function MakeChunkName(const s: RawByteString): TChunkName; forward;
+function CompareChunkName(const s1: TChunkName; const s2: TPascalString): Boolean; overload; forward;
+function MakeRawByteString(const s: TChunkName): TPascalString; forward;
+function MakeChunkName(const s: TPascalString): TChunkName; forward;
+function ReadPNGStringFromStream(Stream: TCoreClassStream; L: Integer): TPascalString; forward;
+procedure WritePNGStringToStream(s: TPascalString; Stream: TCoreClassStream); forward;
 
 procedure RegisterPngChunk(ChunkClass: TCustomDefinedChunkWithHeaderClass); forward;
 procedure RegisterPngChunks(ChunkClasses: array of TCustomDefinedChunkWithHeaderClass); forward;
@@ -1155,20 +1153,62 @@ begin
   Result := CompareMemory(@s1[0], @s2[0], SizeOf(TChunkName));
 end;
 
-function CompareChunkName(const s1: TChunkName; const s2: RawByteString): Boolean;
+function CompareChunkName(const s1: TChunkName; const s2: TPascalString): Boolean;
 begin
   Result := CompareChunkName(s1, MakeChunkName(s2));
 end;
 
-function MakeRawByteString(const s: TChunkName): RawByteString;
+function MakeRawByteString(const s: TChunkName): TPascalString;
 begin
-  Setlength(Result, 4);
-  PChunkName(@Result[1])^ := s;
+  Result.L := 4;
+  Result[1] := SystemChar(s[0]);
+  Result[2] := SystemChar(s[1]);
+  Result[3] := SystemChar(s[2]);
+  Result[4] := SystemChar(s[3]);
 end;
 
-function MakeChunkName(const s: RawByteString): TChunkName;
+function MakeChunkName(const s: TPascalString): TChunkName;
 begin
-  Result := PChunkName(@s[1])^;
+  Result[0] := Byte(s[1]);
+  Result[1] := Byte(s[2]);
+  Result[2] := Byte(s[3]);
+  Result[3] := Byte(s[4]);
+end;
+
+function ReadPNGStringFromStream(Stream: TCoreClassStream; L: Integer): TPascalString;
+var
+  i: TGeoInt;
+  tmp: TBytes;
+begin
+  Result := '';
+  i := 0;
+  Setlength(tmp, L);
+  while (Stream.Position < Stream.Size) do
+    begin
+      Stream.Read(tmp[i], 1);
+      if tmp[i] = 0 then
+        begin
+          Setlength(tmp, i);
+          Result.ANSI := tmp;
+          Break;
+        end;
+      Inc(i);
+    end;
+end;
+
+procedure WritePNGStringToStream(s: TPascalString; Stream: TCoreClassStream);
+var
+  tmp: TBytes;
+  tmp_end: Byte;
+begin
+  tmp := s.ANSI;
+  if Length(tmp) > 0 then
+    begin
+      Stream.Write(tmp[0], Length(tmp));
+      Setlength(tmp, 0);
+    end;
+  tmp_end := 0;
+  Stream.Write(tmp_end, 1);
 end;
 
 procedure RegisterPngChunk(ChunkClass: TCustomDefinedChunkWithHeaderClass);
@@ -1270,9 +1310,6 @@ end;
 
 function ReadSwappedWord(Stream: TCoreClassStream): Word;
 begin
-{$IFDEF FPC}
-  Result := 0;
-{$ENDIF}
 {$IFDEF ValidateEveryReadOperation}
   if Stream.Read(Result, SizeOf(Word)) <> SizeOf(Word) then
       raiseInfo('ReadSwappedWord error!');
@@ -1284,9 +1321,6 @@ end;
 
 function ReadSwappedSmallInt(Stream: TCoreClassStream): SmallInt;
 begin
-{$IFDEF FPC}
-  Result := 0;
-{$ENDIF}
 {$IFDEF ValidateEveryReadOperation}
   if Stream.Read(Result, SizeOf(SmallInt)) <> SizeOf(SmallInt) then
       raiseInfo('ReadSwappedSmallInt error!');
@@ -1298,9 +1332,6 @@ end;
 
 function ReadSwappedCardinal(Stream: TCoreClassStream): Cardinal;
 begin
-{$IFDEF FPC}
-  Result := 0;
-{$ENDIF}
 {$IFDEF ValidateEveryReadOperation}
   if Stream.Read(Result, SizeOf(Cardinal)) <> SizeOf(Cardinal) then
       raiseInfo('ReadSwappedCardinal error!');
@@ -1506,11 +1537,6 @@ begin
   Result := GetClassChunkName;
 end;
 
-function TCustomDefinedChunk.GetChunkNameAsString: RawByteString;
-begin
-  Result := MakeRawByteString(GetClassChunkName);
-end;
-
 constructor TChunkPngUnknown.Create(ChunkName_: TChunkName);
 begin
   FChunkName := ChunkName_;
@@ -1565,12 +1591,6 @@ end;
 function TChunkPngUnknown.GetChunkSize: Cardinal;
 begin
   Result := FDataStream.Size;
-end;
-
-function TChunkPngUnknown.GetChunkNameAsString: RawByteString;
-begin
-  Setlength(Result, 0);
-  Result := MakeRawByteString(FChunkName);
 end;
 
 function TChunkPngUnknown.GetChunkName: TChunkName;
@@ -2291,27 +2311,12 @@ begin
   Result := 9;
 end;
 
-procedure TChunkPngPixelCalibrator.ReadFromStream(Stream: TCoreClassStream;
-  ChunkSize_: Cardinal);
-var
-  Index: TGeoInt;
-  ParamIndex: TGeoInt;
+procedure TChunkPngPixelCalibrator.ReadFromStream(Stream: TCoreClassStream; ChunkSize_: Cardinal);
 begin
   with Stream do
     begin
       // read keyword
-      Index := 1;
-      Setlength(FCalibratorName, 80);
-      while (Position < Size) do
-        begin
-          Read(FCalibratorName[Index], SizeOf(Byte));
-          if FCalibratorName[Index] = #0 then
-            begin
-              Setlength(FCalibratorName, Index - 1);
-              Break;
-            end;
-          Inc(Index);
-        end;
+      FCalibratorName := ReadPNGStringFromStream(Stream, 80);
 
       // read original zeros
       FOriginalZeroes[0] := ReadSwappedCardinal(Stream);
@@ -2324,23 +2329,7 @@ begin
       Stream.Read(FNumberOfParams, 1);
 
       // read keyword
-      Index := 1;
-      Setlength(FUnitName, 80);
-      while (Position < Size) do
-        begin
-          Read(FUnitName[Index], SizeOf(Byte));
-          if FUnitName[Index] = #0 then
-            begin
-              Setlength(FUnitName, Index - 1);
-              Break;
-            end;
-          Inc(Index);
-        end;
-
-      for ParamIndex := 0 to FNumberOfParams - 2 do
-        begin
-          // yet todo
-        end;
+      FUnitName := ReadPNGStringFromStream(Stream, 80);
     end;
 end;
 
@@ -2362,7 +2351,7 @@ begin
       inherited;
 end;
 
-procedure TCustomChunkPngText.SetKeyword(const Value: RawByteString);
+procedure TCustomChunkPngText.SetKeyword(const Value: TPascalString);
 begin
   if FKeyword <> Value then
     begin
@@ -2371,7 +2360,7 @@ begin
     end;
 end;
 
-procedure TCustomChunkPngText.SetText(const Value: RawByteString);
+procedure TCustomChunkPngText.SetText(const Value: TPascalString);
 begin
   if FText <> Value then
     begin
@@ -2397,57 +2386,41 @@ end;
 
 function TChunkPngText.GetChunkSize: Cardinal;
 begin
-  Result := Length(FKeyword) + Length(FText) + 1;
+  Result := Length(FKeyword.ANSI) + Length(FText.ANSI) + 1;
 end;
 
-procedure TChunkPngText.ReadFromStream(Stream: TCoreClassStream;
-  ChunkSize_: Cardinal);
+procedure TChunkPngText.ReadFromStream(Stream: TCoreClassStream; ChunkSize_: Cardinal);
 var
   Index: TGeoInt;
+  tmp: TBytes;
 begin
   with Stream do
     begin
       // read keyword
-      Index := 1;
-      Setlength(FKeyword, 80);
-      while (Position < Size) do
-        begin
-          Read(FKeyword[Index], SizeOf(Byte));
-          if FKeyword[Index] = #0 then
-            begin
-              Setlength(FKeyword, Index - 1);
-              Break;
-            end;
-          Inc(Index);
-        end;
+      FKeyword := ReadPNGStringFromStream(Stream, 80);
 
       // read text
-      Index := 1;
-      Setlength(FText, Size - Position);
+      Index := 0;
+      Setlength(tmp, Size - Position);
       while (Position < Size) do
         begin
-          Read(FText[Index], SizeOf(Byte));
+          Read(tmp[Index], SizeOf(Byte));
           Inc(Index);
         end;
+      FText.ANSI := tmp;
     end;
 end;
 
 procedure TChunkPngText.WriteToStream(Stream: TCoreClassStream);
 var
-  Temp: Byte;
+  tmp: TBytes;
 begin
-  with Stream do
-    begin
-      // write keyword
-      Write(FKeyword[1], Length(FKeyword));
+  // write keyword
+  WritePNGStringToStream(FKeyword, Stream);
 
-      // write separator
-      Temp := 0;
-      Write(Temp, 1);
-
-      // write text
-      Write(FText[1], Length(FText));
-    end;
+  // write text
+  tmp := FText.ANSI;
+  Stream.Write(tmp[0], Length(tmp));
 end;
 
 procedure TChunkPngCompressedText.AssignTo(Dest: TCoreClassPersistent);
@@ -2469,44 +2442,35 @@ end;
 function TChunkPngCompressedText.GetChunkSize: Cardinal;
 var
   OutputStream: TMemoryStream64;
+  tmp: TBytes;
 begin
   OutputStream := TMemoryStream64.Create;
   try
     // compress text
-    ZCompress(@FText[1], Length(FText), OutputStream, Z_DEFAULT_COMPRESSION);
+    tmp := FText.ANSI;
+    ZCompress(@tmp[0], Length(tmp), OutputStream, Z_DEFAULT_COMPRESSION);
+    Setlength(tmp, 0);
 
     // calculate chunk size
-    Result := Length(FKeyword) + OutputStream.Size + 1;
+    Result := Length(FKeyword.ANSI) + OutputStream.Size + 1;
   finally
       DisposeObjectAndNil(OutputStream);
   end;
 end;
 
-procedure TChunkPngCompressedText.ReadFromStream(Stream: TCoreClassStream;
-  ChunkSize_: Cardinal);
+procedure TChunkPngCompressedText.ReadFromStream(Stream: TCoreClassStream; ChunkSize_: Cardinal);
 var
   DataIn: Pointer;
   DataInSize: TGeoInt;
   Output: TMemoryStream64;
-  Index: TGeoInt;
+  tmp: TBytes;
 begin
   inherited;
 
   with Stream do
     begin
       // read keyword
-      Index := 1;
-      Setlength(FKeyword, 80);
-      while (Position < Size) do
-        begin
-          Read(FKeyword[Index], SizeOf(Byte));
-          if FKeyword[Index] = #0 then
-            begin
-              Setlength(FKeyword, Index - 1);
-              Break;
-            end;
-          Inc(Index);
-        end;
+      FKeyword := ReadPNGStringFromStream(Stream, 80);
 
       // read compression method
       Read(FCompressionMethod, SizeOf(Byte));
@@ -2522,8 +2486,10 @@ begin
             Output := TMemoryStream64.Create;
             try
               ZDecompress(DataIn, DataInSize, Output);
-              Setlength(FText, Output.Size);
-              CopyPtr(Output.Memory, @FText[1], Output.Size);
+              Setlength(tmp, Output.Size);
+              CopyPtr(Output.Memory, @tmp[0], Output.Size);
+              FText.ANSI := tmp;
+              Setlength(tmp, 0);
             finally
                 DisposeObjectAndNil(Output);
             end;
@@ -2537,24 +2503,18 @@ end;
 procedure TChunkPngCompressedText.WriteToStream(Stream: TCoreClassStream);
 var
   OutputStream: TMemoryStream64;
-  Temp: Byte;
+  tmp: TBytes;
 begin
   OutputStream := TMemoryStream64.Create;
   try
     // compress text
-    ZCompress(@FText[1], Length(FText), OutputStream, Z_DEFAULT_COMPRESSION);
+    tmp := FText.ANSI;
+    ZCompress(@tmp[0], Length(tmp), OutputStream, Z_DEFAULT_COMPRESSION);
 
     with Stream do
       begin
         // write keyword
-        Write(FKeyword[1], Length(FKeyword));
-
-        // write separator
-        Temp := 0;
-        Write(Temp, 1);
-
-        // write text
-        Write(FText[1], Length(FText));
+        WritePNGStringToStream(FKeyword, Stream);
 
         // write compression method
         Write(FCompressionMethod, SizeOf(Byte));
@@ -2591,8 +2551,7 @@ begin
   Result := 0;
 end;
 
-procedure TChunkPngInternationalText.ReadFromStream(Stream: TCoreClassStream;
-  ChunkSize_: Cardinal);
+procedure TChunkPngInternationalText.ReadFromStream(Stream: TCoreClassStream; ChunkSize_: Cardinal);
 var
   Index: TGeoInt;
 begin
@@ -2601,18 +2560,7 @@ begin
   with Stream do
     begin
       // read keyword
-      Index := 1;
-      Setlength(FKeyword, 80);
-      while (Position < Size) do
-        begin
-          Read(FKeyword[Index], SizeOf(Byte));
-          if FKeyword[Index] = #0 then
-            begin
-              Setlength(FKeyword, Index - 1);
-              Break;
-            end;
-          Inc(Index);
-        end;
+      FKeyword := ReadPNGStringFromStream(Stream, 80);
 
       // read compression flag
       Read(FCompressionFlag, SizeOf(Byte));
@@ -2621,18 +2569,7 @@ begin
       Read(FCompressionMethod, SizeOf(Byte));
 
       // read language U_String
-      Index := 1;
-      Setlength(FLanguageString, 10);
-      while (Position < Size) do
-        begin
-          Read(FLanguageString[Index], SizeOf(Byte));
-          if FLanguageString[Index] = #0 then
-            begin
-              Setlength(FLanguageString, Index - 1);
-              Break;
-            end;
-          Inc(Index);
-        end;
+      FLanguageString := ReadPNGStringFromStream(Stream, 10);
 
       // yet todo!
       Exit;
@@ -2812,29 +2749,15 @@ end;
 
 function TChunkPngEmbeddedIccProfile.GetChunkSize: Cardinal;
 begin
-  Result := Length(FProfileName) + 2;
+  Result := Length(FProfileName.ANSI) + 2;
 end;
 
-procedure TChunkPngEmbeddedIccProfile.ReadFromStream(Stream: TCoreClassStream;
-  ChunkSize_: Cardinal);
-var
-  Index: TGeoInt;
+procedure TChunkPngEmbeddedIccProfile.ReadFromStream(Stream: TCoreClassStream; ChunkSize_: Cardinal);
 begin
   with Stream do
     begin
       // read keyword
-      Index := 1;
-      Setlength(FProfileName, 80);
-      while (Position < Size) do
-        begin
-          Read(FProfileName[Index], SizeOf(Byte));
-          if FProfileName[Index] = #0 then
-            begin
-              Setlength(FProfileName, Index - 1);
-              Break;
-            end;
-          Inc(Index);
-        end;
+      FProfileName := ReadPNGStringFromStream(Stream, 80);
 
       // read compression method
       Read(FCompressionMethod, 1);
@@ -2844,17 +2767,11 @@ begin
 end;
 
 procedure TChunkPngEmbeddedIccProfile.WriteToStream(Stream: TCoreClassStream);
-var
-  Temp: Byte;
 begin
   with Stream do
     begin
       // write keyword
-      Write(FProfileName[1], Length(FProfileName));
-
-      // write separator
-      Temp := 0;
-      Write(Temp, 1);
+      WritePNGStringToStream(FProfileName, Stream);
 
       // write compression method
       Write(FCompressionMethod, 1);
@@ -3667,12 +3584,11 @@ end;
 
 function TChunkPngSuggestedPalette.GetChunkSize: Cardinal;
 begin
-  Result := Cardinal(Length(FPaletteName)) + 2 +
+  Result := Cardinal(Length(FPaletteName.ANSI)) + 2 +
     (4 * (FSampleDepth shr 3) + 2) * Count;
 end;
 
-procedure TChunkPngSuggestedPalette.ReadFromStream(Stream: TCoreClassStream;
-  ChunkSize_: Cardinal);
+procedure TChunkPngSuggestedPalette.ReadFromStream(Stream: TCoreClassStream; ChunkSize_: Cardinal);
 var
   Index: TGeoInt;
   DataSize: TGeoInt;
@@ -3683,23 +3599,12 @@ begin
           raise EPngError.Create(RCStrChunkSizeTooSmall);
 
       // read palette name
-      Index := 1;
-      Setlength(FPaletteName, 80);
-      while (Position < ChunkSize_) do
-        begin
-          Read(FPaletteName[Index], SizeOf(Byte));
-          if FPaletteName[Index] = #0 then
-            begin
-              Setlength(FPaletteName, Index - 1);
-              Break;
-            end;
-          Inc(Index);
-        end;
+      FPaletteName := ReadPNGStringFromStream(Stream, 80);
 
       // read sample depth
       Read(FSampleDepth, 1);
 
-      DataSize := TGeoInt(ChunkSize_) - Length(FPaletteName) - 2;
+      DataSize := TGeoInt(ChunkSize_) - Length(FPaletteName.ANSI) - 2;
       Assert(DataSize >= 0);
       Assert(DataSize mod 2 = 0);
       Assert(DataSize mod (4 * (FSampleDepth shr 3) + 2) = 0);
@@ -4657,15 +4562,16 @@ end;
 
 class function TPortableNetworkGraphic.CanLoad(Stream: TCoreClassStream): Boolean;
 var
-  ChunkID: TChunkName;
+  ChunkID, PNGMagic_: TChunkName;
 begin
-  Result := Stream.Size >= 4;
+  Result := Stream.Size >= 8;
 
   if Result then
     begin
       Stream.Read(ChunkID, 4);
-      Stream.Seek(-4, TSeekOrigin.soCurrent);
-      Result := CompareChunkName(ChunkID, PNG_SIG);
+      Stream.Read(PNGMagic_, 4);
+      Stream.Seek(-8, TSeekOrigin.soCurrent);
+      Result := CompareChunkName(ChunkID, PNG_SIG) and CompareChunkName(PNGMagic_, CPngMagic);
     end;
 end;
 
@@ -4887,7 +4793,7 @@ begin
       Write(ChunkName, 4);
 
       // write PNG magic
-      ChunkName := MakeChunkName(CPngMagic);
+      ChunkName := CPngMagic;
       Write(ChunkName, 4);
 
       MemoryStream := TMemoryStream64.Create;
@@ -5188,6 +5094,10 @@ begin
       inherited;
 end;
 
+{$IFDEF OverflowCheck}{$Q-}{$ENDIF}
+{$IFDEF RangeCheck}{$R-}{$ENDIF}
+
+
 function TPortableNetworkGraphic.CalculateCRC(Stream: TCoreClassStream): Cardinal;
 var
   CrcValue: Cardinal;
@@ -5238,6 +5148,9 @@ begin
 
   Result := (CrcValue xor $FFFFFFFF);
 end;
+
+{$IFDEF OverflowCheck}{$Q+}{$ENDIF}
+{$IFDEF RangeCheck}{$R+}{$ENDIF}
 
 {$IFDEF CheckCRC}
 
@@ -6013,37 +5926,41 @@ end;
 
 function IsPNG(const Stream: TCoreClassStream): Boolean;
 begin
-  try
-    with TPortableNetworkGraphic32.Create do
+  with TPortableNetworkGraphic32.Create do
+    begin
       try
           Result := CanLoad(Stream);
-      finally
-          Free;
+      except
+          Result := False;
       end;
-  except
-      Result := False;
-  end;
+      Free;
+    end;
 end;
 
 procedure LoadRasterFromPNG(raster: TMemoryRaster; Stream: TCoreClassStream);
 begin
   with TPortableNetworkGraphic32.Create do
-    try
-      LoadFromStream(Stream);
-      AssignTo(raster);
-    finally
-        Free;
+    begin
+      try
+        LoadFromStream(Stream);
+        AssignTo(raster);
+      except
+          raster.Reset;
+      end;
+      Free;
     end;
 end;
 
 procedure SaveRasterToPNG(raster: TMemoryRaster; Stream: TCoreClassStream);
 begin
   with TPortableNetworkGraphic32.Create do
-    try
-      Assign(raster);
-      SaveToStream(Stream);
-    finally
-        Free;
+    begin
+      try
+        Assign(raster);
+        SaveToStream(Stream);
+      except
+      end;
+      Free;
     end;
 end;
 

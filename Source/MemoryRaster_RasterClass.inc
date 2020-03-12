@@ -4540,6 +4540,12 @@ begin
       SaveToQuartYUVFile(fn)
   else if umlMultipleMatch('*.png', fn) then
       SaveToPNGFile(fn)
+  else if umlMultipleMatch('*.zlib_bmp', fn) then
+      SaveToZLibCompressFile(fn)
+  else if umlMultipleMatch('*.deflate_bmp', fn) then
+      SaveToDeflateCompressFile(fn)
+  else if umlMultipleMatch('*.BRRC_bmp', fn) then
+      SaveToBRRCCompressFile(fn)
   else
       SaveToBmp32File(fn);
 end;
