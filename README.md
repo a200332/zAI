@@ -10,6 +10,8 @@ zChinese是正在完善中的NLP项目 https://github.com/PassByYou888/zChinese
 
 # 1.30主引擎版本
 
+[白皮书](https://zpascal.net/AI%E7%99%BD%E7%9A%AE%E4%B9%A6.pdf)
+
 [1.30大更新日志](http://zpascal.net/1.30%E6%9B%B4%E6%96%B0%E6%97%A5%E5%BF%97.pdf)
 
 
