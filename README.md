@@ -25,6 +25,8 @@ zChinese是正在完善中的NLP项目 https://github.com/PassByYou888/zChinese
 
 下载 [freedemo运行时资源包 2.34GB](https://zpascal.net/download/github/FreeDemoBinary.7z) 完成后,解压到 **FreeDemo\Binary** 目录
 
+zAI的git镜像下载 [source](https://zpascal.net/download/github/AISource.7z) 如果git下载很卡,通过国内服务器下载
+
 如果要使用gpu 参考 [cuda 10.2安装指南](https://zpascal.net/ZAI-CUDA%E5%AE%89%E8%A3%85%E6%8C%87%E5%8D%97.pdf)
 
 
