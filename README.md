@@ -21,9 +21,7 @@ zChinese是正在完善中的NLP项目 https://github.com/PassByYou888/zChinese
 
 首先下载两个大包
 
-下载 [主引擎 2.35GB](https://zpascal.net/download/github/AIEngine.7z) 下载完成后,解压engine.7z到任意目录,运行 **ZAIToolChain.exe** 任意选择MKL64 or CUDA作为计算引擎即可使用
-
-计算引擎Key **TAAAAAAAAABAALTGhAbqkeFdQpzxP0+yT/0MLgzMjGpsTNmvS1OPM14WU7EbovD9J0UfCBrHz4LA3v12pK1YeI2ACM61+e1YYmg=**
+下载 [主引擎 2.35GB](https://zpascal.net/download/github/AIEngine.7z) 下载完成后,解压engine.7z到任意目录,运行 **ZAIToolChain.exe** 任意选择MKL64 or CUDA作为计算引擎即可使用 计算引擎Key **TAAAAAAAAABAALTGhAbqkeFdQpzxP0+yT/0MLgzMjGpsTNmvS1OPM14WU7EbovD9J0UfCBrHz4LA3v12pK1YeI2ACM61+e1YYmg=**
 
 下载 [freedemo运行时资源包 2.34GB](https://zpascal.net/download/github/FreeDemoBinary.7z) 完成后,解压到 **FreeDemo\Binary** 目录
 
