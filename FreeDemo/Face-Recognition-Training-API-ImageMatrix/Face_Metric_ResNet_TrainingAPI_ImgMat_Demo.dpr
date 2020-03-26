@@ -1,4 +1,4 @@
-﻿program Face_Metric_ResNet_TrainingAPI_ImgMat_Demo;
+program Face_Metric_ResNet_TrainingAPI_ImgMat_Demo;
 
 uses
   Vcl.Forms,

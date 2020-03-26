@@ -1,4 +1,4 @@
-﻿program Face_Alignment;
+program Face_Alignment;
 
 uses
   System.StartUpCopy,

@@ -1,4 +1,4 @@
-﻿program FastSurfDemo;
+program FastSurfDemo;
 
 uses
   System.StartUpCopy,

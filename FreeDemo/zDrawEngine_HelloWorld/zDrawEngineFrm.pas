@@ -1,4 +1,4 @@
-﻿﻿unit zDrawEngineFrm;
+unit zDrawEngineFrm;
 
 interface
 

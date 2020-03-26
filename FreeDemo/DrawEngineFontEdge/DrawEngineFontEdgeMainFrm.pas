@@ -1,4 +1,4 @@
-ï»¿ï»¿unit DrawEngineFontEdgeMainFrm;
+unit DrawEngineFontEdgeMainFrm;
 
 interface
 
@@ -52,9 +52,9 @@ begin
       Result := NewRaster();
       tmpDrawEng := TDrawEngine.Create;
       tmpDrawEng.ViewOptions := [];
-      // é«˜çº§å›¾å½¢æŠ€æœ¯ï¼šæˆ‘ä»¬å…ˆå°†å›¾åƒæ”¾å¤§2å€ï¼Œåšä¸€æ¬¡é«˜æ–¯å¹³æ»‘ï¼Œç„¶åå†ç¼©å›å»ï¼Œè¾¾åˆ°åé”¯é½¿æ•ˆæœ
+      // ¸ß¼¶Í¼ĞÎ¼¼Êõ£ºÎÒÃÇÏÈ½«Í¼Ïñ·Å´ó2±¶£¬×öÒ»´Î¸ßË¹Æ½»¬£¬È»ºóÔÙËõ»ØÈ¥£¬´ïµ½·´¾â³İĞ§¹û
       text_siz := tmpDrawEng.GetTextSize(text, siz * 2);
-      // åŸºäºæ–‡å­—å†…å®¹åˆå§‹åŒ–å…‰æ …çš„å°ºå¯¸å’Œé»˜è®¤èƒŒæ™¯ä¸º0,0,0,$FF
+      // »ùÓÚÎÄ×ÖÄÚÈİ³õÊ¼»¯¹âÕ¤µÄ³ß´çºÍÄ¬ÈÏ±³¾°Îª0,0,0,$FF
       Result.SetSizeF(text_siz[0] + borderSiz + 50, text_siz[1] + borderSiz + 50, RColor(0, 0, 0));
       tmpDrawEng.Rasterization.SetWorkMemory(Result);
       tmpDrawEng.SetSize;
@@ -62,21 +62,21 @@ begin
       tmpDrawEng.Flush;
       disposeObject(tmpDrawEng);
 
-      // å¡«å……è¾¹ç¼˜åƒç´ ï¼Œå°†èƒŒæ™¯è‰²ä¸º0,0,0,$FFçš„åƒç´ è‰²ï¼Œæç»˜å‡ºè¾¹ç¼˜
+      // Ìî³ä±ßÔµÏñËØ£¬½«±³¾°É«Îª0,0,0,$FFµÄÏñËØÉ«£¬Ãè»æ³ö±ßÔµ
       tmpRaster := TMemoryRaster.Create;
       tmpRaster.SetSize(Result.Width, Result.Height, 0);
       Result.FillNoneBGColorAlphaBorder(RColor(0, 0, 0), RColor(EdgeColor), borderSiz, tmpRaster);
       tmpRaster.DrawTo(Result);
       disposeObject(tmpRaster);
 
-      // æˆ‘ä»¬é‡æ„å‡ºæ¥çš„å…‰æ …æ˜¯RGBå›¾ï¼Œæˆ‘ä»¬éœ€è¦ä¸€æ¬¡Alphaé€šé“è®©å®ƒèƒ½å¤Ÿé€æ˜
+      // ÎÒÃÇÖØ¹¹³öÀ´µÄ¹âÕ¤ÊÇRGBÍ¼£¬ÎÒÃÇĞèÒªÒ»´ÎAlphaÍ¨µÀÈÃËüÄÜ¹»Í¸Ã÷
       GrayscaleToAlpha(Result);
 
-      // ç¼©å›å»è¾¾åˆ°åé”¯é½¿æ•ˆæœ
+      // Ëõ»ØÈ¥´ïµ½·´¾â³İĞ§¹û
       Result.SigmaGaussian(False, 1.5, 3);
       Result.Scale(0.5);
 
-      // å°†æˆ‘ä»¬æ„å»ºå¥½çš„å…‰æ …å­—ä½“å†™å…¥åˆ°ç¼“å­˜ä¸­
+      // ½«ÎÒÃÇ¹¹½¨ºÃµÄ¹âÕ¤×ÖÌåĞ´Èëµ½»º´æÖĞ
       TextRasterCache.FastAdd(cacheToken, Result);
     end;
 end;
@@ -101,28 +101,28 @@ begin
 
   d.ViewOptions := [voEdge, voFPS];
 
-  // ä»¥tileæ–¹å¼ç”»å›¾ç‰‡
+  // ÒÔtile·½Ê½»­Í¼Æ¬
   d.DrawTile(bk, bk.BoundsRectV2, 1.0);
 
-  // ä½¿ç”¨ç¼“å­˜æ„å»ºæ–‡æœ¬å­—ä½“
-  textRaster := GetTextFont('æ‚¨å¥½|color(0,1,0)|ç»¿è‰²||ä¸–ç•Œ' + #13#10 + 'hello |color(0,1,0)|green|| world', 24, DEColor(1, 1, 1, 1), DEColor(0.5, 0.5, 1.0, 0.9), 5);
-  // è®¡ç®—å±å¹•ä¸­å¤®åæ ‡
+  // Ê¹ÓÃ»º´æ¹¹½¨ÎÄ±¾×ÖÌå
+  textRaster := GetTextFont('ÄúºÃ|color(0,1,0)|ÂÌÉ«||ÊÀ½ç' + #13#10 + 'hello |color(0,1,0)|green|| world', 24, DEColor(1, 1, 1, 1), DEColor(0.5, 0.5, 1.0, 0.9), 5);
+  // ¼ÆËãÆÁÄ»ÖĞÑë×ø±ê
   dstR[0] := Vec2Mul(Vec2Sub(d.SizeVec, textRaster.Size2D), 0.5);
   dstR[1] := Vec2Add(dstR[0], textRaster.Size2D);
 
-  // æ–°ç‰ˆæœ¬çš„ BeginCaptureShadow å¯ä»¥æ•è·é«˜æ–¯å½±å­ï¼Œè¿™ç§å½±å­æœ‰æ¨¡ç³Šæ•ˆæœï¼Œåªå¯¹çº¹ç†æœ‰ä½œç”¨
+  // ĞÂ°æ±¾µÄ BeginCaptureShadow ¿ÉÒÔ²¶»ñ¸ßË¹Ó°×Ó£¬ÕâÖÖÓ°×ÓÓĞÄ£ºıĞ§¹û£¬Ö»¶ÔÎÆÀíÓĞ×÷ÓÃ
   d.BeginCaptureShadow(vec2(20, 20), 1.0, 20, 5);
-  // ç”»è§’æ ‡å½±å­ï¼ŒTV2Rect4æ˜¯å¦ä¸€ç§é€šç”¨äºå‡ ä½•ç³»ç»Ÿçš„åæ ‡ï¼Œç”±4ä¸ªé¡¶ç‚¹æ„æˆ
+  // »­½Ç±êÓ°×Ó£¬TV2Rect4ÊÇÁíÒ»ÖÖÍ¨ÓÃÓÚ¼¸ºÎÏµÍ³µÄ×ø±ê£¬ÓÉ4¸ö¶¥µã¹¹³É
   d.DrawCorner(TV2Rect4.Init(dstR, ang).Transform(20, 20), DEColor(0, 0, 0, 0.8), 20, 2);
-  // ç”»è§’æ ‡ï¼ŒTV2Rect4æ˜¯å¦ä¸€ç§é€šç”¨äºå‡ ä½•ç³»ç»Ÿçš„åæ ‡ï¼Œç”±4ä¸ªé¡¶ç‚¹æ„æˆ
+  // »­½Ç±ê£¬TV2Rect4ÊÇÁíÒ»ÖÖÍ¨ÓÃÓÚ¼¸ºÎÏµÍ³µÄ×ø±ê£¬ÓÉ4¸ö¶¥µã¹¹³É
   d.DrawCorner(TV2Rect4.Init(dstR, ang), DEColor(1, 0.5, 0.5, 1.0), 20, 2);
-  // TDE4Væ˜¯DrawEngineç”¨äºè¡¨ç¤ºé€šç”¨å¹³å°çº¹ç†çš„åæ ‡ç³»ï¼Œç”±left,right,top,bottom,angleï¼Œ5ä¸ªè¦ç´ æ„æˆ
+  // TDE4VÊÇDrawEngineÓÃÓÚ±íÊ¾Í¨ÓÃÆ½Ì¨ÎÆÀíµÄ×ø±êÏµ£¬ÓÉleft,right,top,bottom,angle£¬5¸öÒªËØ¹¹³É
   d.DrawPicture(textRaster, TDE4V.Init(textRaster.BoundsRectV2, 0), TDE4V.Init(dstR, ang), 1.0);
   d.EndCaptureShadow;
 
   d.Flush;
 
-  // å½’ä¸€åŒ–è§’åº¦-180..180ä¹‹é—´
+  // ¹éÒ»»¯½Ç¶È-180..180Ö®¼ä
   ang := NormalizeDegAngle(ang + d.LastDeltaTime * 40);
 end;
 

@@ -1,4 +1,4 @@
-﻿program ParallelDemo;
+program ParallelDemo;
 
 uses
   Vcl.Forms,

@@ -1,4 +1,4 @@
-﻿program GoingDeeperWithConvolutionsNetImageClassifier;
+program GoingDeeperWithConvolutionsNetImageClassifier;
 
 uses
   System.StartUpCopy,

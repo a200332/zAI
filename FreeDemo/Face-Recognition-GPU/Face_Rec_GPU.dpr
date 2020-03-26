@@ -1,4 +1,4 @@
-﻿program Face_Rec_GPU;
+program Face_Rec_GPU;
 
 uses
   System.StartUpCopy,

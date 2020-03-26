@@ -1,4 +1,4 @@
-﻿program SVM_OD_TrainingAPI_XML_Demo;
+program SVM_OD_TrainingAPI_XML_Demo;
 
 uses
   Vcl.Forms,

@@ -1,4 +1,4 @@
-﻿program GeometryIntersect;
+program GeometryIntersect;
 
 uses
   System.StartUpCopy,

@@ -1,4 +1,4 @@
-﻿﻿unit zAI_RealTime_MMOD_VideoServer;
+unit zAI_RealTime_MMOD_VideoServer;
 
 interface
 

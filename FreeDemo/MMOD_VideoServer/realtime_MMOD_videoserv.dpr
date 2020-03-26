@@ -1,4 +1,4 @@
-﻿program realtime_MMOD_videoserv;
+program realtime_MMOD_videoserv;
 
 {$APPTYPE CONSOLE}
 

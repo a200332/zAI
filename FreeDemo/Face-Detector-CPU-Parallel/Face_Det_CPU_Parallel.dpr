@@ -1,4 +1,4 @@
-﻿program Face_Det_CPU_Parallel;
+program Face_Det_CPU_Parallel;
 
 uses
   System.StartUpCopy,

@@ -1,4 +1,4 @@
-﻿﻿unit VideoFrm;
+unit VideoFrm;
 
 interface
 

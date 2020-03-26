@@ -1,4 +1,4 @@
-ï»¿ï»¿unit RectRotationProjectionFrm;
+unit RectRotationProjectionFrm;
 
 interface
 
@@ -25,9 +25,9 @@ type
   private
   public
     dIntf: TDrawEngineInterface_FMX;
-    destBox: TRectV2; // ç›®æ ‡æŠ•å½±æ¡†
-    a: TDEFloat;      // ç›®æ ‡æŠ•å½±æ¡†çš„æ—‹è½¬è§’åº¦
-    destPt: TVec2;    // ä½äºç›®æ ‡æŠ•å½±æ¡†ä¸­çš„åæ ‡
+    destBox: TRectV2; // Ä¿±êÍ¶Ó°¿ò
+    a: TDEFloat;      // Ä¿±êÍ¶Ó°¿òµÄĞı×ª½Ç¶È
+    destPt: TVec2;    // Î»ÓÚÄ¿±êÍ¶Ó°¿òÖĞµÄ×ø±ê
     constructor Create(AOwner: TComponent); override;
   end;
 
@@ -41,7 +41,7 @@ implementation
 
 procedure TRectRotationProjectionForm.Timer1Timer(Sender: TObject);
 begin
-  // ç»˜å›¾å¼•æ“ä¸»å¾ªç¯
+  // »æÍ¼ÒıÇæÖ÷Ñ­»·
   a := NormalizeDegAngle(a + EnginePool.Progress() * 5);
   Invalidate;
 end;
@@ -69,7 +69,7 @@ begin
   d.ViewOptions := [voEdge];
   d.FillBox();
   d.DrawPoint(destPt, DEColor(1, 0.5, 0, 5), 20, 2);
-  d.DrawText('|color(0.5,1,0.5)|åœ¨æ­¤å¤„ç§»åŠ¨é¼ æ ‡æ­£æŠ•å½±', 14, d.ScreenRectV2, DEColor(1, 1, 1), False);
+  d.DrawText('|color(0.5,1,0.5)|ÔÚ´Ë´¦ÒÆ¶¯Êó±êÕıÍ¶Ó°', 14, d.ScreenRectV2, DEColor(1, 1, 1), False);
   d.Flush;
 end;
 
@@ -87,7 +87,7 @@ begin
   with TV2R4.Init(r, a) do
     if not InHere(Vec2(X, Y)) then
         v := GetNear(v);
-  // åæŠ•å½±
+  // ·´Í¶Ó°
   destPt := RectProjectionRotationSource(r, RectV2(0, 0, 500, 500), a, v);
 end;
 
@@ -100,32 +100,32 @@ begin
   d := DrawPool(Sender, dIntf);
   d.ViewOptions := [voEdge];
   d.FillBox();
-  // æŠŠç›®æ ‡æŠ•å½±æ¡†ç”»åˆ°ä¸­å¤®ä½ç½®
+  // °ÑÄ¿±êÍ¶Ó°¿ò»­µ½ÖĞÑëÎ»ÖÃ
   r := destBox;
   r := RectAdd(r, Vec2((d.width - RectWidth(r)) * 0.5, (d.Height - RectHeight(r)) * 0.5));
   d.DrawDotLineBox(r, RectCentre(r), a, DEColor(1, 1, 1), 2);
-  // æ–¹ä¾¿åŒºåˆ†ï¼Œæ­£æŠ•å½±æˆ‘ä»¬ç”¨å‡½æ•° RectProjectionRotationDest
+  // ·½±ãÇø·Ö£¬ÕıÍ¶Ó°ÎÒÃÇÓÃº¯Êı RectProjectionRotationDest
   d.DrawPoint(RectProjectionRotationDest(RectV2(0, 0, 500, 500), r, a, destPt), DEColor(1, 0.5, 0, 5), 20, 2);
-  // å¦ä¸€ç§é€šç”¨çš„æ­£æŠ•å½±çš„å‡½æ•° RectRotationProjection ä¹Ÿèƒ½è¾¾åˆ°åŒæ ·çš„ç›®çš„
+  // ÁíÒ»ÖÖÍ¨ÓÃµÄÕıÍ¶Ó°µÄº¯Êı RectRotationProjection Ò²ÄÜ´ïµ½Í¬ÑùµÄÄ¿µÄ
   // d.DrawPoint(RectRotationProjection(RectV2(0, 0, 500, 500), r, 0, a, destPt), DEColor(1, 0.5, 0, 5), 20, 2);
-  // åœ¨æŠ•å½±æ¡†å››å‘¨ç”»ä¸Šè®°å·
+  // ÔÚÍ¶Ó°¿òËÄÖÜ»­ÉÏ¼ÇºÅ
   with TV2R4.Init(r, a) do
     begin
-      d.DrawText('å·¦ä¸Š', 14, DEColor(0.5, 1, 0.5), LeftTop, a);
-      d.DrawText('å³ä¸Š', 14, DEColor(0.5, 1, 0.5), RightTop, a);
-      d.DrawText('å³ä¸‹', 14, DEColor(0.5, 1, 0.5), RightBottom, a);
-      d.DrawText('å·¦ä¸‹', 14, DEColor(0.5, 1, 0.5), LeftBottom, a);
+      d.DrawText('×óÉÏ', 14, DEColor(0.5, 1, 0.5), LeftTop, a);
+      d.DrawText('ÓÒÉÏ', 14, DEColor(0.5, 1, 0.5), RightTop, a);
+      d.DrawText('ÓÒÏÂ', 14, DEColor(0.5, 1, 0.5), RightBottom, a);
+      d.DrawText('×óÏÂ', 14, DEColor(0.5, 1, 0.5), LeftBottom, a);
     end;
   d.DrawText(
-    '|color(0.5,1,0.5)|åœ¨æ­¤å¤„ç§»åŠ¨é¼ æ ‡åæŠ•å½±||' + #13#10 +
-    'ä¸¥æ ¼åˆ’åˆ†ï¼ŒæŠ•å½±æ˜¯å›¾å½¢é¢†åŸŸï¼Œå¤šç”¨äºç©ºé—´åˆ°ç©ºé—´ä¹‹é—´çš„è½¬æ¢' + #13#10 +
-    'åæ ‡æŠ•å½±æ˜¯å°†åŸæ¡†ä½“åæ ‡æŒ‰å°ºåº¦å’Œæ—‹è½¬æŠ•å½±åˆ°ç›®æ ‡æ¡†ä½“' + #13#10 +
-    'æˆ‘ä»¬å¯ä»¥æ³¨æ„åˆ°ç›®æ ‡æ¡†ä½“åœ¨æ—‹è½¬ï¼Œç›®æ ‡æ¡†ä½“å°ºåº¦å’ŒåŸæ¡†ä½“å¹¶ä¸ç›¸åŒ' + #13#10 +
-    'æŠ•å½±çš„è®¡ç®—å’Œä½¿ç”¨ï¼Œéœ€è¦å»ºç«‹æ¦‚å¿µæ‰è¡Œï¼Œè¿™æ˜¯å…¬å¼è®¡ç®—ï¼Œä¸æ˜¯æµç¨‹' + #13#10 +
-    'æ­£æŠ•å½±å‡½æ•°: |color(0.5,1.0,0.5)|RectProjectionRotationDest||' + #13#10 +
-    'åæŠ•å½±å‡½æ•°: |color(0.5,1.0,0.5)|RectProjectionRotationSource||' + #13#10 +
-    'æ­£åé€šç”¨æŠ•å½±å‡½æ•°: |color(0.5,1.0,0.5)|RectRotationProjection||' + #13#10 +
-    'è¯¥DemoæŠ•å½±è®¡ç®—ä¸ä½¿ç”¨å¯¹ç§°çŸ©é˜µï¼Œè¿™æ ·å¯ä»¥æ›´ç›´è§‚çš„ç†è§£æŠ•å½±', 14, d.ScreenRectV2, DEColor(1, 1, 1), False);
+    '|color(0.5,1,0.5)|ÔÚ´Ë´¦ÒÆ¶¯Êó±ê·´Í¶Ó°||' + #13#10 +
+    'ÑÏ¸ñ»®·Ö£¬Í¶Ó°ÊÇÍ¼ĞÎÁìÓò£¬¶àÓÃÓÚ¿Õ¼äµ½¿Õ¼äÖ®¼äµÄ×ª»»' + #13#10 +
+    '×ø±êÍ¶Ó°ÊÇ½«Ô­¿òÌå×ø±ê°´³ß¶ÈºÍĞı×ªÍ¶Ó°µ½Ä¿±ê¿òÌå' + #13#10 +
+    'ÎÒÃÇ¿ÉÒÔ×¢Òâµ½Ä¿±ê¿òÌåÔÚĞı×ª£¬Ä¿±ê¿òÌå³ß¶ÈºÍÔ­¿òÌå²¢²»ÏàÍ¬' + #13#10 +
+    'Í¶Ó°µÄ¼ÆËãºÍÊ¹ÓÃ£¬ĞèÒª½¨Á¢¸ÅÄî²ÅĞĞ£¬ÕâÊÇ¹«Ê½¼ÆËã£¬²»ÊÇÁ÷³Ì' + #13#10 +
+    'ÕıÍ¶Ó°º¯Êı: |color(0.5,1.0,0.5)|RectProjectionRotationDest||' + #13#10 +
+    '·´Í¶Ó°º¯Êı: |color(0.5,1.0,0.5)|RectProjectionRotationSource||' + #13#10 +
+    'Õı·´Í¨ÓÃÍ¶Ó°º¯Êı: |color(0.5,1.0,0.5)|RectRotationProjection||' + #13#10 +
+    '¸ÃDemoÍ¶Ó°¼ÆËã²»Ê¹ÓÃ¶Ô³Æ¾ØÕó£¬ÕâÑù¿ÉÒÔ¸üÖ±¹ÛµÄÀí½âÍ¶Ó°', 14, d.ScreenRectV2, DEColor(1, 1, 1), False);
   d.Flush;
 end;
 

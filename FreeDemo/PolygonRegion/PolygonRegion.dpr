@@ -1,4 +1,4 @@
-﻿program PolygonRegion;
+program PolygonRegion;
 
 uses
   System.StartUpCopy,

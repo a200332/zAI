@@ -1,4 +1,4 @@
-﻿program VideoTracker_Camera;
+program VideoTracker_Camera;
 
 uses
   System.StartUpCopy,

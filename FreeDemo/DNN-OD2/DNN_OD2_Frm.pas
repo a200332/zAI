@@ -1,4 +1,4 @@
-ï»¿ï»¿unit DNN_OD2_Frm;
+unit DNN_OD2_Frm;
 
 interface
 
@@ -54,35 +54,35 @@ end;
 procedure TForm1.FormCreate(Sender: TObject);
 begin
   AddDoStatusHook(Self, DoStatusMethod);
-  // è¯»å–zAIçš„é…ç½®
+  // ¶ÁÈ¡zAIµÄÅäÖÃ
   ReadAIConfig;
 
-  // è¿™ä¸€æ­¥ä¼šè¿æ¥KeyæœåŠ¡å™¨ï¼ŒéªŒè¯ZAIçš„Key
-  // è¿æ¥æœåŠ¡å™¨éªŒè¯Keyæ˜¯åœ¨å¯åŠ¨å¼•æ“æ—¶ä¸€æ¬¡æ€§çš„éªŒè¯ï¼Œåªä¼šå½“ç¨‹åºå¯åŠ¨æ—¶æ‰ä¼šéªŒè¯ï¼Œå‡å¦‚éªŒè¯ä¸èƒ½é€šè¿‡ï¼ŒzAIå°†ä¼šæ‹’ç»å·¥ä½œ
-  // åœ¨ç¨‹åºè¿è¡Œä¸­ï¼Œåå¤åˆ›å»ºTAIï¼Œä¸ä¼šå‘ç”Ÿè¿œç¨‹éªŒè¯
-  // éªŒè¯éœ€è¦ä¸€ä¸ªuserKeyï¼Œé€šè¿‡userkeyæ¨ç®—å‡ºZAIåœ¨å¯åŠ¨æ—¶ç”Ÿæˆçš„éšæœºKeyï¼Œuserkeyå¯ä»¥é€šè¿‡webç”³è¯·ï¼Œä¹Ÿå¯ä»¥è”ç³»ä½œè€…å‘æ”¾
-  // éªŒè¯keyéƒ½æ˜¯æŠ—é‡å­çº§ï¼Œæ— æ³•è¢«ç ´è§£
+  // ÕâÒ»²½»áÁ¬½ÓKey·şÎñÆ÷£¬ÑéÖ¤ZAIµÄKey
+  // Á¬½Ó·şÎñÆ÷ÑéÖ¤KeyÊÇÔÚÆô¶¯ÒıÇæÊ±Ò»´ÎĞÔµÄÑéÖ¤£¬Ö»»áµ±³ÌĞòÆô¶¯Ê±²Å»áÑéÖ¤£¬¼ÙÈçÑéÖ¤²»ÄÜÍ¨¹ı£¬zAI½«»á¾Ü¾ø¹¤×÷
+  // ÔÚ³ÌĞòÔËĞĞÖĞ£¬·´¸´´´½¨TAI£¬²»»á·¢ÉúÔ¶³ÌÑéÖ¤
+  // ÑéÖ¤ĞèÒªÒ»¸öuserKey£¬Í¨¹ıuserkeyÍÆËã³öZAIÔÚÆô¶¯Ê±Éú³ÉµÄËæ»úKey£¬userkey¿ÉÒÔÍ¨¹ıwebÉêÇë£¬Ò²¿ÉÒÔÁªÏµ×÷Õß·¢·Å
+  // ÑéÖ¤key¶¼ÊÇ¿¹Á¿×Ó¼¶£¬ÎŞ·¨±»ÆÆ½â
   zAI.Prepare_AI_Engine();
 
-  // ä½¿ç”¨zDrawEngineåšå¤–éƒ¨ç»˜å›¾æ—¶(æ¯”å¦‚æ¸¸æˆï¼Œé¢å‘paintbox)ï¼Œéƒ½éœ€è¦ä¸€ä¸ªç»˜å›¾æ¥å£
-  // TDrawEngineInterface_FMXæ˜¯é¢å‘FMXçš„ç»˜å›¾coreæ¥å£
-  // å¦‚æœä¸æŒ‡å®šç»˜å›¾æ¥å£ï¼ŒzDrawEngineä¼šé»˜è®¤ä½¿ç”¨è½¯ä»¶å…‰æ …ç»˜å›¾(æ¯”è¾ƒæ…¢)
+  // Ê¹ÓÃzDrawEngine×öÍâ²¿»æÍ¼Ê±(±ÈÈçÓÎÏ·£¬ÃæÏòpaintbox)£¬¶¼ĞèÒªÒ»¸ö»æÍ¼½Ó¿Ú
+  // TDrawEngineInterface_FMXÊÇÃæÏòFMXµÄ»æÍ¼core½Ó¿Ú
+  // Èç¹û²»Ö¸¶¨»æÍ¼½Ó¿Ú£¬zDrawEngine»áÄ¬ÈÏÊ¹ÓÃÈí¼ş¹âÕ¤»æÍ¼(±È½ÏÂı)
   drawIntf := TDrawEngineInterface_FMX.Create;
 
-  // mp4è§†é¢‘å¸§æ ¼å¼
+  // mp4ÊÓÆµÖ¡¸ñÊ½
   mpeg_r := TFFMPEG_Reader.Create(umlCombineFileName(TPath.GetLibraryPath, 'market2.mp4'));
 
-  // å½“å‰ç»˜åˆ¶çš„è§†é¢‘å¸§
+  // µ±Ç°»æÖÆµÄÊÓÆµÖ¡
   frame := TDrawEngine.NewTexture;
 
-  // cadencerå¼•æ“
+  // cadencerÒıÇæ
   cadencer_eng := TCadencer.Create;
   cadencer_eng.ProgressInterface := Self;
 
-  // aiå¼•æ“
+  // aiÒıÇæ
   ai := TAI.OpenEngine();
 
-  // åŠ è½½dnn-odçš„æ£€æµ‹å™¨
+  // ¼ÓÔØdnn-odµÄ¼ì²âÆ÷
   mmod_hnd := ai.MMOD_DNN_Open_Stream(umlCombineFileName(TPath.GetLibraryPath, 'RealTime_MMOD.svm_dnn_od'));
 end;
 
@@ -96,22 +96,22 @@ procedure TForm1.PaintBox1Paint(Sender: TObject; Canvas: TCanvas);
   begin
     ai.DrawMMOD(mmod_hnd, mr, DEColor(0.5, 0.5, 1, 1), 10);
 
-    // è¿™é‡Œæ¼”ç¤ºäº†å¯¹è§†é¢‘è¾“å‡ºåšåæœŸå¤„ç†çš„éƒ¨åˆ†æ–¹æ³•
+    // ÕâÀïÑİÊ¾ÁË¶ÔÊÓÆµÊä³ö×öºóÆÚ´¦ÀíµÄ²¿·Ö·½·¨
 
-    // Sepiaæ˜¯éå¸¸æ¼‚äº®çš„è‰²å½©ç³»ï¼Œå¸¸ç”¨äºç¾å·¥é£æ ¼å®šä¹‰
+    // SepiaÊÇ·Ç³£Æ¯ÁÁµÄÉ«²ÊÏµ£¬³£ÓÃÓÚÃÀ¹¤·ç¸ñ¶¨Òå
     if SepiaCheckBox.IsChecked then
         Sepia32(mr, 12);
 
-    // ä½¿ç”¨è‰²å½©ç›´æ–¹å›¾ä¿®å¤yv12ä¸¢å¤±çš„è‰²å½©
-    // è®©å›¾åƒè¾“å‡ºçœ‹èµ·æ¥æ›´æœ‰ç”µè§†æ„Ÿè§‰
+    // Ê¹ÓÃÉ«²ÊÖ±·½Í¼ĞŞ¸´yv12¶ªÊ§µÄÉ«²Ê
+    // ÈÃÍ¼ÏñÊä³ö¿´ÆğÀ´¸üÓĞµçÊÓ¸Ğ¾õ
     if HistogramEqualizeCheckBox.IsChecked then
         HistogramEqualize(mr);
 
-    // åé”¯é½¿
+    // ·´¾â³İ
     if AntialiasCheckBox.IsChecked then
         Antialias32(mr, 1);
 
-    // é”åŒ–
+    // Èñ»¯
     if SharpenCheckBox.IsChecked then
         Sharpen(mr, False);
   end;
@@ -134,7 +134,7 @@ begin
   Raster_DetectAndDraw(frame);
   d.FitDrawPicture(frame, frame.BoundsRectV2, d.ScreenRect, 1.0);
 
-  // æ‰§è¡Œç»˜å›¾æŒ‡ä»¤
+  // Ö´ĞĞ»æÍ¼Ö¸Áî
   d.Flush;
   frame.ReleaseGPUMemory;
 end;

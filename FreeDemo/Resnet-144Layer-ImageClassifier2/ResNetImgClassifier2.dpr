@@ -1,4 +1,4 @@
-﻿program ResNetImgClassifier2;
+program ResNetImgClassifier2;
 
 uses
   System.StartUpCopy,

@@ -1,4 +1,4 @@
-﻿program LargeMetricImgClassifier;
+program LargeMetricImgClassifier;
 
 uses
   System.StartUpCopy,

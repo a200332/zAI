@@ -1,4 +1,4 @@
-﻿program realtime_Face_videoserv_GPU;
+program realtime_Face_videoserv_GPU;
 
 {$APPTYPE CONSOLE}
 

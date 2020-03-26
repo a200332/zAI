@@ -1,4 +1,4 @@
-ï»¿ï»¿unit GradientBasedNetImageClassifierFrm;
+unit GradientBasedNetImageClassifierFrm;
 
 interface
 
@@ -34,8 +34,8 @@ type
     ai: TAI;
     imgMat: TAI_ImageMatrix;
 
-    // å¤§è§„æ¨¡è®­ç»ƒä¼šç›´æ¥ç»•è¿‡å†…å­˜ä½¿ç”¨ï¼Œè®©æ•°æ®ä»¥åºåˆ—åŒ–æ–¹å¼é€šè¿‡Streamæ¥å·¥ä½œ
-    // TRasterSerializedåº”è¯¥æ„å»ºåœ¨ssd,m2,raidè¿™ç±»æ‹¥æœ‰é«˜é€Ÿå­˜å‚¨èƒ½åŠ›çš„è®¾å¤‡ä¸­
+    // ´ó¹æÄ£ÑµÁ·»áÖ±½ÓÈÆ¹ıÄÚ´æÊ¹ÓÃ£¬ÈÃÊı¾İÒÔĞòÁĞ»¯·½Ê½Í¨¹ıStreamÀ´¹¤×÷
+    // TRasterSerializedÓ¦¸Ã¹¹½¨ÔÚssd,m2,raidÕâÀàÓµÓĞ¸ßËÙ´æ´¢ÄÜÁ¦µÄÉè±¸ÖĞ
     RSeri: TRasterSerialized;
   end;
 
@@ -69,7 +69,7 @@ begin
 
       if (not umlFileExists(output_fn)) or (not umlFileExists(gnic_index_fn)) then
         begin
-          DoStatus('å¿…é¡»è®­ç»ƒ');
+          DoStatus('±ØĞëÑµÁ·');
           exit;
         end;
 
@@ -80,8 +80,8 @@ begin
           ResetButton.Enabled := False;
         end);
 
-      // ZAIå¯¹cudaçš„æ”¯æŒæœºåˆ¶è¯´æ˜ï¼šåœ¨10.xç‰ˆæœ¬ï¼Œä¸€ä¸ªZAIè¿›ç¨‹ä¸€æ¬¡åªèƒ½ç”¨ä¸€ä¸ªcudaï¼Œä¸èƒ½å¹¶è¡ŒåŒ–ä½¿ç”¨cudaï¼Œå¦‚æœæœ‰å¤šç§cudaè®¡ç®—å¤šå¼€è¿›ç¨‹å³å¯
-      // ä½¿ç”¨zAIçš„cudaå¿…è¡Œä¿è¯åœ¨ä¸»è¿›ç¨‹ä¸­è®¡ç®—ï¼Œå¦åˆ™ä¼šå‘ç”Ÿæ˜¾å­˜æ³„æ¼
+      // ZAI¶ÔcudaµÄÖ§³Ö»úÖÆËµÃ÷£ºÔÚ10.x°æ±¾£¬Ò»¸öZAI½ø³ÌÒ»´ÎÖ»ÄÜÓÃÒ»¸öcuda£¬²»ÄÜ²¢ĞĞ»¯Ê¹ÓÃcuda£¬Èç¹ûÓĞ¶àÖÖcuda¼ÆËã¶à¿ª½ø³Ì¼´¿É
+      // Ê¹ÓÃzAIµÄcuda±ØĞĞ±£Ö¤ÔÚÖ÷½ø³ÌÖĞ¼ÆËã£¬·ñÔò»á·¢ÉúÏÔ´æĞ¹Â©
       TThread.Synchronize(TThread.CurrentThread, procedure
         begin
           hnd := ai.GNIC_Open_Stream(output_fn);
@@ -89,10 +89,10 @@ begin
       Train_OutputIndex := TPascalStringList.Create;
       Train_OutputIndex.LoadFromFile(gnic_index_fn);
 
-      // åœ¨æ¯ä¸ªåˆ†ç±»ä¸­ï¼Œéšæœºé‡‡é›†å‡ºæ¥æµ‹è¯•çš„æ•°é‡
+      // ÔÚÃ¿¸ö·ÖÀàÖĞ£¬Ëæ»ú²É¼¯³öÀ´²âÊÔµÄÊıÁ¿
       pick_raster := 100;
 
-      // ä»è®­ç»ƒæ•°æ®é›†ä¸­éšæœºæ„å»ºæµ‹è¯•æ•°æ®é›†
+      // ´ÓÑµÁ·Êı¾İ¼¯ÖĞËæ»ú¹¹½¨²âÊÔÊı¾İ¼¯
       rasterList := TMemoryRasterList.Create;
       for i := 0 to imgMat.Count - 1 do
         begin
@@ -110,8 +110,8 @@ begin
       wrong := 0;
       for i := 0 to rasterList.Count - 1 do
         begin
-          // ZAIå¯¹cudaçš„æ”¯æŒæœºåˆ¶è¯´æ˜ï¼šåœ¨10.xç‰ˆæœ¬ï¼Œä¸€ä¸ªZAIè¿›ç¨‹ä¸€æ¬¡åªèƒ½ç”¨ä¸€ä¸ªcudaï¼Œä¸èƒ½å¹¶è¡ŒåŒ–ä½¿ç”¨cudaï¼Œå¦‚æœæœ‰å¤šç§cudaè®¡ç®—å¤šå¼€è¿›ç¨‹å³å¯
-          // ä½¿ç”¨zAIçš„cudaå¿…è¡Œä¿è¯åœ¨ä¸»è¿›ç¨‹ä¸­è®¡ç®—ï¼Œå¦åˆ™ä¼šå‘ç”Ÿæ˜¾å­˜æ³„æ¼
+          // ZAI¶ÔcudaµÄÖ§³Ö»úÖÆËµÃ÷£ºÔÚ10.x°æ±¾£¬Ò»¸öZAI½ø³ÌÒ»´ÎÖ»ÄÜÓÃÒ»¸öcuda£¬²»ÄÜ²¢ĞĞ»¯Ê¹ÓÃcuda£¬Èç¹ûÓĞ¶àÖÖcuda¼ÆËã¶à¿ª½ø³Ì¼´¿É
+          // Ê¹ÓÃzAIµÄcuda±ØĞĞ±£Ö¤ÔÚÖ÷½ø³ÌÖĞ¼ÆËã£¬·ñÔò»á·¢ÉúÏÔ´æĞ¹Â©
           TThread.Synchronize(TThread.CurrentThread, procedure
             begin
               vec := ai.GNIC_Process(hnd, 32, 32, rasterList[i]);
@@ -129,15 +129,15 @@ begin
           DoStatus('test %d/%d', [i + 1, rasterList.Count]);
         end;
 
-      DoStatus('æµ‹è¯•æ€»æ•°: %d', [rasterList.Count]);
-      DoStatus('æµ‹è¯•é”™è¯¯: %d', [wrong]);
-      DoStatus('æ¨¡å‹å‡†ç¡®ç‡: %f%%', [(1.0 - (wrong / rasterList.Count)) * 100]);
+      DoStatus('²âÊÔ×ÜÊı: %d', [rasterList.Count]);
+      DoStatus('²âÊÔ´íÎó: %d', [wrong]);
+      DoStatus('Ä£ĞÍ×¼È·ÂÊ: %f%%', [(1.0 - (wrong / rasterList.Count)) * 100]);
 
       DisposeObject(Train_OutputIndex);
       DisposeObject(rasterList);
       ai.GNIC_Close(hnd);
 
-      DoStatus('æ­£åœ¨å›æ”¶å†…å­˜');
+      DoStatus('ÕıÔÚ»ØÊÕÄÚ´æ');
       imgMat.SerializedAndRecycleMemory(RSeri);
 
       TThread.Synchronize(Sender, procedure
@@ -146,7 +146,7 @@ begin
           TestClassifierButton.Enabled := True;
           ResetButton.Enabled := True;
         end);
-      DoStatus('æµ‹è¯•å®Œæˆ.');
+      DoStatus('²âÊÔÍê³É.');
     end);
 end;
 
@@ -174,47 +174,47 @@ begin
         begin
           param := TAI.Init_GNIC_Train_Parameter(sync_fn, output_fn);
 
-          // æœ¬æ¬¡è®­ç»ƒè®¡åˆ’ä½¿ç”¨8å°æ—¶
+          // ±¾´ÎÑµÁ·¼Æ»®Ê¹ÓÃ8Ğ¡Ê±
           param^.timeout := C_Tick_Hour * 8;
 
-          // é€šè¿‡é€šè¿‡è°ƒæ•´å­¦ä¹ ç‡ä¹Ÿå¯ä»¥è¾¾åˆ°epoch(åˆçº§å»ºæ¨¡æ–¹å¼)çš„æ”¶æ•›æµç¨‹
+          // Í¨¹ıÍ¨¹ıµ÷ÕûÑ§Ï°ÂÊÒ²¿ÉÒÔ´ïµ½epoch(³õ¼¶½¨Ä£·½Ê½)µÄÊÕÁ²Á÷³Ì
           param^.learning_rate := 0.01;
           param^.completed_learning_rate := 0.00001;
 
-          // æ”¶æ•›æ¢¯åº¦çš„å¤„ç†æ¡ä»¶
-          // åœ¨æ”¶æ•›æ¢¯åº¦ä¸­ï¼Œåªè¦å¤±æ•ˆæ­¥æ•°é«˜äºè¯¥æ•°å€¼ï¼Œæ¢¯åº¦å°±ä¼šå¼€å§‹æ”¶æ•›
+          // ÊÕÁ²Ìİ¶ÈµÄ´¦ÀíÌõ¼ş
+          // ÔÚÊÕÁ²Ìİ¶ÈÖĞ£¬Ö»ÒªÊ§Ğ§²½Êı¸ßÓÚ¸ÃÊıÖµ£¬Ìİ¶È¾Í»á¿ªÊ¼ÊÕÁ²
           param^.iterations_without_progress_threshold := 4000;
 
-          // å¯¹æ¯ä¸ªæ­¥æ•°è¾“å…¥çš„å›¾ç‰‡
+          // ¶ÔÃ¿¸ö²½ÊıÊäÈëµÄÍ¼Æ¬
           param^.img_mini_batch := 128;
 
-          // gpuæ¯åšä¸€æ¬¡æ‰¹æ¬¡è¿ç®—ä¼šæš‚åœçš„æ—¶é—´å•ä½æ˜¯ms
-          // è¿™é¡¹å‚æ•°æ˜¯åœ¨1.15æ–°å¢çš„å‘¼å¸å‚æ•°ï¼Œå®ƒå¯ä»¥è®©æˆ‘ä»¬åœ¨å·¥ä½œçš„åŒæ—¶ï¼Œåå°è¿›è¡Œæ— æ„Ÿè§‰è®­ç»ƒ
+          // gpuÃ¿×öÒ»´ÎÅú´ÎÔËËã»áÔİÍ£µÄÊ±¼äµ¥Î»ÊÇms
+          // ÕâÏî²ÎÊıÊÇÔÚ1.15ĞÂÔöµÄºôÎü²ÎÊı£¬Ëü¿ÉÒÔÈÃÎÒÃÇÔÚ¹¤×÷µÄÍ¬Ê±£¬ºóÌ¨½øĞĞÎŞ¸Ğ¾õÑµÁ·
           // zAI.KeepPerformanceOnTraining := 10;
 
-          // åœ¨å¤§è§„æ¨¡è®­ç»ƒä¸­ï¼Œä½¿ç”¨é¢‘ç‡ä¸é«˜çš„å…‰æ …åŒ–æ•°æ®æ•°æ®éƒ½ä¼šåœ¨ç¡¬ç›˜(m2,ssd,raid)æš‚å­˜ï¼Œä½¿ç”¨æ‰ä¼šè¢«è°ƒç”¨å‡ºæ¥
-          // LargeScaleTrainingMemoryRecycleTimeè¡¨ç¤ºè¿™äº›å…‰æ …åŒ–æ•°æ®å¯ä»¥åœ¨ç³»ç»Ÿå†…å­˜ä¸­æš‚å­˜å¤šä¹…ï¼Œå•ä½æ˜¯æ¯«ç§’ï¼Œæ•°å€¼è¶Šå¤§ï¼Œè¶Šåƒå†…å­˜
-          // å¦‚æœåœ¨æœºæ¢°ç¡¬ç›˜ä½¿ç”¨å…‰æ …åºåˆ—åŒ–äº¤æ¢ï¼Œæ›´å¤§çš„æ•°å€¼å¯èƒ½å¸¦æ¥æ›´å¥½çš„è®­ç»ƒæ€§èƒ½
-          // å¤§è§„æ¨¡è®­ç»ƒæ³¨æ„ç»™å…‰æ …åºåˆ—åŒ–äº¤æ¢æ–‡ä»¶è…¾æŒªè¶³å¤Ÿçš„ç£ç›˜ç©ºé—´
-          // å¤§æ•°æ®æ¶ˆè€—åˆ°æ•°ç™¾Gç”šè‡³è‹¥å¹²TBï¼Œå› ä¸ºæŸäº›jpgè¿™ç±»æ•°æ®åŸå¤ªå¤šï¼Œå±•å¼€ä»¥åï¼Œå­˜å‚¨ç©ºé—´ä¼šåœ¨åŸå°ºåº¦åŸºç¡€ä¸Š*10å€å·¦å³
+          // ÔÚ´ó¹æÄ£ÑµÁ·ÖĞ£¬Ê¹ÓÃÆµÂÊ²»¸ßµÄ¹âÕ¤»¯Êı¾İÊı¾İ¶¼»áÔÚÓ²ÅÌ(m2,ssd,raid)Ôİ´æ£¬Ê¹ÓÃ²Å»á±»µ÷ÓÃ³öÀ´
+          // LargeScaleTrainingMemoryRecycleTime±íÊ¾ÕâĞ©¹âÕ¤»¯Êı¾İ¿ÉÒÔÔÚÏµÍ³ÄÚ´æÖĞÔİ´æ¶à¾Ã£¬µ¥Î»ÊÇºÁÃë£¬ÊıÖµÔ½´ó£¬Ô½³ÔÄÚ´æ
+          // Èç¹ûÔÚ»úĞµÓ²ÅÌÊ¹ÓÃ¹âÕ¤ĞòÁĞ»¯½»»»£¬¸ü´óµÄÊıÖµ¿ÉÄÜ´øÀ´¸üºÃµÄÑµÁ·ĞÔÄÜ
+          // ´ó¹æÄ£ÑµÁ·×¢Òâ¸ø¹âÕ¤ĞòÁĞ»¯½»»»ÎÄ¼şÌÚÅ²×ã¹»µÄ´ÅÅÌ¿Õ¼ä
+          // ´óÊı¾İÏûºÄµ½Êı°ÙGÉõÖÁÈô¸ÉTB£¬ÒòÎªÄ³Ğ©jpgÕâÀàÊı¾İÔ­Ì«¶à£¬Õ¹¿ªÒÔºó£¬´æ´¢¿Õ¼ä»áÔÚÔ­³ß¶È»ù´¡ÉÏ*10±¶×óÓÒ
           LargeScaleTrainingMemoryRecycleTime := C_Tick_Second * 5;
 
           Train_OutputIndex := TPascalStringList.Create;
           if ai.GNIC_Train(True, RSeri, 32, 32, imgMat, param, Train_OutputIndex) then
             begin
               Train_OutputIndex.SaveToFile(gnic_index_fn);
-              DoStatus('è®­ç»ƒæˆåŠŸ.');
+              DoStatus('ÑµÁ·³É¹¦.');
             end
           else
             begin
-              DoStatus('è®­ç»ƒå¤±è´¥.');
+              DoStatus('ÑµÁ·Ê§°Ü.');
             end;
 
           TAI.Free_GNIC_Train_Parameter(param);
           DisposeObject(Train_OutputIndex);
         end
       else
-          DoStatus('å›¾ç‰‡åˆ†ç±»å™¨å·²ç»è®­ç»ƒè¿‡äº†.');
+          DoStatus('Í¼Æ¬·ÖÀàÆ÷ÒÑ¾­ÑµÁ·¹ıÁË.');
 
       TThread.Synchronize(Sender, procedure
         begin
@@ -234,13 +234,13 @@ end;
 procedure TGradientBasedNetImageClassifierForm.FormCreate(Sender: TObject);
 begin
   AddDoStatusHook(Self, DoStatusMethod);
-  // è¯»å–zAIçš„é…ç½®
+  // ¶ÁÈ¡zAIµÄÅäÖÃ
   ReadAIConfig;
-  // è¿™ä¸€æ­¥ä¼šè¿æ¥KeyæœåŠ¡å™¨ï¼ŒéªŒè¯ZAIçš„Key
-  // è¿æ¥æœåŠ¡å™¨éªŒè¯Keyæ˜¯åœ¨å¯åŠ¨å¼•æ“æ—¶ä¸€æ¬¡æ€§çš„éªŒè¯ï¼Œåªä¼šå½“ç¨‹åºå¯åŠ¨æ—¶æ‰ä¼šéªŒè¯ï¼Œå‡å¦‚éªŒè¯ä¸èƒ½é€šè¿‡ï¼ŒzAIå°†ä¼šæ‹’ç»å·¥ä½œ
-  // åœ¨ç¨‹åºè¿è¡Œä¸­ï¼Œåå¤åˆ›å»ºTAIï¼Œä¸ä¼šå‘ç”Ÿè¿œç¨‹éªŒè¯
-  // éªŒè¯éœ€è¦ä¸€ä¸ªuserKeyï¼Œé€šè¿‡userkeyæ¨ç®—å‡ºZAIåœ¨å¯åŠ¨æ—¶ç”Ÿæˆçš„éšæœºKeyï¼Œuserkeyå¯ä»¥é€šè¿‡webç”³è¯·ï¼Œä¹Ÿå¯ä»¥è”ç³»ä½œè€…å‘æ”¾
-  // éªŒè¯keyéƒ½æ˜¯æŠ—é‡å­çº§ï¼Œæ— æ³•è¢«ç ´è§£
+  // ÕâÒ»²½»áÁ¬½ÓKey·şÎñÆ÷£¬ÑéÖ¤ZAIµÄKey
+  // Á¬½Ó·şÎñÆ÷ÑéÖ¤KeyÊÇÔÚÆô¶¯ÒıÇæÊ±Ò»´ÎĞÔµÄÑéÖ¤£¬Ö»»áµ±³ÌĞòÆô¶¯Ê±²Å»áÑéÖ¤£¬¼ÙÈçÑéÖ¤²»ÄÜÍ¨¹ı£¬zAI½«»á¾Ü¾ø¹¤×÷
+  // ÔÚ³ÌĞòÔËĞĞÖĞ£¬·´¸´´´½¨TAI£¬²»»á·¢ÉúÔ¶³ÌÑéÖ¤
+  // ÑéÖ¤ĞèÒªÒ»¸öuserKey£¬Í¨¹ıuserkeyÍÆËã³öZAIÔÚÆô¶¯Ê±Éú³ÉµÄËæ»úKey£¬userkey¿ÉÒÔÍ¨¹ıwebÉêÇë£¬Ò²¿ÉÒÔÁªÏµ×÷Õß·¢·Å
+  // ÑéÖ¤key¶¼ÊÇ¿¹Á¿×Ó¼¶£¬ÎŞ·¨±»ÆÆ½â
   zAI.Prepare_AI_Engine();
 
   TComputeThread.RunP(nil, nil, procedure(Sender: TComputeThread)
@@ -259,13 +259,13 @@ begin
         end);
       ai := TAI.OpenEngine();
       imgMat := TAI_ImageMatrix.Create;
-      DoStatus('æ­£åœ¨è¯»å–åˆ†ç±»å›¾ç‰‡çŸ©é˜µåº“.');
-      // TRasterSerialized åˆ›å»ºæ—¶éœ€è¦æŒ‡å®šä¸€ä¸ªä¸´æ—¶æ–‡ä»¶åï¼Œai.MakeSerializedFileNameæŒ‡å‘äº†ä¸€ä¸ªä¸´æ—¶ç›®å½•tempï¼Œå®ƒä¸€èˆ¬ä½äºc:ç›˜
-      // å¦‚æœc:ç›˜ç©ºé—´ä¸å¤Ÿï¼Œè®­ç»ƒå¤§æ•°æ®å°†ä¼šå‡ºé”™ï¼Œè§£å†³åŠæ³•ï¼Œé‡æ–°æŒ‡å®šTRasterSerializedæ„å»ºçš„ä¸´æ—¶æ–‡ä»¶å
+      DoStatus('ÕıÔÚ¶ÁÈ¡·ÖÀàÍ¼Æ¬¾ØÕó¿â.');
+      // TRasterSerialized ´´½¨Ê±ĞèÒªÖ¸¶¨Ò»¸öÁÙÊ±ÎÄ¼şÃû£¬ai.MakeSerializedFileNameÖ¸ÏòÁËÒ»¸öÁÙÊ±Ä¿Â¼temp£¬ËüÒ»°ãÎ»ÓÚc:ÅÌ
+      // Èç¹ûc:ÅÌ¿Õ¼ä²»¹»£¬ÑµÁ·´óÊı¾İ½«»á³ö´í£¬½â¾ö°ì·¨£¬ÖØĞÂÖ¸¶¨TRasterSerialized¹¹½¨µÄÁÙÊ±ÎÄ¼şÃû
       RSeri := TRasterSerialized.Create(TFileStream.Create(ai.MakeSerializedFileName, fmCreate));
       imgMat.LargeScale_LoadFromFile(RSeri, umlCombineFileName(TPath.GetLibraryPath, 'mnist_number_0_9.imgMat'));
 
-      DoStatus('çŸ«æ­£åˆ†ç±»æ ‡ç­¾.');
+      DoStatus('½ÃÕı·ÖÀà±êÇ©.');
       for i := 0 to imgMat.Count - 1 do
         begin
           imgL := imgMat[i];
@@ -281,9 +281,9 @@ begin
         end;
 
       tokens := imgMat.DetectorTokens;
-      DoStatus('æ€»å…±æœ‰ %d ä¸ªåˆ†ç±»', [length(tokens)]);
+      DoStatus('×Ü¹²ÓĞ %d ¸ö·ÖÀà', [length(tokens)]);
       for n in tokens do
-          DoStatus('"%s" æœ‰ %d å¼ å›¾ç‰‡', [n.Text, imgMat.GetDetectorTokenCount(n)]);
+          DoStatus('"%s" ÓĞ %d ÕÅÍ¼Æ¬', [n.Text, imgMat.GetDetectorTokenCount(n)]);
 
       TThread.Synchronize(Sender, procedure
         begin
@@ -297,7 +297,7 @@ end;
 procedure TGradientBasedNetImageClassifierForm.ResetButtonClick(Sender: TObject);
   procedure d(FileName: U_String);
   begin
-    DoStatus('åˆ é™¤æ–‡ä»¶ %s', [FileName.Text]);
+    DoStatus('É¾³ıÎÄ¼ş %s', [FileName.Text]);
     umlDeleteFile(FileName);
   end;
 

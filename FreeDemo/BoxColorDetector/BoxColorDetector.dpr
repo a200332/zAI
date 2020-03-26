@@ -1,4 +1,4 @@
-﻿program BoxColorDetector;
+program BoxColorDetector;
 
 uses
   System.StartUpCopy,

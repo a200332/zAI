@@ -1,4 +1,4 @@
-ï»¿ï»¿unit SSMainFrm;
+unit SSMainFrm;
 
 interface
 
@@ -32,8 +32,8 @@ type
     procedure DoStatusMethod(Text_: SystemString; const ID: Integer);
   public
     ai: TAI;
-    // å¤§è§„æ¨¡è®­ç»ƒä¼šç›´æ¥ç»•è¿‡å†…å­˜ä½¿ç”¨ï¼Œè®©æ•°æ®ä»¥åºåˆ—åŒ–æ–¹å¼é€šè¿‡Streamæ¥å·¥ä½œ
-    // TRasterSerializedåº”è¯¥æ„å»ºåœ¨ssd,m2,raidè¿™ç±»æ‹¥æœ‰é«˜é€Ÿå­˜å‚¨èƒ½åŠ›çš„è®¾å¤‡ä¸­
+    // ´ó¹æÄ£ÑµÁ·»áÖ±½ÓÈÆ¹ıÄÚ´æÊ¹ÓÃ£¬ÈÃÊı¾İÒÔĞòÁĞ»¯·½Ê½Í¨¹ıStreamÀ´¹¤×÷
+    // TRasterSerializedÓ¦¸Ã¹¹½¨ÔÚssd,m2,raidÕâÀàÓµÓĞ¸ßËÙ´æ´¢ÄÜÁ¦µÄÉè±¸ÖĞ
     RSeri: TRasterSerialized;
   end;
 
@@ -50,19 +50,19 @@ uses ShowImageFrm;
 procedure TSSMainForm.FormCreate(Sender: TObject);
 begin
   AddDoStatusHook(Self, DoStatusMethod);
-  // è¯»å–zAIçš„é…ç½®
+  // ¶ÁÈ¡zAIµÄÅäÖÃ
   ReadAIConfig;
-  // è¿™ä¸€æ­¥ä¼šè¿æ¥KeyæœåŠ¡å™¨ï¼ŒéªŒè¯ZAIçš„Key
-  // è¿æ¥æœåŠ¡å™¨éªŒè¯Keyæ˜¯åœ¨å¯åŠ¨å¼•æ“æ—¶ä¸€æ¬¡æ€§çš„éªŒè¯ï¼Œåªä¼šå½“ç¨‹åºå¯åŠ¨æ—¶æ‰ä¼šéªŒè¯ï¼Œå‡å¦‚éªŒè¯ä¸èƒ½é€šè¿‡ï¼ŒzAIå°†ä¼šæ‹’ç»å·¥ä½œ
-  // åœ¨ç¨‹åºè¿è¡Œä¸­ï¼Œåå¤åˆ›å»ºTAIï¼Œä¸ä¼šå‘ç”Ÿè¿œç¨‹éªŒè¯
-  // éªŒè¯éœ€è¦ä¸€ä¸ªuserKeyï¼Œé€šè¿‡userkeyæ¨ç®—å‡ºZAIåœ¨å¯åŠ¨æ—¶ç”Ÿæˆçš„éšæœºKeyï¼Œuserkeyå¯ä»¥é€šè¿‡webç”³è¯·ï¼Œä¹Ÿå¯ä»¥è”ç³»ä½œè€…å‘æ”¾
-  // éªŒè¯keyéƒ½æ˜¯æŠ—é‡å­çº§ï¼Œæ— æ³•è¢«ç ´è§£
+  // ÕâÒ»²½»áÁ¬½ÓKey·şÎñÆ÷£¬ÑéÖ¤ZAIµÄKey
+  // Á¬½Ó·şÎñÆ÷ÑéÖ¤KeyÊÇÔÚÆô¶¯ÒıÇæÊ±Ò»´ÎĞÔµÄÑéÖ¤£¬Ö»»áµ±³ÌĞòÆô¶¯Ê±²Å»áÑéÖ¤£¬¼ÙÈçÑéÖ¤²»ÄÜÍ¨¹ı£¬zAI½«»á¾Ü¾ø¹¤×÷
+  // ÔÚ³ÌĞòÔËĞĞÖĞ£¬·´¸´´´½¨TAI£¬²»»á·¢ÉúÔ¶³ÌÑéÖ¤
+  // ÑéÖ¤ĞèÒªÒ»¸öuserKey£¬Í¨¹ıuserkeyÍÆËã³öZAIÔÚÆô¶¯Ê±Éú³ÉµÄËæ»úKey£¬userkey¿ÉÒÔÍ¨¹ıwebÉêÇë£¬Ò²¿ÉÒÔÁªÏµ×÷Õß·¢·Å
+  // ÑéÖ¤key¶¼ÊÇ¿¹Á¿×Ó¼¶£¬ÎŞ·¨±»ÆÆ½â
   zAI.Prepare_AI_Engine();
 
   TrainingButton.Enabled := False;
   TestButton.Enabled := False;
   ResetButton.Enabled := False;
-  DoStatus('æ­£åœ¨è¯»å–å›¾åƒè¯­ä¹‰æ•°æ®.');
+  DoStatus('ÕıÔÚ¶ÁÈ¡Í¼ÏñÓïÒåÊı¾İ.');
 
   TComputeThread.RunP(nil, nil, procedure(Sender: TComputeThread)
     var
@@ -71,8 +71,8 @@ begin
       n: TPascalString;
     begin
       ai := TAI.OpenEngine();
-      // TRasterSerialized åˆ›å»ºæ—¶éœ€è¦æŒ‡å®šä¸€ä¸ªä¸´æ—¶æ–‡ä»¶åï¼Œai.MakeSerializedFileNameæŒ‡å‘äº†ä¸€ä¸ªä¸´æ—¶ç›®å½•tempï¼Œå®ƒä¸€èˆ¬ä½äºc:ç›˜
-      // å¦‚æœc:ç›˜ç©ºé—´ä¸å¤Ÿï¼Œè®­ç»ƒå¤§æ•°æ®å°†ä¼šå‡ºé”™ï¼Œè§£å†³åŠæ³•ï¼Œé‡æ–°æŒ‡å®šTRasterSerializedæ„å»ºçš„ä¸´æ—¶æ–‡ä»¶å
+      // TRasterSerialized ´´½¨Ê±ĞèÒªÖ¸¶¨Ò»¸öÁÙÊ±ÎÄ¼şÃû£¬ai.MakeSerializedFileNameÖ¸ÏòÁËÒ»¸öÁÙÊ±Ä¿Â¼temp£¬ËüÒ»°ãÎ»ÓÚc:ÅÌ
+      // Èç¹ûc:ÅÌ¿Õ¼ä²»¹»£¬ÑµÁ·´óÊı¾İ½«»á³ö´í£¬½â¾ö°ì·¨£¬ÖØĞÂÖ¸¶¨TRasterSerialized¹¹½¨µÄÁÙÊ±ÎÄ¼şÃû
       RSeri := TRasterSerialized.Create(TFileStream.Create(ai.MakeSerializedFileName, fmCreate));
 
       TThread.Synchronize(Sender, procedure
@@ -80,7 +80,7 @@ begin
           TrainingButton.Enabled := True;
           TestButton.Enabled := True;
           ResetButton.Enabled := True;
-          DoStatus('è¯»å–å›¾åƒè¯­ä¹‰æ•°æ®å®Œæˆ.');
+          DoStatus('¶ÁÈ¡Í¼ÏñÓïÒåÊı¾İÍê³É.');
         end);
     end);
 end;
@@ -111,45 +111,45 @@ begin
           imgList.LoadFromFile(umlCombineFileName(TPath.GetLibraryPath, 'SSTrainDemo.ImgDataSet'));
           param := TAI.Init_SS_Train_Parameter(sync_fn, output_fn);
 
-          // æœ¬æ¬¡è®­ç»ƒè®¡åˆ’ä½¿ç”¨72å°æ—¶
+          // ±¾´ÎÑµÁ·¼Æ»®Ê¹ÓÃ72Ğ¡Ê±
           param^.timeout := C_Tick_Hour * 72;
 
-          // é€šè¿‡é€šè¿‡è°ƒæ•´å­¦ä¹ ç‡ä¹Ÿå¯ä»¥è¾¾åˆ°epoch(åˆçº§å»ºæ¨¡æ–¹å¼)çš„æ”¶æ•›æµç¨‹
+          // Í¨¹ıÍ¨¹ıµ÷ÕûÑ§Ï°ÂÊÒ²¿ÉÒÔ´ïµ½epoch(³õ¼¶½¨Ä£·½Ê½)µÄÊÕÁ²Á÷³Ì
           param^.learning_rate := 0.01;
           param^.completed_learning_rate := 0.00001;
 
-          // æ”¶æ•›æ¢¯åº¦çš„å¤„ç†æ¡ä»¶
-          // åœ¨æ”¶æ•›æ¢¯åº¦ä¸­ï¼Œåªè¦å¤±æ•ˆæ­¥æ•°é«˜äºè¯¥æ•°å€¼ï¼Œæ¢¯åº¦å°±ä¼šå¼€å§‹æ”¶æ•›
+          // ÊÕÁ²Ìİ¶ÈµÄ´¦ÀíÌõ¼ş
+          // ÔÚÊÕÁ²Ìİ¶ÈÖĞ£¬Ö»ÒªÊ§Ğ§²½Êı¸ßÓÚ¸ÃÊıÖµ£¬Ìİ¶È¾Í»á¿ªÊ¼ÊÕÁ²
           param^.iterations_without_progress_threshold := 5000;
 
-          // æ¯ä¸ªæ­¥æ•°çš„å›¾ç‰‡è¾“å…¥æ•°é‡
-          // ssç½‘ç»œï¼šsemantic segmentationç½‘ç»œéå¸¸æ¶ˆè€—æ˜¾å­˜ï¼Œè®¡ç®—é‡è¿œé«˜äºzAIçš„å…¶ä»–nn
-          // åœ¨ssç½‘ç»œä¸­ï¼Œinput batchï¼Œè¿™é‡Œç»™çš„æ˜¯10ï¼Œå¤§è‡´ä¼šæ¶ˆè€—æ‰6Gå·¦å³æ˜¾å­˜
+          // Ã¿¸ö²½ÊıµÄÍ¼Æ¬ÊäÈëÊıÁ¿
+          // ssÍøÂç£ºsemantic segmentationÍøÂç·Ç³£ÏûºÄÏÔ´æ£¬¼ÆËãÁ¿Ô¶¸ßÓÚzAIµÄÆäËûnn
+          // ÔÚssÍøÂçÖĞ£¬input batch£¬ÕâÀï¸øµÄÊÇ10£¬´óÖÂ»áÏûºÄµô6G×óÓÒÏÔ´æ
           param^.img_crops_batch := 20;
 
-          // gpuæ¯åšä¸€æ¬¡æ‰¹æ¬¡è¿ç®—ä¼šæš‚åœçš„æ—¶é—´å•ä½æ˜¯ms
-          // è¿™é¡¹å‚æ•°æ˜¯åœ¨1.15æ–°å¢çš„å‘¼å¸å‚æ•°ï¼Œå®ƒå¯ä»¥è®©æˆ‘ä»¬åœ¨å·¥ä½œçš„åŒæ—¶ï¼Œåå°è¿›è¡Œæ— æ„Ÿè§‰è®­ç»ƒ
+          // gpuÃ¿×öÒ»´ÎÅú´ÎÔËËã»áÔİÍ£µÄÊ±¼äµ¥Î»ÊÇms
+          // ÕâÏî²ÎÊıÊÇÔÚ1.15ĞÂÔöµÄºôÎü²ÎÊı£¬Ëü¿ÉÒÔÈÃÎÒÃÇÔÚ¹¤×÷µÄÍ¬Ê±£¬ºóÌ¨½øĞĞÎŞ¸Ğ¾õÑµÁ·
           // zAI.KeepPerformanceOnTraining := 10;
 
-          // åœ¨å¤§è§„æ¨¡è®­ç»ƒä¸­ï¼Œä½¿ç”¨é¢‘ç‡ä¸é«˜çš„å…‰æ …åŒ–æ•°æ®æ•°æ®éƒ½ä¼šåœ¨ç¡¬ç›˜(m2,ssd,raid)æš‚å­˜ï¼Œä½¿ç”¨æ‰ä¼šè¢«è°ƒç”¨å‡ºæ¥
-          // LargeScaleTrainingMemoryRecycleTimeè¡¨ç¤ºè¿™äº›å…‰æ …åŒ–æ•°æ®å¯ä»¥åœ¨ç³»ç»Ÿå†…å­˜ä¸­æš‚å­˜å¤šä¹…ï¼Œå•ä½æ˜¯æ¯«ç§’ï¼Œæ•°å€¼è¶Šå¤§ï¼Œè¶Šåƒå†…å­˜
-          // å¦‚æœåœ¨æœºæ¢°ç¡¬ç›˜ä½¿ç”¨å…‰æ …åºåˆ—åŒ–äº¤æ¢ï¼Œæ›´å¤§çš„æ•°å€¼å¯èƒ½å¸¦æ¥æ›´å¥½çš„è®­ç»ƒæ€§èƒ½
-          // å¤§è§„æ¨¡è®­ç»ƒæ³¨æ„ç»™å…‰æ …åºåˆ—åŒ–äº¤æ¢æ–‡ä»¶è…¾æŒªè¶³å¤Ÿçš„ç£ç›˜ç©ºé—´
-          // å¤§æ•°æ®æ¶ˆè€—åˆ°æ•°ç™¾Gç”šè‡³è‹¥å¹²TBï¼Œå› ä¸ºæŸäº›jpgè¿™ç±»æ•°æ®åŸå¤ªå¤šï¼Œå±•å¼€ä»¥åï¼Œå­˜å‚¨ç©ºé—´ä¼šåœ¨åŸå°ºåº¦åŸºç¡€ä¸Š*10å€å·¦å³
+          // ÔÚ´ó¹æÄ£ÑµÁ·ÖĞ£¬Ê¹ÓÃÆµÂÊ²»¸ßµÄ¹âÕ¤»¯Êı¾İÊı¾İ¶¼»áÔÚÓ²ÅÌ(m2,ssd,raid)Ôİ´æ£¬Ê¹ÓÃ²Å»á±»µ÷ÓÃ³öÀ´
+          // LargeScaleTrainingMemoryRecycleTime±íÊ¾ÕâĞ©¹âÕ¤»¯Êı¾İ¿ÉÒÔÔÚÏµÍ³ÄÚ´æÖĞÔİ´æ¶à¾Ã£¬µ¥Î»ÊÇºÁÃë£¬ÊıÖµÔ½´ó£¬Ô½³ÔÄÚ´æ
+          // Èç¹ûÔÚ»úĞµÓ²ÅÌÊ¹ÓÃ¹âÕ¤ĞòÁĞ»¯½»»»£¬¸ü´óµÄÊıÖµ¿ÉÄÜ´øÀ´¸üºÃµÄÑµÁ·ĞÔÄÜ
+          // ´ó¹æÄ£ÑµÁ·×¢Òâ¸ø¹âÕ¤ĞòÁĞ»¯½»»»ÎÄ¼şÌÚÅ²×ã¹»µÄ´ÅÅÌ¿Õ¼ä
+          // ´óÊı¾İÏûºÄµ½Êı°ÙGÉõÖÁÈô¸ÉTB£¬ÒòÎªÄ³Ğ©jpgÕâÀàÊı¾İÔ­Ì«¶à£¬Õ¹¿ªÒÔºó£¬´æ´¢¿Õ¼ä»áÔÚÔ­³ß¶È»ù´¡ÉÏ*10±¶×óÓÒ
           LargeScaleTrainingMemoryRecycleTime := C_Tick_Second * 5;
 
-          // è¯­ä¹‰åˆ†å‰²éœ€è¦ä¸€ä¸ªè‰²å½©æ± åšæ ‡æ³¨åˆ†å—
-          // BuildSegmentationColorBufferæ–¹æ³•æ˜¯æ ¹æ®æ ‡ç­¾åˆ†ç±»æ„å»ºä¸é‡å¤çš„éšæœºåˆ†å—é¢œè‰²æ± 
+          // ÓïÒå·Ö¸îĞèÒªÒ»¸öÉ«²Ê³Ø×ö±ê×¢·Ö¿é
+          // BuildSegmentationColorBuffer·½·¨ÊÇ¸ù¾İ±êÇ©·ÖÀà¹¹½¨²»ÖØ¸´µÄËæ»ú·Ö¿éÑÕÉ«³Ø
           ColorPool := imgList.BuildSegmentationColorBuffer;
 
           if ai.SS_Train(True, RSeri, imgList, param, ColorPool) then
             begin
-              DoStatus('è®­ç»ƒæˆåŠŸ.');
+              DoStatus('ÑµÁ·³É¹¦.');
               ColorPool.SaveToFile(colorpool_fn);
             end
           else
             begin
-              DoStatus('è®­ç»ƒå¤±è´¥.');
+              DoStatus('ÑµÁ·Ê§°Ü.');
             end;
           DisposeObject(ColorPool);
 
@@ -157,7 +157,7 @@ begin
           DisposeObject(imgList);
         end
       else
-          DoStatus('å›¾ç‰‡åˆ†ç±»å™¨å·²ç»è®­ç»ƒè¿‡äº†.');
+          DoStatus('Í¼Æ¬·ÖÀàÆ÷ÒÑ¾­ÑµÁ·¹ıÁË.');
 
       TThread.Synchronize(Sender, procedure
         begin
@@ -193,14 +193,14 @@ begin
 
       if umlFileExists(output_fn) and umlFileExists(colorpool_fn) then
         begin
-          DoStatus('æ­£åœ¨è¯»å–åˆ†å‰²ç½‘ç»œ');
+          DoStatus('ÕıÔÚ¶ÁÈ¡·Ö¸îÍøÂç');
           ssHnd := ai.SS_Open_Stream(output_fn);
 
-          DoStatus('æ­£åœ¨è¯»å–åˆ†å‰²é¢œè‰²');
+          DoStatus('ÕıÔÚ¶ÁÈ¡·Ö¸îÑÕÉ«');
           ColorPool := TSegmentationColorList.Create;
           ColorPool.LoadFromFile(colorpool_fn);
 
-          DoStatus('æ­£åœ¨è¯»å–æµ‹è¯•æ ·æœ¬åº“');
+          DoStatus('ÕıÔÚ¶ÁÈ¡²âÊÔÑù±¾¿â');
           from_editor_soruce := TEditorImageDataList.Create(True);
           from_editor_soruce.LoadFromFile(umlCombineFileName(TPath.GetLibraryPath, 'ss_test_picture.AI_Set'));
 
@@ -212,8 +212,8 @@ begin
               inputRaster.Assign(imgData.Raster);
               output_token := TPascalStringList.Create;
 
-              // ZAIå¯¹cudaçš„æ”¯æŒæœºåˆ¶è¯´æ˜ï¼šåœ¨10.xç‰ˆæœ¬ï¼Œä¸€ä¸ªZAIè¿›ç¨‹ä¸€æ¬¡åªèƒ½ç”¨ä¸€ä¸ªcudaï¼Œä¸èƒ½å¹¶è¡ŒåŒ–ä½¿ç”¨cudaï¼Œå¦‚æœæœ‰å¤šç§cudaè®¡ç®—å¤šå¼€è¿›ç¨‹å³å¯
-              // ä½¿ç”¨zAIçš„cudaå¿…è¡Œä¿è¯åœ¨ä¸»è¿›ç¨‹ä¸­è®¡ç®—ï¼Œå¦åˆ™ä¼šå‘ç”Ÿæ˜¾å­˜æ³„æ¼
+              // ZAI¶ÔcudaµÄÖ§³Ö»úÖÆËµÃ÷£ºÔÚ10.x°æ±¾£¬Ò»¸öZAI½ø³ÌÒ»´ÎÖ»ÄÜÓÃÒ»¸öcuda£¬²»ÄÜ²¢ĞĞ»¯Ê¹ÓÃcuda£¬Èç¹ûÓĞ¶àÖÖcuda¼ÆËã¶à¿ª½ø³Ì¼´¿É
+              // Ê¹ÓÃzAIµÄcuda±ØĞĞ±£Ö¤ÔÚÖ÷½ø³ÌÖĞ¼ÆËã£¬·ñÔò»á·¢ÉúÏÔ´æĞ¹Â©
               TThread.Synchronize(TThread.CurrentThread, procedure
                 begin
                   outputRaster := ai.SS_Process(ssHnd, inputRaster, ColorPool, output_token);
@@ -223,7 +223,7 @@ begin
               DisposeObject(output_token);
               TThread.Synchronize(Sender, procedure
                 begin
-                  ShowImage(inputRaster, 'è¾“å‡ºå›¾åƒ');
+                  ShowImage(inputRaster, 'Êä³öÍ¼Ïñ');
                 end);
               DisposeObject(inputRaster);
               DisposeObject(outputRaster);
@@ -234,7 +234,7 @@ begin
         end
       else
         begin
-          DoStatus('éœ€è¦è®­ç»ƒ');
+          DoStatus('ĞèÒªÑµÁ·');
         end;
       TThread.Synchronize(Sender, procedure
         begin
@@ -248,7 +248,7 @@ end;
 procedure TSSMainForm.ResetButtonClick(Sender: TObject);
   procedure d(FileName: U_String);
   begin
-    DoStatus('åˆ é™¤æ–‡ä»¶ %s', [FileName.Text]);
+    DoStatus('É¾³ıÎÄ¼ş %s', [FileName.Text]);
     umlDeleteFile(FileName);
   end;
 

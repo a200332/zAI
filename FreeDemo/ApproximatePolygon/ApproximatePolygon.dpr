@@ -1,4 +1,4 @@
-﻿program ApproximatePolygon;
+program ApproximatePolygon;
 
 uses
   System.StartUpCopy,

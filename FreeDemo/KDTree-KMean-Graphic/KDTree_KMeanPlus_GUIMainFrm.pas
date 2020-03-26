@@ -1,4 +1,4 @@
-﻿﻿unit KDTree_KMeanPlus_GUIMainFrm;
+unit KDTree_KMeanPlus_GUIMainFrm;
 
 interface
 

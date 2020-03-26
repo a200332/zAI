@@ -1,4 +1,4 @@
-﻿﻿unit NumTransFrm;
+unit NumTransFrm;
 
 interface
 

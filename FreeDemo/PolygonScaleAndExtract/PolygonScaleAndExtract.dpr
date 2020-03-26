@@ -1,4 +1,4 @@
-﻿program PolygonScaleAndExtract;
+program PolygonScaleAndExtract;
 
 uses
   System.StartUpCopy,

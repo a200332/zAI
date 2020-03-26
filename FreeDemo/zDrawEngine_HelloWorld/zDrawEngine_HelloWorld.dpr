@@ -1,4 +1,4 @@
-﻿program zDrawEngine_HelloWorld;
+program zDrawEngine_HelloWorld;
 
 uses
   System.StartUpCopy,

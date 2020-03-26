@@ -1,4 +1,4 @@
-﻿program AISetFormatExtract;
+program AISetFormatExtract;
 
 uses
   System.StartUpCopy,

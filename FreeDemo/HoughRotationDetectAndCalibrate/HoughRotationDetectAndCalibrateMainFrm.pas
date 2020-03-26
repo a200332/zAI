@@ -1,4 +1,4 @@
-﻿﻿unit HoughRotationDetectAndCalibrateMainFrm;
+unit HoughRotationDetectAndCalibrateMainFrm;
 
 interface
 

@@ -1,4 +1,4 @@
-ï»¿program PascalCodeDependencyAnslysis;
+program PascalCodeDependencyAnslysis;
 
 {$APPTYPE CONSOLE}
 
@@ -7,7 +7,7 @@
 
 uses SysUtils,
 {$IFDEF FPC}
-  FPCGenericStructlist, // è®©fpcç¼–è¯‘å™¨æ”¯æŒæ³›å‹ï¼Œéœ€è¦è¿™ä¸ªåº“
+  FPCGenericStructlist, // ÈÃfpc±àÒëÆ÷Ö§³Ö·ºĞÍ£¬ĞèÒªÕâ¸ö¿â
 {$ENDIF FPC}
   CoreClasses, PascalStrings, TextParsing, UnicodeMixedLib, DoStatusIO, ListEngine;
 
@@ -24,17 +24,17 @@ type
 
 {$IFDEF FPC}
 
-  // fpcç¼–è¯‘å™¨æ³›å‹ç”³æ˜å‰éœ€è¦ç”¨specializeä¿®é¥°ç¬¦è¯´æ˜
+  // fpc±àÒëÆ÷·ºĞÍÉêÃ÷Ç°ĞèÒªÓÃspecializeĞŞÊÎ·ûËµÃ÷
   TProbeList = specialize TGenericsList<PProbeRec>;
   TPascalUnitList_Decl = specialize TGenericsList<TPascalUnit>;
 {$ELSE FPC}
-  // ä½¿ç”¨delphiçš„æ³›å‹åº“ç›´æ¥ç”¨TGenericsListç”³æ˜å³å¯
+  // Ê¹ÓÃdelphiµÄ·ºĞÍ¿âÖ±½ÓÓÃTGenericsListÉêÃ÷¼´¿É
   TProbeList = TGenericsList<PProbeRec>;
   TPascalUnitList_Decl = TGenericsList<TPascalUnit>;
 {$ENDIF FPC}
 
-  // è§£æpascalç»“æ„ä½“ï¼Œæ”¯æŒæ‰€æœ‰fmx,vcl,runtime,LCL,fpcåŸºç¡€åº“+é«˜çº§åº“ï¼Œæ”¯æŒè§£ædelphiçš„é«˜çº§è¯­æ³•
-  // TPascalUnitæ¥è‡ªzExpressionçš„å·¥å…·é“¾ä»£ç 
+  // ½âÎöpascal½á¹¹Ìå£¬Ö§³ÖËùÓĞfmx,vcl,runtime,LCL,fpc»ù´¡¿â+¸ß¼¶¿â£¬Ö§³Ö½âÎödelphiµÄ¸ß¼¶Óï·¨
+  // TPascalUnitÀ´×ÔzExpressionµÄ¹¤¾ßÁ´´úÂë
   TPascalUnit = class(TCoreClassObject)
   public
     Parsing: TTextParsing;
@@ -61,7 +61,7 @@ type
     procedure AddPascalCodeFile(pasCodeFile: U_String);
     procedure DependencySort;
 
-    // è¿™ä¸‰ä¸ªåœ°æ–¹éœ€è¦é‡Šæ”¾æˆå‘˜ï¼Œæ²¡æœ‰ä½¿ç”¨Notifyæ˜¯å¤„äºå…¼å®¹fpcçš„æ³›å‹åº“ï¼šFPCGenericStructlist.pasåº“ä¸æä¾›Notifyå›è°ƒ
+    // ÕâÈı¸öµØ·½ĞèÒªÊÍ·Å³ÉÔ±£¬Ã»ÓĞÊ¹ÓÃNotifyÊÇ´¦ÓÚ¼æÈİfpcµÄ·ºĞÍ¿â£ºFPCGenericStructlist.pas¿â²»Ìá¹©Notify»Øµ÷
     procedure remove(p: TPascalUnit);
     procedure Delete(Index: Integer);
     procedure Clear;
@@ -481,14 +481,14 @@ var
   pl: TPascalUnitList;
   i: Integer;
 begin
-  // ä½¿ç”¨è¿™é¡¹æŠ€æœ¯çš„åˆ¶ä½œçš„å¼€æºé¡¹ç›® https://github.com/PassByYou888/FFMPEG-Header
+  // Ê¹ÓÃÕâÏî¼¼ÊõµÄÖÆ×÷µÄ¿ªÔ´ÏîÄ¿ https://github.com/PassByYou888/FFMPEG-Header
   pl := TPascalUnitList.Create;
 
-  // plå¯ä»¥ç›´æ¥å¤§è§„æ¨¡åŠ å…¥ä»£ç æ–‡ä»¶ï¼Œç„¶ååšä¾èµ–å…³ç³»ï¼Œåšè‡ªåŠ¨åŒ–çš„ä»£ç åº“åˆ†å±‚
-  // ç”šè‡³æˆ‘ä»¬å¯ä»¥ä½¿ç”¨è¿™é¡¹æŠ€æœ¯ï¼Œæ¥åˆ¶ä½œä»£ç å‘è¡Œå·¥å…·
+  // pl¿ÉÒÔÖ±½Ó´ó¹æÄ£¼ÓÈë´úÂëÎÄ¼ş£¬È»ºó×öÒÀÀµ¹ØÏµ£¬×ö×Ô¶¯»¯µÄ´úÂë¿â·Ö²ã
+  // ÉõÖÁÎÒÃÇ¿ÉÒÔÊ¹ÓÃÕâÏî¼¼Êõ£¬À´ÖÆ×÷´úÂë·¢ĞĞ¹¤¾ß
 
   pl.AddPascalCode(
-    // ä½¿ç”¨å·¥å…·ç”Ÿæˆçš„ä»£ç 
+    // Ê¹ÓÃ¹¤¾ßÉú³ÉµÄ´úÂë
     'unit u1;'#13#10 +
     'interface'#13#10 +
     'uses u2,u3;'#13#10 +
@@ -497,7 +497,7 @@ begin
     'end.'#13#10
     );
   pl.AddPascalCode(
-    // ä½¿ç”¨å·¥å…·ç”Ÿæˆçš„ä»£ç 
+    // Ê¹ÓÃ¹¤¾ßÉú³ÉµÄ´úÂë
     'unit u2;'#13#10 +
     'interface'#13#10 +
     'uses u3;'#13#10 +
@@ -505,7 +505,7 @@ begin
     'end.'#13#10
     );
   pl.AddPascalCode(
-    // ä½¿ç”¨å·¥å…·ç”Ÿæˆçš„ä»£ç 
+    // Ê¹ÓÃ¹¤¾ßÉú³ÉµÄ´úÂë
     'unit u3;'#13#10 +
     'interface'#13#10 +
     'uses u4;'#13#10 +
@@ -513,7 +513,7 @@ begin
     'end.'#13#10
     );
   pl.AddPascalCode(
-    // ä½¿ç”¨å·¥å…·ç”Ÿæˆçš„ä»£ç 
+    // Ê¹ÓÃ¹¤¾ßÉú³ÉµÄ´úÂë
     'unit u4;'#13#10 +
     'interface'#13#10 +
     'uses SysUtils;'#13#10 +
@@ -521,13 +521,13 @@ begin
     'end.'#13#10
     );
 
-  DoStatus('ä¾èµ–å…³ç³»æœªæ’åºå‰');
+  DoStatus('ÒÀÀµ¹ØÏµÎ´ÅÅĞòÇ°');
   for i := 0 to pl.Count - 1 do
       DoStatus(pl[i].Unit_Name);
 
   pl.DependencySort;
 
-  DoStatus('ä¾èµ–å…³ç³»æ’åºå');
+  DoStatus('ÒÀÀµ¹ØÏµÅÅĞòºó');
   for i := 0 to pl.Count - 1 do
       DoStatus(pl[i].Unit_Name);
 

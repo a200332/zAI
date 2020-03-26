@@ -1,4 +1,4 @@
-﻿program zExpressionSupport;
+program zExpressionSupport;
 
 uses
   System.StartUpCopy,

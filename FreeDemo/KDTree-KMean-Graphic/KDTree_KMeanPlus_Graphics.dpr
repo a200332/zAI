@@ -1,4 +1,4 @@
-﻿program KDTree_KMeanPlus_Graphics;
+program KDTree_KMeanPlus_Graphics;
 
 uses
   System.StartUpCopy,

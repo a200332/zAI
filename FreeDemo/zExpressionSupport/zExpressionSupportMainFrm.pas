@@ -1,4 +1,4 @@
-锘匡豢unit zExpressionSupportMainFrm;
+unit zExpressionSupportMainFrm;
 
 interface
 
@@ -66,7 +66,7 @@ procedure TzExpressionSupportMainForm.EditButton1Click(Sender: TObject);
 var
   v: Variant;
 begin
-  // 璇勪及鍣紝鏀寔鍚戦噺琛ㄨ揪寮忥細1+1,2+2,3+3
+  // 评估器，支持向量表达式：1+1,2+2,3+3
   v := EvaluateExpressionValue(False, InputEdit.Text);
   if not VarIsNull(v) then
       DoStatus(InputEdit.Text + ' = ' + VarToStr(v));
@@ -79,7 +79,7 @@ var
 begin
   for i := 0 to expEvaluateMemo.Lines.Count - 1 do
     begin
-      // 璇勪及鍣紝鏀寔鍚戦噺琛ㄨ揪寮忥細1+1,2+2,3+3
+      // 评估器，支持向量表达式：1+1,2+2,3+3
       v := EvaluateExpressionValue(False, nil, tsPascal, expEvaluateMemo.Lines[i], nil);
       if not VarIsNull(v) then
           DoStatus('%s = %s', [expEvaluateMemo.Lines[i], VarToStr(v)])
@@ -95,7 +95,7 @@ var
 begin
   for i := 0 to ExpParsingMemo.Lines.Count - 1 do
     begin
-      // 搴曞眰绗﹀彿瑙ｆ瀽api锛屼笉鏀寔鍚戦噺琛ㄨ揪寮忥細1+1,2+2,3+3
+      // 底层符号解析api，不支持向量表达式：1+1,2+2,3+3
       E := ParseTextExpressionAsSymbol_M(TTextParsing, tsPascal, '', ExpParsingMemo.Lines[i], nil, nil);
       if E <> nil then
         begin

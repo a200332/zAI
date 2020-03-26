@@ -1,4 +1,4 @@
-﻿program TrainingTool;
+program TrainingTool;
 
 {$APPTYPE CONSOLE}
 

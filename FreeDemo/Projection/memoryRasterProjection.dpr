@@ -1,4 +1,4 @@
-﻿program memoryRasterProjection;
+program memoryRasterProjection;
 
 uses
   System.StartUpCopy,

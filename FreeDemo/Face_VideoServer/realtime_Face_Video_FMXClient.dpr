@@ -1,4 +1,4 @@
-﻿program realtime_Face_Video_FMXClient;
+program realtime_Face_Video_FMXClient;
 
 uses
   System.StartUpCopy,

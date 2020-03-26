@@ -1,4 +1,4 @@
-ï»¿ï»¿unit ODTrainAPIDemoFrm;
+unit ODTrainAPIDemoFrm;
 
 interface
 
@@ -44,19 +44,19 @@ end;
 procedure TForm2.FormCreate(Sender: TObject);
 begin
   AddDoStatusHook(Self, DoStatusMethod);
-  // è¯»å–zAIçš„é…ç½®
+  // ¶ÁÈ¡zAIµÄÅäÖÃ
   ReadAIConfig;
-  // è¿™ä¸€æ­¥ä¼šè¿æ¥KeyæœåŠ¡å™¨ï¼ŒéªŒè¯ZAIçš„Key
-  // è¿æ¥æœåŠ¡å™¨éªŒè¯Keyæ˜¯åœ¨å¯åŠ¨å¼•æ“æ—¶ä¸€æ¬¡æ€§çš„éªŒè¯ï¼Œåªä¼šå½“ç¨‹åºå¯åŠ¨æ—¶æ‰ä¼šéªŒè¯ï¼Œå‡å¦‚éªŒè¯ä¸èƒ½é€šè¿‡ï¼ŒzAIå°†ä¼šæ‹’ç»å·¥ä½œ
-  // åœ¨ç¨‹åºè¿è¡Œä¸­ï¼Œåå¤åˆ›å»ºTAIï¼Œä¸ä¼šå‘ç”Ÿè¿œç¨‹éªŒè¯
-  // éªŒè¯éœ€è¦ä¸€ä¸ªuserKeyï¼Œé€šè¿‡userkeyæ¨ç®—å‡ºZAIåœ¨å¯åŠ¨æ—¶ç”Ÿæˆçš„éšæœºKeyï¼Œuserkeyå¯ä»¥é€šè¿‡webç”³è¯·ï¼Œä¹Ÿå¯ä»¥è”ç³»ä½œè€…å‘æ”¾
-  // éªŒè¯keyéƒ½æ˜¯æŠ—é‡å­çº§ï¼Œæ— æ³•è¢«ç ´è§£
+  // ÕâÒ»²½»áÁ¬½ÓKey·şÎñÆ÷£¬ÑéÖ¤ZAIµÄKey
+  // Á¬½Ó·şÎñÆ÷ÑéÖ¤KeyÊÇÔÚÆô¶¯ÒıÇæÊ±Ò»´ÎĞÔµÄÑéÖ¤£¬Ö»»áµ±³ÌĞòÆô¶¯Ê±²Å»áÑéÖ¤£¬¼ÙÈçÑéÖ¤²»ÄÜÍ¨¹ı£¬zAI½«»á¾Ü¾ø¹¤×÷
+  // ÔÚ³ÌĞòÔËĞĞÖĞ£¬·´¸´´´½¨TAI£¬²»»á·¢ÉúÔ¶³ÌÑéÖ¤
+  // ÑéÖ¤ĞèÒªÒ»¸öuserKey£¬Í¨¹ıuserkeyÍÆËã³öZAIÔÚÆô¶¯Ê±Éú³ÉµÄËæ»úKey£¬userkey¿ÉÒÔÍ¨¹ıwebÉêÇë£¬Ò²¿ÉÒÔÁªÏµ×÷Õß·¢·Å
+  // ÑéÖ¤key¶¼ÊÇ¿¹Á¿×Ó¼¶£¬ÎŞ·¨±»ÆÆ½â
   zAI.Prepare_AI_Engine();
 end;
 
 procedure TForm2.Timer1Timer(Sender: TObject);
 begin
-  // dostatusä¸ç»™å‚æ•°ï¼Œæ˜¯åˆ·æ–°åœ¨çº¿ç¨‹ä¸­çš„StatusIOçŠ¶æ€ï¼Œå¯ä»¥åˆ·æ–°parallelçº¿ç¨‹ä¸­çš„status
+  // dostatus²»¸ø²ÎÊı£¬ÊÇË¢ĞÂÔÚÏß³ÌÖĞµÄStatusIO×´Ì¬£¬¿ÉÒÔË¢ĞÂparallelÏß³ÌÖĞµÄstatus
   DoStatus;
 end;
 
@@ -66,9 +66,9 @@ begin
     procedure(Sender: TComputeThread)
     var
       fn: U_String;
-      // AIå¼•æ“
+      // AIÒıÇæ
       ai: TAI;
-      // æ—¶é—´åˆ»åº¦å˜é‡
+      // Ê±¼ä¿Ì¶È±äÁ¿
       dt: TTimeTick;
       imgMat: TAI_ImageMatrix;
       m64: TMemoryStream64;
@@ -78,48 +78,48 @@ begin
           fn := umlCombineFileName(TPath.GetLibraryPath, FileEdit.Text);
         end);
 
-      // imgMatæ˜¯å›¾ç‰‡çŸ©é˜µï¼Œç”¨äºå¤„ç†å¤§è§„æ¨¡å›¾ç‰‡æ•°æ®é›†çš„è®­ç»ƒ
+      // imgMatÊÇÍ¼Æ¬¾ØÕó£¬ÓÃÓÚ´¦Àí´ó¹æÄ£Í¼Æ¬Êı¾İ¼¯µÄÑµÁ·
       imgMat := TAI_ImageMatrix.Create;
 
-      // ç”±äºå›¾ç‰‡çŸ©é˜µåœ¨è¯»å–å’Œä¿å­˜å¤§å‹å›¾ç‰‡é›†éå¸¸æ…¢ï¼Œä¸€èˆ¬æ¥è¯´ï¼Œä¸€æ¬¡è¯»å–å’Œä¿å­˜éƒ½æ˜¯æ•°åä¸‡å¼ ï¼Œè¿™é‡Œçš„æ“ä½œè¦è°¨æ…
-      // å›¾ç‰‡çŸ©é˜µçš„ä¿å­˜å’Œè¯»å–ï¼Œéƒ½æ˜¯å¹¶è¡ŒåŒ–çš„ï¼Œä¼šå°†cpuåƒæ»¡ï¼Œç„¶åè®©ç£ç›˜IOæ»¡è´Ÿè·å·¥ä½œï¼Œä»¥å‡å°‘ç­‰å¾…æ—¶é—´
+      // ÓÉÓÚÍ¼Æ¬¾ØÕóÔÚ¶ÁÈ¡ºÍ±£´æ´óĞÍÍ¼Æ¬¼¯·Ç³£Âı£¬Ò»°ãÀ´Ëµ£¬Ò»´Î¶ÁÈ¡ºÍ±£´æ¶¼ÊÇÊıÊ®ÍòÕÅ£¬ÕâÀïµÄ²Ù×÷Òª½÷É÷
+      // Í¼Æ¬¾ØÕóµÄ±£´æºÍ¶ÁÈ¡£¬¶¼ÊÇ²¢ĞĞ»¯µÄ£¬»á½«cpu³ÔÂú£¬È»ºóÈÃ´ÅÅÌIOÂú¸ººÉ¹¤×÷£¬ÒÔ¼õÉÙµÈ´ıÊ±¼ä
       imgMat.LoadFromFile(fn);
 
-      // ç¼©å°æ•°æ®é›†å°ºå¯¸ï¼Œæé«˜ODè®­ç»ƒé€Ÿåº¦
-      DoStatus('è°ƒæ•´æ•°æ®é›†å°ºå¯¸');
+      // ËõĞ¡Êı¾İ¼¯³ß´ç£¬Ìá¸ßODÑµÁ·ËÙ¶È
+      DoStatus('µ÷ÕûÊı¾İ¼¯³ß´ç');
       imgMat.Scale(0.5);
 
-      // æ„å»ºzAIçš„å¼•æ“
-      // zAIå¼•æ“å¯ä»¥åœ¨çº¿ç¨‹ä¸­ç›´æ¥æ„å»ºï¼Œä¸ç”¨Sync
+      // ¹¹½¨zAIµÄÒıÇæ
+      // zAIÒıÇæ¿ÉÒÔÔÚÏß³ÌÖĞÖ±½Ó¹¹½¨£¬²»ÓÃSync
       ai := TAI.OpenEngine();
 
-      DoStatus('å¼€å§‹è®­ç»ƒ');
-      // åå°è®­ç»ƒ
+      DoStatus('¿ªÊ¼ÑµÁ·');
+      // ºóÌ¨ÑµÁ·
       dt := GetTimeTick();
 
-      // å¼€å§‹è®­ç»ƒå›¾ç‰‡åº“çŸ©é˜µ
-      // æˆ‘ä»¬è®­ç»ƒå¤§è§„æ¨¡æ ·æœ¬æ—¶ï¼Œéƒ½åº”è¯¥é€‰æ‹©å›¾ç‰‡çŸ©é˜µæ–¹å¼æ¥è®­ç»ƒ
+      // ¿ªÊ¼ÑµÁ·Í¼Æ¬¿â¾ØÕó
+      // ÎÒÃÇÑµÁ·´ó¹æÄ£Ñù±¾Ê±£¬¶¼Ó¦¸ÃÑ¡ÔñÍ¼Æ¬¾ØÕó·½Ê½À´ÑµÁ·
       m64 := ai.OD_Marshal_Train(imgMat, 100, 100, 8);
 
       if m64 <> nil then
         begin
-          DoStatus('è®­ç»ƒæˆåŠŸ.è€—æ—¶ %d æ¯«ç§’', [GetTimeTick() - dt]);
+          DoStatus('ÑµÁ·³É¹¦.ºÄÊ± %d ºÁÃë', [GetTimeTick() - dt]);
           TThread.Synchronize(Sender, procedure
             begin
-              // å½“è®­ç»ƒå®Œæˆåï¼Œæˆ‘ä»¬å°†è®­ç»ƒå¥½çš„æ•°æ®ä¿å­˜
+              // µ±ÑµÁ·Íê³Éºó£¬ÎÒÃÇ½«ÑµÁ·ºÃµÄÊı¾İ±£´æ
               SaveDialog.FileName := 'output' + C_OD_Marshal_Ext;
               if not SaveDialog.Execute() then
                   exit;
 
-              // ä½¿ç”¨.svm_odæ•°æ®ï¼Œè¯·å‚è€ƒSVM_ODçš„Demo
+              // Ê¹ÓÃ.svm_odÊı¾İ£¬Çë²Î¿¼SVM_ODµÄDemo
               m64.SaveToFile(SaveDialog.FileName);
             end);
           DisposeObject(m64);
         end
       else
-          DoStatus('è®­ç»ƒå¤±è´¥.');
+          DoStatus('ÑµÁ·Ê§°Ü.');
 
-      // é‡Šæ”¾è®­ç»ƒä½¿ç”¨çš„æ•°æ®
+      // ÊÍ·ÅÑµÁ·Ê¹ÓÃµÄÊı¾İ
       DisposeObject(ai);
       DisposeObject(imgMat);
 

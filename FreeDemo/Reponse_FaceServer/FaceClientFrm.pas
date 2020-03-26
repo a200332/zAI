@@ -1,4 +1,4 @@
-﻿﻿unit FaceClientFrm;
+unit FaceClientFrm;
 
 interface
 

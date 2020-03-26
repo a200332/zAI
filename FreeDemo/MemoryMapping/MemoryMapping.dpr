@@ -1,4 +1,4 @@
-ï»¿program MemoryMapping;
+program MemoryMapping;
 
 {$APPTYPE CONSOLE}
 
@@ -19,22 +19,22 @@ var
   data: TMemoryStream64;
   m64: TMemoryStream64;
 begin
-  // TMemoryStream64æä¾›äº†å†…å­˜æ˜ å°„æ–¹æ³•
-  // ä½¿ç”¨å†…å­˜æ˜ å°„å¯ä»¥é¿å…ä¸¤ä¸ªStreamçš„åå¤copy
-  // å¦å¤–ï¼Œå†…å­˜æ˜ å°„è¿˜å¯ä»¥ç›´æ¥å¯¹ä¸€ä¸ªå†…å­˜å—ä½¿ç”¨Streamæ–¹æ³•æ“ä½œ
-  // æ¢å¥è¯è¯´ï¼ŒTStringListçš„LoadFromStreamæ–¹æ³•ï¼Œé€šè¿‡TMemoryStream64ä¸­è½¬ï¼Œå¯ä»¥é«˜é€Ÿæ“ä½œå†…å­˜å—
+  // TMemoryStream64Ìá¹©ÁËÄÚ´æÓ³Éä·½·¨
+  // Ê¹ÓÃÄÚ´æÓ³Éä¿ÉÒÔ±ÜÃâÁ½¸öStreamµÄ·´¸´copy
+  // ÁíÍâ£¬ÄÚ´æÓ³Éä»¹¿ÉÒÔÖ±½Ó¶ÔÒ»¸öÄÚ´æ¿éÊ¹ÓÃStream·½·¨²Ù×÷
+  // »»¾ä»°Ëµ£¬TStringListµÄLoadFromStream·½·¨£¬Í¨¹ıTMemoryStream64ÖĞ×ª£¬¿ÉÒÔ¸ßËÙ²Ù×÷ÄÚ´æ¿é
   data := TMemoryStream64.Create;
   data.Size := 1024 * 1024 * 1024;
 
   m64 := TMemoryStream64.Create;
 
-  // å°†dataçš„ç”³æ˜çš„å†…å­˜å—ç›´æ¥æ˜ å°„åˆ°m64ä¸­ï¼Œè¿™ç§æ–¹æ³•æ²¡æœ‰copyï¼Œéå¸¸é€‚åˆå¤§å†…å­˜å—äº¤æ¢
-  // ä½¿ç”¨SetPointerWithProtectedModeæ–¹æ³•æ˜ å°„åï¼ŒPositionä¼šè¢«ç½®0
+  // ½«dataµÄÉêÃ÷µÄÄÚ´æ¿éÖ±½ÓÓ³Éäµ½m64ÖĞ£¬ÕâÖÖ·½·¨Ã»ÓĞcopy£¬·Ç³£ÊÊºÏ´óÄÚ´æ¿é½»»»
+  // Ê¹ÓÃSetPointerWithProtectedMode·½·¨Ó³Éäºó£¬Position»á±»ÖÃ0
   m64.SetPointerWithProtectedMode(data.Memory, data.Size);
 
-  // ç°åœ¨ï¼Œæˆ‘ä»¬å¯ä»¥ä½¿ç”¨ä»»æ„TStreamçš„æ–¹æ³•æ¥æ“ä½œå†…å­˜å—ï¼Œè¿™æ˜¯é«˜é€Ÿå†…å­˜æ˜ å°„
+  // ÏÖÔÚ£¬ÎÒÃÇ¿ÉÒÔÊ¹ÓÃÈÎÒâTStreamµÄ·½·¨À´²Ù×÷ÄÚ´æ¿é£¬ÕâÊÇ¸ßËÙÄÚ´æÓ³Éä
 
-  // é‡Šæ”¾æ—¶å…»æˆä¸€ä¸ªå¥½ä¹ æƒ¯ï¼Œå…ˆé‡Šæ”¾ä½¿ç”¨äº†å†…å­˜æ˜ å°„çš„ç±»ï¼Œå†é‡Šæ”¾å®¿ä¸»
+  // ÊÍ·ÅÊ±Ñø³ÉÒ»¸öºÃÏ°¹ß£¬ÏÈÊÍ·ÅÊ¹ÓÃÁËÄÚ´æÓ³ÉäµÄÀà£¬ÔÙÊÍ·ÅËŞÖ÷
   DisposeObject([m64, data]);
 end;
 
@@ -43,18 +43,18 @@ var
   data: TMemoryRaster;
   mr: TMemoryRaster;
 begin
-  // TMemoryRasterä¹Ÿæä¾›äº†ç±»ä¼¼çš„å†…å­˜æ˜ å°„æ–¹æ³•åŸç†å’ŒTMemoryStream64ç›¸åŒ
+  // TMemoryRasterÒ²Ìá¹©ÁËÀàËÆµÄÄÚ´æÓ³Éä·½·¨Ô­ÀíºÍTMemoryStream64ÏàÍ¬
   data := newRaster();
   data.SetSize(10000, 10000, RasterColorF(0, 0, 0));
 
   mr := newRaster();
-  // å°†dataçš„å…‰æ …ç›´æ¥æ˜ å°„åˆ°mrä¸­ï¼Œè¿™ç§æ–¹æ³•æ²¡æœ‰copyï¼Œéå¸¸é€‚åˆå¤§å…‰æ …åŒ–çš„å¤„ç†
-  // ä½¿ç”¨SetWorkMemoryæ–¹æ³•æ˜ å°„åï¼Œmrçš„width,height,bitséƒ½æ¥è‡ªdata
+  // ½«dataµÄ¹âÕ¤Ö±½ÓÓ³Éäµ½mrÖĞ£¬ÕâÖÖ·½·¨Ã»ÓĞcopy£¬·Ç³£ÊÊºÏ´ó¹âÕ¤»¯µÄ´¦Àí
+  // Ê¹ÓÃSetWorkMemory·½·¨Ó³Éäºó£¬mrµÄwidth,height,bits¶¼À´×Ôdata
   mr.SetWorkMemory(data);
 
-  // ç°åœ¨ï¼Œæˆ‘ä»¬å¯ä»¥ä½¿ç”¨ä»»æ„TMemoryRasterçš„æ–¹æ³•æ¥æ“ä½œï¼Œè¿™æ˜¯é«˜é€Ÿå†…å­˜æ˜ å°„
+  // ÏÖÔÚ£¬ÎÒÃÇ¿ÉÒÔÊ¹ÓÃÈÎÒâTMemoryRasterµÄ·½·¨À´²Ù×÷£¬ÕâÊÇ¸ßËÙÄÚ´æÓ³Éä
 
-  // é‡Šæ”¾æ—¶å…»æˆä¸€ä¸ªå¥½ä¹ æƒ¯ï¼Œå…ˆé‡Šæ”¾ä½¿ç”¨äº†å†…å­˜æ˜ å°„çš„ç±»ï¼Œå†é‡Šæ”¾å®¿ä¸»
+  // ÊÍ·ÅÊ±Ñø³ÉÒ»¸öºÃÏ°¹ß£¬ÏÈÊÍ·ÅÊ¹ÓÃÁËÄÚ´æÓ³ÉäµÄÀà£¬ÔÙÊÍ·ÅËŞÖ÷
   DisposeObject([mr, data]);
 end;
 

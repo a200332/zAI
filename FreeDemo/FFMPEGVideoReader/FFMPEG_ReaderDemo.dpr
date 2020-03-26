@@ -1,4 +1,4 @@
-﻿program FFMPEG_ReaderDemo;
+program FFMPEG_ReaderDemo;
 
 uses
   System.StartUpCopy,

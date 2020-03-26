@@ -1,4 +1,4 @@
-ï»¿ï»¿unit GaussPyramidsRegionFrm;
+unit GaussPyramidsRegionFrm;
 
 interface
 
@@ -116,18 +116,18 @@ begin
 
   dt := GetTimeTick;
   f := MatchFeature(ft1, ft2, mi);
-  DoStatus('åˆ†æç‰¹å¾ç›¸è¿‘åº¦:%s æ€»å…±åŒ¹é…äº† %d ä¸ªç›¸ä¼¼ç‰¹å¾', [FloatToStr(f), length(mi)]);
-  DoStatus('åˆ†æç‰¹å¾æ‰€èŠ±è´¹çš„æ—¶é—´:%dms ', [GetTimeTick - dt]);
+  DoStatus('·ÖÎöÌØÕ÷Ïà½ü¶È:%s ×Ü¹²Æ¥ÅäÁË %d ¸öÏàËÆÌØÕ÷', [FloatToStr(f), length(mi)]);
+  DoStatus('·ÖÎöÌØÕ÷Ëù»¨·ÑµÄÊ±¼ä:%dms ', [GetTimeTick - dt]);
 
   if length(mi) = 0 then
     begin
-      DoStatus('æ²¡æœ‰ç›¸ä¼¼ç‰¹å¾');
+      DoStatus('Ã»ÓĞÏàËÆÌØÕ÷');
       exit;
     end;
 
   dt := GetTimeTick;
   mr := BuildMatchInfoView(mi, Min((ft1.width + ft2.width) * 0.05, 3), True);
-  DoStatus('ç”Ÿæˆç‰¹å¾åˆ†æè§†å›¾æ‰€èŠ±è´¹çš„æ—¶é—´:%dms ', [GetTimeTick - dt]);
+  DoStatus('Éú³ÉÌØÕ÷·ÖÎöÊÓÍ¼Ëù»¨·ÑµÄÊ±¼ä:%dms ', [GetTimeTick - dt]);
 
   if mr <> nil then
     begin
@@ -135,7 +135,7 @@ begin
       DisposeObject(mr);
     end
   else
-      DoStatus('æ²¡æœ‰ç›¸ä¼¼ç‰¹å¾');
+      DoStatus('Ã»ÓĞÏàËÆÌØÕ÷');
 
   TabControl1.ActiveTab := TabItem3;
 end;

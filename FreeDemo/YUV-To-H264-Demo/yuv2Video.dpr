@@ -1,4 +1,4 @@
-﻿program yuv2Video;
+program yuv2Video;
 
 uses
   System.StartUpCopy,

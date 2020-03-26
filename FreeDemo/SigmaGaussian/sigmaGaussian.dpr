@@ -1,4 +1,4 @@
-﻿program sigmaGaussian;
+program sigmaGaussian;
 
 uses
   System.StartUpCopy,

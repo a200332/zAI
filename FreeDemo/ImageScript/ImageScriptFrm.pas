@@ -1,4 +1,4 @@
-﻿﻿unit ImageScriptFrm;
+unit ImageScriptFrm;
 
 interface
 

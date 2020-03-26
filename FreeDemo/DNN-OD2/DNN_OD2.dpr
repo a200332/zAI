@@ -1,4 +1,4 @@
-﻿program DNN_OD2;
+program DNN_OD2;
 
 uses
   System.StartUpCopy,

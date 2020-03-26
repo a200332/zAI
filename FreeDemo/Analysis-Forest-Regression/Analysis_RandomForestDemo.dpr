@@ -1,4 +1,4 @@
-﻿program Analysis_RandomForestDemo;
+program Analysis_RandomForestDemo;
 
 {$APPTYPE CONSOLE}
 
@@ -32,8 +32,8 @@ end;
 begin
   System.ReportMemoryLeaksOnShutdown := True;
 
-  // 随机森林决策树回归模型
-  // 随机森林决策模型在工作时需要逻辑决策回归，OutIn可以1或者更高数值，OutLen只能是1
+  // ���ɭ�־������ع�ģ��
+  // ���ɭ�־���ģ���ڹ���ʱ��Ҫ�߼����߻ع飬OutIn����1���߸�����ֵ��OutLenֻ����1
   lr := TLearn.CreateRegression(TLearnType.ltForest, 2, 1);
   lr.AddMemory('0,0 = 1');
   lr.AddMemory('1,1 = 2');
@@ -47,22 +47,22 @@ begin
   lr.AddMemory('0,5 = 10');
   lr.Training();
 
-  // 这里是我们已经学习过的内容，我们打印出来验证
+  // �����������Ѿ�ѧϰ�������ݣ����Ǵ�ӡ������֤
   for i := 0 to lr.Count - 1 do
       f2(f1(lr[i]^.m_in));
 
-  // 随机值 推理学习
-  // 随机森林决策模型会严格的从已经学习到的Out值中去寻找和推理最佳符合条件
-  // 随机森林适用于复杂的条件处理程序
+  // ���ֵ ����ѧϰ
+  // ���ɭ�־���ģ�ͻ��ϸ�Ĵ��Ѿ�ѧϰ����Outֵ��ȥѰ�Һ�������ѷ�������
+  // ���ɭ�������ڸ��ӵ�������������
   DoStatus('************************************************');
   for i := 1 to 10 do
       f2(f1([umlRandomRange(0, 5), umlRandomRange(0, 5)]));
   disposeObject(lr);
 
   DoStatus('************************************************');
-  // 标签式决策
-  // 森林决策树回归模型
-  // 森林决策树回归模型在工作时需要逻辑决策回归，OutIn可以1或者更高数值，OutLen只能是1
+  // ��ǩʽ����
+  // ɭ�־������ع�ģ��
+  // ɭ�־������ع�ģ���ڹ���ʱ��Ҫ�߼����߻ع飬OutIn����1���߸�����ֵ��OutLenֻ����1
   lr := TLearn.CreateRegression(TLearnType.ltForest, 2, 1);
   lr.AddMemory('0,0 = ' + f2(1, False));
   lr.AddMemory('1,1 = ' + f2(2, False));

@@ -1,4 +1,4 @@
-﻿program SVM_OD_TrainingAPI_ImgDataset_Demo;
+program SVM_OD_TrainingAPI_ImgDataset_Demo;
 
 uses
   Vcl.Forms,

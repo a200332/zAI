@@ -1,4 +1,4 @@
-﻿program RotationDemo;
+program RotationDemo;
 
 uses
   System.StartUpCopy,

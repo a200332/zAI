@@ -1,4 +1,4 @@
-ï»¿ï»¿unit numberTrainFrm;
+unit numberTrainFrm;
 
 interface
 
@@ -58,7 +58,7 @@ begin
     begin
       if state then
         begin
-          DoStatus('è®­ç»ƒå®Œæˆ');
+          DoStatus('ÑµÁ·Íê³É');
           UpdateOutput;
         end;
     end);

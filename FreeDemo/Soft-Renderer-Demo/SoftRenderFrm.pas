@@ -1,4 +1,4 @@
-﻿﻿unit SoftRenderFrm;
+unit SoftRenderFrm;
 
 interface
 

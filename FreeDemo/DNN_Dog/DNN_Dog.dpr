@@ -1,4 +1,4 @@
-﻿program DNN_Dog;
+program DNN_Dog;
 
 uses
   System.StartUpCopy,

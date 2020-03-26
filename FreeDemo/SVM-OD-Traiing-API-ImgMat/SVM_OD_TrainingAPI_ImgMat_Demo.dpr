@@ -1,4 +1,4 @@
-﻿program SVM_OD_TrainingAPI_ImgMat_Demo;
+program SVM_OD_TrainingAPI_ImgMat_Demo;
 
 uses
   Vcl.Forms,

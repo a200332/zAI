@@ -1,4 +1,4 @@
-﻿program Face_Det_GPU;
+program Face_Det_GPU;
 
 uses
   System.StartUpCopy,

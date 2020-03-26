@@ -1,4 +1,4 @@
-ï»¿ï»¿unit MemoryRasterMoreFontMainFrm;
+unit MemoryRasterMoreFontMainFrm;
 
 interface
 
@@ -53,9 +53,9 @@ begin
   rfont5 := TFontRaster.Create;
   rfont6 := TFontRaster.Create;
 
-  // zFontæ–‡ä»¶ä½¿ç”¨FontBuildå·¥å…·åˆ›å»º
-  // zFontå­˜æ”¾çš„æ˜¯å­—ä½“å…‰æ …æ•°æ®ï¼Œå®ƒæœ‰å¼ºå¤§çš„é€šç”¨æ€§ï¼Œåœ¨ä»»ä½•å¹³å°é€šç”¨
-  // demoä½¿ç”¨çš„zfontä¸åŒ…å«ä¸­æ–‡å…‰æ …ï¼ŒåªåŒ…å«äº†0-255å­—ç¬¦
+  // zFontÎÄ¼şÊ¹ÓÃFontBuild¹¤¾ß´´½¨
+  // zFont´æ·ÅµÄÊÇ×ÖÌå¹âÕ¤Êı¾İ£¬ËüÓĞÇ¿´óµÄÍ¨ÓÃĞÔ£¬ÔÚÈÎºÎÆ½Ì¨Í¨ÓÃ
+  // demoÊ¹ÓÃµÄzfont²»°üº¬ÖĞÎÄ¹âÕ¤£¬Ö»°üº¬ÁË0-255×Ö·û
   rfont1.LoadFromFile(umlCombineFileName(TPath.GetLibraryPath, 'font_demo_1.zfont'));
   rfont2.LoadFromFile(umlCombineFileName(TPath.GetLibraryPath, 'font_demo_2.zfont'));
   rfont3.LoadFromFile(umlCombineFileName(TPath.GetLibraryPath, 'font_demo_3.zfont'));
@@ -65,14 +65,14 @@ begin
 
   raster := NewRaster;
 
-  // åˆå§‹åŒ–å…‰æ …å°ºå¯¸å’ŒèƒŒæ™¯
+  // ³õÊ¼»¯¹âÕ¤³ß´çºÍ±³¾°
   raster.SetSize(1024, 512, RColor(0, 0, 0));
 
-  // ä»yåæ ‡10å¼€å§‹ç”»
+  // ´Óy×ø±ê10¿ªÊ¼»­
   y := 50;
 
-  // æŠŠä¸åŒfontç”»åˆ°å…‰æ …å»
-  // è¿™æ˜¯ä¼˜è´¨å…‰æ …ï¼Œæ¯”windowsçš„å­—ä½“æ›´åŠ åœ†æ¶¦å¹³æ»‘
+  // °Ñ²»Í¬font»­µ½¹âÕ¤È¥
+  // ÕâÊÇÓÅÖÊ¹âÕ¤£¬±ÈwindowsµÄ×ÖÌå¸ü¼ÓÔ²ÈóÆ½»¬
   d(raster, rfont1, y);
   d(raster, rfont2, y);
   d(raster, rfont3, y);
@@ -80,10 +80,10 @@ begin
   d(raster, rfont5, y);
   d(raster, rfont6, y);
 
-  // æŠŠMemoryRasterå…‰æ …è½¬æ¢æˆFMXå…‰æ …
+  // °ÑMemoryRaster¹âÕ¤×ª»»³ÉFMX¹âÕ¤
   MemoryBitmapToBitmap(raster, ImageViewer1.Bitmap);
 
-  // é‡Šæ”¾
+  // ÊÍ·Å
   disposeObject(raster);
   disposeObject([rfont1, rfont2, rfont3, rfont4, rfont5, rfont6]);
 end;

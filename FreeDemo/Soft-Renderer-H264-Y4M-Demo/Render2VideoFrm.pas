@@ -1,4 +1,4 @@
-﻿﻿unit Render2VideoFrm;
+unit Render2VideoFrm;
 
 interface
 

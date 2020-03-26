@@ -1,4 +1,4 @@
-﻿﻿unit WildcardFrm;
+unit WildcardFrm;
 
 interface
 

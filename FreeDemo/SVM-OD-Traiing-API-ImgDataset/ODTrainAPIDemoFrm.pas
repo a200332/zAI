@@ -1,4 +1,4 @@
-ï»¿ï»¿unit ODTrainAPIDemoFrm;
+unit ODTrainAPIDemoFrm;
 
 interface
 
@@ -44,19 +44,19 @@ end;
 procedure TForm2.FormCreate(Sender: TObject);
 begin
   AddDoStatusHook(Self, DoStatusMethod);
-  // è¯»å–zAIçš„é…ç½®
+  // ¶ÁÈ¡zAIµÄÅäÖÃ
   ReadAIConfig;
-  // è¿™ä¸€æ­¥ä¼šè¿æ¥KeyæœåŠ¡å™¨ï¼ŒéªŒè¯ZAIçš„Key
-  // è¿æ¥æœåŠ¡å™¨éªŒè¯Keyæ˜¯åœ¨å¯åŠ¨å¼•æ“æ—¶ä¸€æ¬¡æ€§çš„éªŒè¯ï¼Œåªä¼šå½“ç¨‹åºå¯åŠ¨æ—¶æ‰ä¼šéªŒè¯ï¼Œå‡å¦‚éªŒè¯ä¸èƒ½é€šè¿‡ï¼ŒzAIå°†ä¼šæ‹’ç»å·¥ä½œ
-  // åœ¨ç¨‹åºè¿è¡Œä¸­ï¼Œåå¤åˆ›å»ºTAIï¼Œä¸ä¼šå‘ç”Ÿè¿œç¨‹éªŒè¯
-  // éªŒè¯éœ€è¦ä¸€ä¸ªuserKeyï¼Œé€šè¿‡userkeyæ¨ç®—å‡ºZAIåœ¨å¯åŠ¨æ—¶ç”Ÿæˆçš„éšæœºKeyï¼Œuserkeyå¯ä»¥é€šè¿‡webç”³è¯·ï¼Œä¹Ÿå¯ä»¥è”ç³»ä½œè€…å‘æ”¾
-  // éªŒè¯keyéƒ½æ˜¯æŠ—é‡å­çº§ï¼Œæ— æ³•è¢«ç ´è§£
+  // ÕâÒ»²½»áÁ¬½ÓKey·şÎñÆ÷£¬ÑéÖ¤ZAIµÄKey
+  // Á¬½Ó·şÎñÆ÷ÑéÖ¤KeyÊÇÔÚÆô¶¯ÒıÇæÊ±Ò»´ÎĞÔµÄÑéÖ¤£¬Ö»»áµ±³ÌĞòÆô¶¯Ê±²Å»áÑéÖ¤£¬¼ÙÈçÑéÖ¤²»ÄÜÍ¨¹ı£¬zAI½«»á¾Ü¾ø¹¤×÷
+  // ÔÚ³ÌĞòÔËĞĞÖĞ£¬·´¸´´´½¨TAI£¬²»»á·¢ÉúÔ¶³ÌÑéÖ¤
+  // ÑéÖ¤ĞèÒªÒ»¸öuserKey£¬Í¨¹ıuserkeyÍÆËã³öZAIÔÚÆô¶¯Ê±Éú³ÉµÄËæ»úKey£¬userkey¿ÉÒÔÍ¨¹ıwebÉêÇë£¬Ò²¿ÉÒÔÁªÏµ×÷Õß·¢·Å
+  // ÑéÖ¤key¶¼ÊÇ¿¹Á¿×Ó¼¶£¬ÎŞ·¨±»ÆÆ½â
   zAI.Prepare_AI_Engine();
 end;
 
 procedure TForm2.Timer1Timer(Sender: TObject);
 begin
-  // dostatusä¸ç»™å‚æ•°ï¼Œæ˜¯åˆ·æ–°åœ¨çº¿ç¨‹ä¸­çš„StatusIOçŠ¶æ€ï¼Œå¯ä»¥åˆ·æ–°parallelçº¿ç¨‹ä¸­çš„status
+  // dostatus²»¸ø²ÎÊı£¬ÊÇË¢ĞÂÔÚÏß³ÌÖĞµÄStatusIO×´Ì¬£¬¿ÉÒÔË¢ĞÂparallelÏß³ÌÖĞµÄstatus
   DoStatus;
 end;
 
@@ -66,13 +66,13 @@ begin
     procedure(Sender: TComputeThread)
     var
       fn: U_String;
-      // è®­ç»ƒå¼•æ“
+      // ÑµÁ·ÒıÇæ
       tt: TTrainingTask;
-      // è®­ç»ƒå‚æ•°
+      // ÑµÁ·²ÎÊı
       param: THashVariantList;
-      // AIå¼•æ“
+      // AIÒıÇæ
       ai: TAI;
-      // æ—¶é—´åˆ»åº¦å˜é‡
+      // Ê±¼ä¿Ì¶È±äÁ¿
       dt: TTimeTick;
       report: SystemString;
     begin
@@ -82,54 +82,54 @@ begin
         end);
       tt := TTrainingTask.CreateTask;
 
-      // å°†æ–‡ä»¶å†™å…¥è®­ç»ƒä»»åŠ¡
+      // ½«ÎÄ¼şĞ´ÈëÑµÁ·ÈÎÎñ
       tt.WriteFile(umlGetFileName(fn), fn);
 
-      // æ„å»ºè®­ç»ƒå‚æ•°
+      // ¹¹½¨ÑµÁ·²ÎÊı
       param := THashVariantList.Create;
-      param.SetDefaultValue('ComputeFunc', 'TrainOD');      // æŒ‡å®šè®­ç»ƒå‡½æ•°
-      param.SetDefaultValue('source', umlGetFileName(fn));  // è¾“å…¥çš„æ•°æ®æ˜¯bear.imgDataset
-      param.SetDefaultValue('window_width', 100);           // è®­ç»ƒå®Œæˆåï¼Œçª—å£æ»‘åŠ¨ç”¨ï¼Œæ£€æµ‹å°ºåº¦å®½ï¼Œå¦‚æœè®­ç»ƒç»™é«˜æ¸…å›¾åƒç”¨ï¼Œè¿™é‡Œå°±ç»™100æˆ–åˆ™æ›´å¤§ï¼Œä½åˆ†è¾¨ç‡å›¾åƒç”¨ï¼Œè¿™é‡Œå°±ç»™å°
-      param.SetDefaultValue('window_height', 100);          // è®­ç»ƒå®Œæˆåï¼Œçª—å£æ»‘åŠ¨ç”¨ï¼Œæ£€æµ‹å°ºåº¦é«˜ï¼Œå¦‚æœè®­ç»ƒç»™é«˜æ¸…å›¾åƒç”¨ï¼Œè¿™é‡Œå°±ç»™100æˆ–åˆ™æ›´å¤§ï¼Œä½åˆ†è¾¨ç‡å›¾åƒç”¨ï¼Œè¿™é‡Œå°±ç»™å°
-      param.SetDefaultValue('thread', 8);                   // å¹¶è¡Œè®­ç»ƒçš„çº¿ç¨‹æ•°é‡
-      param.SetDefaultValue('scale', 0.5);                  // ç¼©æ”¾ç³»æ•°ï¼Œ0.5å¯ä»¥æœ‰æ•ˆæå‡è®­ç»ƒé€Ÿåº¦
-      param.SetDefaultValue('output', 'output' + C_OD_Ext); // è®­ç»ƒå®Œæˆåçš„è¾“å‡ºæ–‡ä»¶
+      param.SetDefaultValue('ComputeFunc', 'TrainOD');      // Ö¸¶¨ÑµÁ·º¯Êı
+      param.SetDefaultValue('source', umlGetFileName(fn));  // ÊäÈëµÄÊı¾İÊÇbear.imgDataset
+      param.SetDefaultValue('window_width', 100);           // ÑµÁ·Íê³Éºó£¬´°¿Ú»¬¶¯ÓÃ£¬¼ì²â³ß¶È¿í£¬Èç¹ûÑµÁ·¸ø¸ßÇåÍ¼ÏñÓÃ£¬ÕâÀï¾Í¸ø100»òÔò¸ü´ó£¬µÍ·Ö±æÂÊÍ¼ÏñÓÃ£¬ÕâÀï¾Í¸øĞ¡
+      param.SetDefaultValue('window_height', 100);          // ÑµÁ·Íê³Éºó£¬´°¿Ú»¬¶¯ÓÃ£¬¼ì²â³ß¶È¸ß£¬Èç¹ûÑµÁ·¸ø¸ßÇåÍ¼ÏñÓÃ£¬ÕâÀï¾Í¸ø100»òÔò¸ü´ó£¬µÍ·Ö±æÂÊÍ¼ÏñÓÃ£¬ÕâÀï¾Í¸øĞ¡
+      param.SetDefaultValue('thread', 8);                   // ²¢ĞĞÑµÁ·µÄÏß³ÌÊıÁ¿
+      param.SetDefaultValue('scale', 0.5);                  // Ëõ·ÅÏµÊı£¬0.5¿ÉÒÔÓĞĞ§ÌáÉıÑµÁ·ËÙ¶È
+      param.SetDefaultValue('output', 'output' + C_OD_Ext); // ÑµÁ·Íê³ÉºóµÄÊä³öÎÄ¼ş
 
       tt.Write('param.txt', param);
 
-      DoStatus('è®­ç»ƒå‚æ•°.');
+      DoStatus('ÑµÁ·²ÎÊı.');
       DoStatus(param.AsText);
 
-      DoStatus('æ£€æµ‹è®­ç»ƒæ•°æ® ');
+      DoStatus('¼ì²âÑµÁ·Êı¾İ ');
       if tt.CheckTrainingBefore('param.txt', report) then
         begin
           DoStatus(report);
 
-          // æ„å»ºzAIçš„å¼•æ“
-          // zAIå¼•æ“å¯ä»¥åœ¨çº¿ç¨‹ä¸­ç›´æ¥æ„å»ºï¼Œä¸ç”¨Sync
+          // ¹¹½¨zAIµÄÒıÇæ
+          // zAIÒıÇæ¿ÉÒÔÔÚÏß³ÌÖĞÖ±½Ó¹¹½¨£¬²»ÓÃSync
           ai := TAI.OpenEngine();
 
-          DoStatus('å¼€å§‹è®­ç»ƒ');
-          // åå°è®­ç»ƒ
+          DoStatus('¿ªÊ¼ÑµÁ·');
+          // ºóÌ¨ÑµÁ·
           dt := GetTimeTick();
           if RunTrainingTask(tt, ai, 'param.txt') then
             begin
-              DoStatus('è®­ç»ƒæˆåŠŸ.è€—æ—¶ %d æ¯«ç§’', [GetTimeTick() - dt]);
+              DoStatus('ÑµÁ·³É¹¦.ºÄÊ± %d ºÁÃë', [GetTimeTick() - dt]);
               TThread.Synchronize(Sender, procedure
                 begin
-                  // å½“è®­ç»ƒå®Œæˆåï¼Œæˆ‘ä»¬å°†è®­ç»ƒå¥½çš„æ•°æ®ä¿å­˜
+                  // µ±ÑµÁ·Íê³Éºó£¬ÎÒÃÇ½«ÑµÁ·ºÃµÄÊı¾İ±£´æ
                   SaveDialog.FileName := param.GetDefaultValue('output', 'output' + C_OD_Ext);
                   if not SaveDialog.Execute() then
                       exit;
 
-                  // ä½¿ç”¨.svm_odæ•°æ®ï¼Œè¯·å‚è€ƒSVM_ODçš„Demo
+                  // Ê¹ÓÃ.svm_odÊı¾İ£¬Çë²Î¿¼SVM_ODµÄDemo
                   tt.ReadToFile(param.GetDefaultValue('output', 'output' + C_OD_Ext), SaveDialog.FileName);
                 end);
             end
           else
-              DoStatus('è®­ç»ƒå¤±è´¥.');
+              DoStatus('ÑµÁ·Ê§°Ü.');
 
-          // é‡Šæ”¾è®­ç»ƒä½¿ç”¨çš„æ•°æ®
+          // ÊÍ·ÅÑµÁ·Ê¹ÓÃµÄÊı¾İ
           disposeObject(ai);
         end
       else

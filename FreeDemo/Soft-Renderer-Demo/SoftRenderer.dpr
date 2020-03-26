@@ -1,4 +1,4 @@
-﻿program SoftRenderer;
+program SoftRenderer;
 
 uses
   System.StartUpCopy,

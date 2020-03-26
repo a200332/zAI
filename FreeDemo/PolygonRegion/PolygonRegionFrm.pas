@@ -1,4 +1,4 @@
-ï»¿ï»¿unit PolygonRegionFrm;
+unit PolygonRegionFrm;
 
 interface
 
@@ -51,7 +51,7 @@ begin
 end;
 
 procedure TPolygonRegionForm.FormCreate(Sender: TObject);
-// æ•°æ®æºä½¿ç”¨PolygonTool.exeç¼–è¾‘å™¨æ„å»º
+// Êı¾İÔ´Ê¹ÓÃPolygonTool.exe±à¼­Æ÷¹¹½¨
 const cGeo_data_ = '/7cAAAABzgAAACBUIEImZlerIhMMbvThodx4nONgYGDgYGFABh9cGBjaXRiZQGyQTFpmUSpYgssFTDXYG06Jc7zRMtelrvaJ' +
     'MxtQZLXM+4NT9u11Omdz4lDWhquO+1TPHrpwoNjp6Kezh/SXnXN6zlFz6NwSLuf4CLtD5TvvODGANJUkFqWnlqAaPGvyBofa' +
     '2IsuBzcquYDU5DotPui0V8u5oP78oap/9k7ThA8dqk8PdZbInXbINCzdefbE1EObp7c723qrHQqR8nEGAHcVRQM=';
@@ -66,7 +66,7 @@ const cGeo_data_ = '/7cAAAABzgAAACBUIEImZlerIhMMbvThodx4nONgYGDgYGFABh9cGBjaXRiZ
     'FillColor=0.5,0.8,0.5'#13#10 +
     'FillAlpha=0.5'#13#10 +
     'FillVisible=True'#13#10 +
-    'Text=ç›¸å…³æ€§è¿½è¸ªæ³•ï¼šç›®æ ‡å‡ºç°åŒºåŸŸ'#13#10 +
+    'Text=Ïà¹ØĞÔ×·×Ù·¨£ºÄ¿±ê³öÏÖÇøÓò'#13#10 +
     'TextColor=1,1,1'#13#10 +
     'TextAlpha=1.0'#13#10 +
     'TextSize=12'#13#10 +
@@ -82,7 +82,7 @@ const cGeo_data_ = '/7cAAAABzgAAACBUIEImZlerIhMMbvThodx4nONgYGDgYGFABh9cGBjaXRiZ
     'FillColor=0.8,0.5,0.5'#13#10 +
     'FillAlpha=0.5'#13#10 +
     'FillVisible=True'#13#10 +
-    'Text=ç›®æ ‡æŠµè¾¾åŒºåŸŸ'#13#10 +
+    'Text=Ä¿±êµÖ´ïÇøÓò'#13#10 +
     'TextColor=1,1,1'#13#10 +
     'TextAlpha=1.0'#13#10 +
     'TextSize=12'#13#10 +
@@ -123,36 +123,36 @@ begin
   d.ViewOptions := [voEdge];
   d.EdgeColor := DEColor(1, 0, 0);
 
-  // ç”»èƒŒæ™¯
+  // »­±³¾°
   d.DrawTile(bk, bk.BoundsRectV2, 1.0);
 
-  // è§£ç è§†é¢‘å¸§
+  // ½âÂëÊÓÆµÖ¡
   if not mpeg_reader.ReadFrame(mpeg_raster, False) then
     begin
-      // å¦‚æœæ’­å®Œï¼Œé‡å¤´å¼€å§‹æ’­
+      // Èç¹û²¥Íê£¬ÖØÍ·¿ªÊ¼²¥
       mpeg_reader.Seek(0);
       mpeg_reader.ReadFrame(mpeg_raster, False);
-      // å…³é—­ç›¸å…³æ€§è¿½è¸ªï¼Œå¹¶é‡Šæ”¾å†…å­˜
+      // ¹Ø±ÕÏà¹ØĞÔ×·×Ù£¬²¢ÊÍ·ÅÄÚ´æ
       ai.Tracker_Close(tracker_hnd);
-      // é‡æ–°å¯åŠ¨ç›¸å…³æ€§è¿½è¸ªç®—æ³•
+      // ÖØĞÂÆô¶¯Ïà¹ØĞÔ×·×ÙËã·¨
       tracker_hnd := ai.Tracker_Open(mpeg_raster, polygonList.FindPolygon('fire').BoundBox);
-      // æ¸…ç©ºè¿½è¸ªè·¯å¾„
+      // Çå¿Õ×·×ÙÂ·¾¶
       moveingPath.Clear;
       InRegion := False;
       OutRegion := False;
     end;
-  // é‡Šæ”¾gpuæ˜¾å­˜ï¼Œè®©fmxå¯ä»¥æ›´æ–°
+  // ÊÍ·ÅgpuÏÔ´æ£¬ÈÃfmx¿ÉÒÔ¸üĞÂ
   mpeg_raster.NoUsage;
 
-  // ç”»è§†é¢‘çº¹ç†
+  // »­ÊÓÆµÎÆÀí
   box := d.FitDrawPicture(mpeg_raster, mpeg_raster.BoundsRectV2, d.ScreenRect, 1.0);
-  // æŠŠpolygonToolä¸­ç¼–è¾‘çš„æ•°æ®ç”»å‡ºæ¥
+  // °ÑpolygonToolÖĞ±à¼­µÄÊı¾İ»­³öÀ´
   polygonList.Render(d, box, False);
 
-  // å¦‚æœæ¢æµ‹å™¨æ²¡æœ‰ä»ç›®æ ‡åŒºåŸŸç¦»å¼€ï¼Œå°±è¿½è¸ªå®ƒ
+  // Èç¹ûÌ½²âÆ÷Ã»ÓĞ´ÓÄ¿±êÇøÓòÀë¿ª£¬¾Í×·×ÙËü
   if not OutRegion then
     begin
-      // ç›¸å…³æ€§è¿½è¸ªè¿ç®—
+      // Ïà¹ØĞÔ×·×ÙÔËËã
       trackCoeff := ai.Tracker_Update(tracker_hnd, mpeg_raster, trackBox);
     end
   else
@@ -161,22 +161,22 @@ begin
       trackCoeff := 0;
     end;
 
-  // æ”¶é›†è¿åŠ¨è½¨è¿¹
+  // ÊÕ¼¯ÔË¶¯¹ì¼£
   pt := RectCentre(trackBox);
 
-  // æ£€æŸ¥æ˜¯å¦æœ‰è¿›å…¥ç›®æ ‡åŒºåŸŸ
+  // ¼ì²éÊÇ·ñÓĞ½øÈëÄ¿±êÇøÓò
   if not InRegion then
     begin
       InRegion := polygonList.FindPolygon('target').InHere(pt);
       if InRegion then
-          DoStatus('æ¢æµ‹å™¨è¿›å…¥ç›®æ ‡åŒºåŸŸ');
+          DoStatus('Ì½²âÆ÷½øÈëÄ¿±êÇøÓò');
     end
   else
     begin
       InRegion := polygonList.FindPolygon('target').InHere(pt);
       if not InRegion then
         begin
-          DoStatus('æ¢æµ‹å™¨å·²ç»ç¦»å¼€ç›®æ ‡åŒºåŸŸ');
+          DoStatus('Ì½²âÆ÷ÒÑ¾­Àë¿ªÄ¿±êÇøÓò');
           OutRegion := True;
         end;
     end;
@@ -184,18 +184,18 @@ begin
   if not OutRegion then
       moveingPath.Add(pt);
 
-  // è¿åŠ¨è½¨è¿¹æœ‰å¾ˆå¤šåæ ‡æ˜¯ä¸´è¿‘çš„ï¼Œæˆ‘ä»¬ç”¨é“æ ¼æ‹‰æ–¯-æ™®å…‹ç®—æ³•ä¼˜åŒ–å®ƒï¼Œè®©å®ƒæ›´ç¬¦åˆçº¿æ€§è·¯çº¿è§„åˆ™
+  // ÔË¶¯¹ì¼£ÓĞºÜ¶à×ø±êÊÇÁÙ½üµÄ£¬ÎÒÃÇÓÃµÀ¸ñÀ­Ë¹-ÆÕ¿ËËã·¨ÓÅ»¯Ëü£¬ÈÃËü¸ü·ûºÏÏßĞÔÂ·Ïß¹æÔò
   moveingPath.Reduction(2);
 
-  // ç”»è¿½è¸ªæ¡†+æ ‡ç­¾
-  d.DrawLabelBox(Format(if_(OutRegion, '|s:16|å¤±å»æ¢æµ‹å™¨', 'coeff %f'), [trackCoeff]), 10, DEColor(1, 1, 1),
+  // »­×·×Ù¿ò+±êÇ©
+  d.DrawLabelBox(Format(if_(OutRegion, '|s:16|Ê§È¥Ì½²âÆ÷', 'coeff %f'), [trackCoeff]), 10, DEColor(1, 1, 1),
     RectProjection(polygonList.BackgroundBox, box, trackBox), DEColor(1, 0.5, 0.5), 2);
 
-  // ç”»è¿åŠ¨è½¨è¿¹
+  // »­ÔË¶¯¹ì¼£
   d.DrawArrayLine(moveingPath.BuildProjectionArray(polygonList.BackgroundBox, box), False, DEColor(1, 1, 1), 3);
 
   d.BeginCaptureShadow(Vec2(2, 2), 1);
-  d.DrawText('å¤šè¾¹å½¢æ•°æ®ä½¿ç”¨PolygonTool.exeç¼–è¾‘æ„å»ºï¼Œç„¶åè½½å…¥åˆ°Demo.', 14, DEColor(1, 1, 1), Vec2(5, 5));
+  d.DrawText('¶à±ßĞÎÊı¾İÊ¹ÓÃPolygonTool.exe±à¼­¹¹½¨£¬È»ºóÔØÈëµ½Demo.', 14, DEColor(1, 1, 1), Vec2(5, 5));
   d.EndCaptureShadow;
   d.Flush;
 end;

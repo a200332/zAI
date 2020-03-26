@@ -1,4 +1,4 @@
-﻿program SemanticSegmentationTraining;
+program SemanticSegmentationTraining;
 
 uses
   System.StartUpCopy,

@@ -1,4 +1,4 @@
-ï»¿ï»¿unit FFMPEGReaderDemoFrm;
+unit FFMPEGReaderDemoFrm;
 
 interface
 
@@ -46,10 +46,10 @@ begin
   drawIntf := TDrawEngineInterface_FMX.Create;
   raster := DefaultTextureClass.Create;
 
-  // Readeråªèƒ½è§£ç è§†é¢‘æ— æ³•è§£ç éŸ³é¢‘ï¼Œå¦‚æœè§†é¢‘æµåŒ…å«éŸ³é¢‘ï¼Œä¼šç›´æ¥åšå¿½ç•¥å¤„ç†
-  // å¦‚æœæ˜¯rtspä¸²æµç»™ rtsp://ç”¨æˆ·:å¯†ç @åœ°å€:ç«¯å£
-  // å¦‚æœæ˜¯rtmpä¸²æµç»™ rtmp://ç”¨æˆ·:å¯†ç @åœ°å€:ç«¯å£
-  // å¦‚æœæ˜¯è§†é¢‘æ–‡ä»¶ï¼Œç›´æ¥ç»™æ–‡ä»¶åå³å¯
+  // ReaderÖ»ÄÜ½âÂëÊÓÆµÎŞ·¨½âÂëÒôÆµ£¬Èç¹ûÊÓÆµÁ÷°üº¬ÒôÆµ£¬»áÖ±½Ó×öºöÂÔ´¦Àí
+  // Èç¹ûÊÇrtsp´®Á÷¸ø rtsp://ÓÃ»§:ÃÜÂë@µØÖ·:¶Ë¿Ú
+  // Èç¹ûÊÇrtmp´®Á÷¸ø rtmp://ÓÃ»§:ÃÜÂë@µØÖ·:¶Ë¿Ú
+  // Èç¹ûÊÇÊÓÆµÎÄ¼ş£¬Ö±½Ó¸øÎÄ¼şÃû¼´¿É
   fr := TFFMPEG_Reader.Create(umlCombineFileName(TPath.GetLibraryPath, 'market.mp4').Text);
 end;
 

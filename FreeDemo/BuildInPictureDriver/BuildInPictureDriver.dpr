@@ -1,4 +1,4 @@
-﻿program BuildInPictureDriver;
+program BuildInPictureDriver;
 
 {$R *.dres}
 

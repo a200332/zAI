@@ -1,4 +1,4 @@
-﻿﻿unit SigmaGaussianMainFrm;
+unit SigmaGaussianMainFrm;
 
 interface
 

@@ -1,4 +1,4 @@
-﻿program Face_Rec_cpu;
+program Face_Rec_cpu;
 
 uses
   System.StartUpCopy,

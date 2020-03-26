@@ -1,4 +1,4 @@
-ï»¿program MatrixAndVectorExpression;
+program MatrixAndVectorExpression;
 
 {$APPTYPE CONSOLE}
 
@@ -15,30 +15,30 @@ uses
   TextParsing,
   zExpression;
 
-// æ„å»º3*3çš„variantçŸ©é˜µï¼Œä½¿ç”¨cè¯­æ³•è¡¨è¾¾å¼
+// ¹¹½¨3*3µÄvariant¾ØÕó£¬Ê¹ÓÃcÓï·¨±í´ïÊ½
 procedure MatrixExp;
 var
   m: TExpressionValueMatrix;
 begin
   DoStatus('');
   m := EvaluateExpressionMatrix(3, 3,
-    '"hello"+"-baby"/*å¤‡æ³¨ï¼šå­—ç¬¦ä¸²è”åˆ*/,true,false,' +
+    '"hello"+"-baby"/*±¸×¢£º×Ö·û´®ÁªºÏ*/,true,false,' +
     '1+1,2+2,3+3,' +
     '4*4,4*5,4*6', tsC);
   DoStatus(m);
 end;
 
-// æ„å»ºvariantå‘é‡æ•°ç»„ï¼Œä½¿ç”¨pascalè¯­æ³•è¡¨è¾¾å¼
+// ¹¹½¨variantÏòÁ¿Êı×é£¬Ê¹ÓÃpascalÓï·¨±í´ïÊ½
 procedure MatrixVec;
 var
   v: TExpressionValueVector;
 begin
   DoStatus('');
-  v := EvaluateExpressionVector('0.1*(0.1+max(0.15,0.11)){å¤‡æ³¨å†…å®¹},1,2,3,4,5,6,7,8,9', tsPascal);
+  v := EvaluateExpressionVector('0.1*(0.1+max(0.15,0.11)){±¸×¢ÄÚÈİ},1,2,3,4,5,6,7,8,9', tsPascal);
   DoStatus(v);
 end;
 
-// æ„å»º3*4çš„TLMatrixçŸ©é˜µï¼Œæµ®ç‚¹çŸ©é˜µï¼Œé»˜è®¤ä½¿ç”¨pascalè¯­æ³•è¡¨è¾¾å¼
+// ¹¹½¨3*4µÄTLMatrix¾ØÕó£¬¸¡µã¾ØÕó£¬Ä¬ÈÏÊ¹ÓÃpascalÓï·¨±í´ïÊ½
 procedure LearnMatrixExp;
 var
   m: TLMatrix;
@@ -52,7 +52,7 @@ begin
   DoStatus(m);
 end;
 
-// æ„å»ºTLVecå‘é‡æ•°ç»„ï¼Œæµ®ç‚¹æ•°ç»„ï¼Œé»˜è®¤ä½¿ç”¨pascalè¯­æ³•è¡¨è¾¾å¼
+// ¹¹½¨TLVecÏòÁ¿Êı×é£¬¸¡µãÊı×é£¬Ä¬ÈÏÊ¹ÓÃpascalÓï·¨±í´ïÊ½
 procedure LearnVecExp;
 var
   v: TLVec;

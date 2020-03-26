@@ -1,4 +1,4 @@
-﻿﻿program KDTree_Analysis_EasyConsoleDemo;
+﻿program KDTree_Analysis_EasyConsoleDemo;
 
 {$APPTYPE CONSOLE}
 

@@ -1,4 +1,4 @@
-ï»¿ï»¿unit FaceRec_GPU_DemoFrm;
+unit FaceRec_GPU_DemoFrm;
 
 interface
 
@@ -50,7 +50,7 @@ var
 
   procedure d(filename: U_String);
   begin
-    DoStatus('åˆ é™¤æ–‡ä»¶ %s', [filename.Text]);
+    DoStatus('É¾³ıÎÄ¼ş %s', [filename.Text]);
     umlDeleteFile(filename);
   end;
 
@@ -89,20 +89,20 @@ begin
           ResetButton.Enabled := False;
         end);
       try
-        DoStatus('æ£€æŸ¥åº¦é‡åŒ–ç¥ç»ç½‘ç»œåº“:%s', ['lady_face' + C_Metric_Ext]);
+        DoStatus('¼ì²é¶ÈÁ¿»¯Éñ¾­ÍøÂç¿â:%s', ['lady_face' + C_Metric_Ext]);
         fn := umlCombineFileName(TPath.GetLibraryPath, 'lady_face' + C_Metric_Ext);
         if not umlFileExists(fn) then
           begin
-            // è¿™é‡Œæˆ‘ä»¬ç”¨apiæ–¹æ³•æ¥è®­ç»ƒé¢éƒ¨åº¦é‡åŒ–çš„ç¥ç»ç½‘ç»œ
-            // åŒæ ·çš„è®­ç»ƒä¹Ÿå¯ä»¥ä½¿ç”¨ TTrainingTask æ–¹å¼
-            DoStatus('å¼€å§‹è®­ç»ƒåº¦é‡åŒ–ç¥ç»ç½‘ç»œåº“:%s', ['lady_face' + C_Metric_Ext]);
+            // ÕâÀïÎÒÃÇÓÃapi·½·¨À´ÑµÁ·Ãæ²¿¶ÈÁ¿»¯µÄÉñ¾­ÍøÂç
+            // Í¬ÑùµÄÑµÁ·Ò²¿ÉÒÔÊ¹ÓÃ TTrainingTask ·½Ê½
+            DoStatus('¿ªÊ¼ÑµÁ·¶ÈÁ¿»¯Éñ¾­ÍøÂç¿â:%s', ['lady_face' + C_Metric_Ext]);
             param := TAI.Init_Metric_ResNet_Parameter(fn + '.sync', fn);
 
-            // åœ¨æ·±åº¦å­¦ä¹ è®­ç»ƒä¸­ï¼Œå­¦ä¹ ç‡æ˜¯ä¸ªä¸å›ºå®šçš„ä¸œè¥¿ï¼Œéœ€è¦æ”¶æ•›
-            // æ”¶æ•›æ¡ä»¶å°±æ˜¯æ ¹æ®æ— æ•ˆè¿­ä»£å™¨å‘ç”Ÿçš„æ¬¡æ•°æ¥
-            // æ— æ•ˆæ¬¡æ•°è¶Šå°ï¼Œå­¦ä¹ é€Ÿåº¦å°±ä¼šè¶Šå¿«ï¼Œä½†æ˜¯å¤ªå°å°±ä¼šé”™è¿‡æœ€ä½³æ”¶æ•›ï¼Œæœ€åå¾—åˆ°æ¨¡å‹å°†ä¼šå¤±å»å‡†ç¡®åº¦
-            // ä¸€èˆ¬æ¥è¯´ä½¿ç”¨é»˜è®¤çš„å€¼å°±å¯ä»¥
-            // å¤„äºå¿«é€Ÿdemoï¼Œæˆ‘å°†æ”¶æ•›å€¼å®šä¹‰æˆäº†300ï¼Œå½“äººè„¸åº“å¾ˆå¤§ï¼Œæ¯”å¦‚5000äººçš„é¢éƒ¨åº“ï¼Œè¿™ä¸ªæ•°å€¼åº”è¯¥è®¾ç½®æˆ500ä»¥ä¸Š
+            // ÔÚÉî¶ÈÑ§Ï°ÑµÁ·ÖĞ£¬Ñ§Ï°ÂÊÊÇ¸ö²»¹Ì¶¨µÄ¶«Î÷£¬ĞèÒªÊÕÁ²
+            // ÊÕÁ²Ìõ¼ş¾ÍÊÇ¸ù¾İÎŞĞ§µü´úÆ÷·¢ÉúµÄ´ÎÊıÀ´
+            // ÎŞĞ§´ÎÊıÔ½Ğ¡£¬Ñ§Ï°ËÙ¶È¾Í»áÔ½¿ì£¬µ«ÊÇÌ«Ğ¡¾Í»á´í¹ı×î¼ÑÊÕÁ²£¬×îºóµÃµ½Ä£ĞÍ½«»áÊ§È¥×¼È·¶È
+            // Ò»°ãÀ´ËµÊ¹ÓÃÄ¬ÈÏµÄÖµ¾Í¿ÉÒÔ
+            // ´¦ÓÚ¿ìËÙdemo£¬ÎÒ½«ÊÕÁ²Öµ¶¨Òå³ÉÁË300£¬µ±ÈËÁ³¿âºÜ´ó£¬±ÈÈç5000ÈËµÄÃæ²¿¿â£¬Õâ¸öÊıÖµÓ¦¸ÃÉèÖÃ³É500ÒÔÉÏ
             param^.iterations_without_progress_threshold := 300;
             param^.step_mini_batch_target_num := 4;
             param^.step_mini_batch_raster_num := 5;
@@ -111,111 +111,111 @@ begin
 
             if training_successed then
               begin
-                DoStatus('è®­ç»ƒæˆåŠŸ');
+                DoStatus('ÑµÁ·³É¹¦');
               end
             else
               begin
-                DoStatus('è®­ç»ƒå¤±è´¥');
+                DoStatus('ÑµÁ·Ê§°Ü');
                 exit;
               end;
           end;
 
-        DoStatus('è½½å…¥åº¦é‡åŒ–ç¥ç»ç½‘ç»œ "%s"', [fn.Text]);
+        DoStatus('ÔØÈë¶ÈÁ¿»¯Éñ¾­ÍøÂç "%s"', [fn.Text]);
         mdnn_hnd := AI.Metric_ResNet_Open_Stream(fn);
 
-        // learnå­¦ä¹ è¿™ä¸€æ­¥å¯ä»¥ä¿å­˜æˆæ–‡ä»¶ï¼Œä¸å¿…æ¯æ¬¡å­¦ä¹ 
+        // learnÑ§Ï°ÕâÒ»²½¿ÉÒÔ±£´æ³ÉÎÄ¼ş£¬²»±ØÃ¿´ÎÑ§Ï°
         L_fn := umlchangeFileExt(fn, '.learn');
-        DoStatus('æ£€æŸ¥åº¦é‡åŒ–è®°å¿†åº“');
+        DoStatus('¼ì²é¶ÈÁ¿»¯¼ÇÒä¿â');
         if umlFileExists(L_fn) then
           begin
-            DoStatus('è¯»å–åº¦é‡åŒ–è®°å¿†åº“ "%s"', [L_fn.Text]);
+            DoStatus('¶ÁÈ¡¶ÈÁ¿»¯¼ÇÒä¿â "%s"', [L_fn.Text]);
             L_Engine.LoadFromFile(L_fn);
           end
         else
           begin
-            DoStatus('Learnå¼•æ“æ­£åœ¨å­¦ä¹ Faceåº¦é‡', []);
+            DoStatus('LearnÒıÇæÕıÔÚÑ§Ï°Face¶ÈÁ¿', []);
             L_Engine.Clear;
             tk := GetTimeTick();
             AI.Metric_ResNet_SaveToLearnEngine(mdnn_hnd, False, imgL, L_Engine);
             L_Engine.Training;
-            DoStatus('å­¦ä¹ Faceåº¦é‡ï¼ŒLearnè®°å¿†äº† %d å¼ é¢éƒ¨åº¦é‡ï¼Œè€—æ—¶:%dms', [L_Engine.Count, GetTimeTick() - tk]);
-            DoStatus('ä¿å­˜åº¦é‡åŒ–è®°å¿†åº“ "%s"', [L_fn.Text]);
+            DoStatus('Ñ§Ï°Face¶ÈÁ¿£¬Learn¼ÇÒäÁË %d ÕÅÃæ²¿¶ÈÁ¿£¬ºÄÊ±:%dms', [L_Engine.Count, GetTimeTick() - tk]);
+            DoStatus('±£´æ¶ÈÁ¿»¯¼ÇÒä¿â "%s"', [L_fn.Text]);
             L_Engine.SaveToFile(L_fn);
           end;
 
-        // å› ä¸ºzaiçš„å†…ç½®äººè„¸æ•°æ®é›†éƒ½é‡‡ç”¨é«˜æ¸…å›¾ç‰‡è®­ç»ƒï¼Œæˆ‘ä»¬åœ¨å®é™…åº”ç”¨ä¸­ï¼Œè¿™ä¸€æ­¥å¯ä»¥çœå´
-        // ç›´æ¥é€‰ç”¨720p,1080pè¿™ç±»é«˜æ¸…å›¾åƒçš„æ•°æ®æºå³å¯
-        // æ²¡æœ‰ç¼©æ”¾åï¼Œæ€§èƒ½å°†ä¼šå¾—åˆ°æå‡
-        DoStatus('å¯¹äººè„¸åšå¹¶è¡ŒåŒ–é«˜æ–¯é¢„å¤„ç†.', []);
+        // ÒòÎªzaiµÄÄÚÖÃÈËÁ³Êı¾İ¼¯¶¼²ÉÓÃ¸ßÇåÍ¼Æ¬ÑµÁ·£¬ÎÒÃÇÔÚÊµ¼ÊÓ¦ÓÃÖĞ£¬ÕâÒ»²½¿ÉÒÔÊ¡È´
+        // Ö±½ÓÑ¡ÓÃ720p,1080pÕâÀà¸ßÇåÍ¼ÏñµÄÊı¾İÔ´¼´¿É
+        // Ã»ÓĞËõ·Åºó£¬ĞÔÄÜ½«»áµÃµ½ÌáÉı
+        DoStatus('¶ÔÈËÁ³×ö²¢ĞĞ»¯¸ßË¹Ô¤´¦Àí.', []);
         new_face_tile := NewRaster();
         tk := GetTimeTick();
         new_face_tile.ZoomFrom(face_tile, face_tile.width * 2, face_tile.height * 2);
-        DoStatus('å¹¶è¡ŒåŒ–é«˜æ–¯é¢„å¤„ç†è€—æ—¶:%dms', [GetTimeTick() - tk]);
+        DoStatus('²¢ĞĞ»¯¸ßË¹Ô¤´¦ÀíºÄÊ±:%dms', [GetTimeTick() - tk]);
 
-        DoStatus('è¯»å–DNN-ODæ–‡ä»¶', []);
+        DoStatus('¶ÁÈ¡DNN-ODÎÄ¼ş', []);
         mmod_hnd := AI.MMOD_DNN_Open_Stream(umlCombineFileName(TPath.GetLibraryPath, 'human_face_detector.svm_dnn_od'));
 
-        // ZAIå¯¹cudaçš„æ”¯æŒæœºåˆ¶è¯´æ˜ï¼šåœ¨10.xç‰ˆæœ¬ï¼Œä¸€ä¸ªZAIè¿›ç¨‹ä¸€æ¬¡åªèƒ½ç”¨ä¸€ä¸ªcudaï¼Œä¸èƒ½å¹¶è¡ŒåŒ–ä½¿ç”¨cudaï¼Œå¦‚æœæœ‰å¤šç§cudaè®¡ç®—å¤šå¼€è¿›ç¨‹å³å¯
-        // ä½¿ç”¨zAIçš„cudaå¿…è¡Œä¿è¯åœ¨ä¸»è¿›ç¨‹ä¸­è®¡ç®—ï¼Œå¦åˆ™ä¼šå‘ç”Ÿæ˜¾å­˜æ³„æ¼
+        // ZAI¶ÔcudaµÄÖ§³Ö»úÖÆËµÃ÷£ºÔÚ10.x°æ±¾£¬Ò»¸öZAI½ø³ÌÒ»´ÎÖ»ÄÜÓÃÒ»¸öcuda£¬²»ÄÜ²¢ĞĞ»¯Ê¹ÓÃcuda£¬Èç¹ûÓĞ¶àÖÖcuda¼ÆËã¶à¿ª½ø³Ì¼´¿É
+        // Ê¹ÓÃzAIµÄcuda±ØĞĞ±£Ö¤ÔÚÖ÷½ø³ÌÖĞ¼ÆËã£¬·ñÔò»á·¢ÉúÏÔ´æĞ¹Â©
         TThread.Synchronize(TThread.CurrentThread, procedure
           begin
-            // faceæ£€æµ‹ä½¿ç”¨gpuæ–¹å¼ï¼Œæ£€æµ‹å®Œæˆåï¼Œè¾“å‡ºmmod_descï¼Œè¿™æ˜¯ä¸€ä¸ªrectæ•°ç»„
-            // é¦–æ¬¡gpuæ£€æµ‹éœ€è¦å±•å¼€cudaå†…å­˜ï¼Œfaceä¼šæ¯”è¾ƒæ…¢ï¼Œç¬¬äºŒæ¬¡gpuæ£€æµ‹faceå°†ä¼šå¾—åˆ°æé€Ÿ
-            // ä¸Šå±‚apiçš„åªç®¡è°ƒç”¨ï¼Œä¸éœ€è¦å…³å¿ƒåº•å±‚
-            DoStatus('æ­£åœ¨æ£€æµ‹äººè„¸. demoå›¾ç‰‡åˆ†è¾¨ç‡ %d*%d', [new_face_tile.width, new_face_tile.height]);
+            // face¼ì²âÊ¹ÓÃgpu·½Ê½£¬¼ì²âÍê³Éºó£¬Êä³ömmod_desc£¬ÕâÊÇÒ»¸örectÊı×é
+            // Ê×´Îgpu¼ì²âĞèÒªÕ¹¿ªcudaÄÚ´æ£¬face»á±È½ÏÂı£¬µÚ¶ş´Îgpu¼ì²âface½«»áµÃµ½ÌáËÙ
+            // ÉÏ²ãapiµÄÖ»¹Üµ÷ÓÃ£¬²»ĞèÒª¹ØĞÄµ×²ã
+            DoStatus('ÕıÔÚ¼ì²âÈËÁ³. demoÍ¼Æ¬·Ö±æÂÊ %d*%d', [new_face_tile.width, new_face_tile.height]);
             tk := GetTimeTick();
             mmod_desc := AI.MMOD_DNN_Process(mmod_hnd, new_face_tile);
-            DoStatus('æ£€æµ‹äººè„¸å®Œæˆ. å‘ç° %d å¼ äººè„¸ï¼Œè€—æ—¶:%dms', [length(mmod_desc), GetTimeTick() - tk]);
+            DoStatus('¼ì²âÈËÁ³Íê³É. ·¢ÏÖ %d ÕÅÈËÁ³£¬ºÄÊ±:%dms', [length(mmod_desc), GetTimeTick() - tk]);
           end);
 
-        // åŸºäºmmod_descæ•°æ®ï¼Œç›´æ¥åšspå¯¹é½
-        // é¦–æ¬¡spå¯¹é½éœ€è¦å±•å¼€stlçš„ä¸´æ—¶å†…å­˜ï¼Œç¬¬äºŒæ¬¡spå¯¹é½å°±ä¼šå¾—åˆ°æé€Ÿ
-        // ä¸Šå±‚apiçš„åªç®¡è°ƒç”¨ï¼Œä¸éœ€è¦å…³å¿ƒåº•å±‚
-        DoStatus('æ­£åœ¨å¯¹é½äººè„¸. demoå›¾ç‰‡åˆ†è¾¨ç‡ %d*%d', [new_face_tile.width, new_face_tile.height]);
+        // »ùÓÚmmod_descÊı¾İ£¬Ö±½Ó×ösp¶ÔÆë
+        // Ê×´Îsp¶ÔÆëĞèÒªÕ¹¿ªstlµÄÁÙÊ±ÄÚ´æ£¬µÚ¶ş´Îsp¶ÔÆë¾Í»áµÃµ½ÌáËÙ
+        // ÉÏ²ãapiµÄÖ»¹Üµ÷ÓÃ£¬²»ĞèÒª¹ØĞÄµ×²ã
+        DoStatus('ÕıÔÚ¶ÔÆëÈËÁ³. demoÍ¼Æ¬·Ö±æÂÊ %d*%d', [new_face_tile.width, new_face_tile.height]);
         tk := GetTimeTick();
         face_hnd := AI.Face_Detector(new_face_tile, mmod_desc, C_Metric_Input_Size);
-        DoStatus('å¯¹é½äººè„¸å®Œæˆ. è€—æ—¶:%dms', [GetTimeTick() - tk]);
+        DoStatus('¶ÔÆëÈËÁ³Íê³É. ºÄÊ±:%dms', [GetTimeTick() - tk]);
 
         d := TDrawEngine.Create;
         d.Rasterization.Memory.Assign(face_tile);
         d.SetSize(face_tile);
         for i := 0 to AI.Face_chips_num(face_hnd) - 1 do
           begin
-            // ä»ç…§ç‰‡è·å–å¯¹é½face
+            // ´ÓÕÕÆ¬»ñÈ¡¶ÔÆëface
             face_raster := AI.Face_chips(face_hnd, i);
 
-            // ZAIå¯¹cudaçš„æ”¯æŒæœºåˆ¶è¯´æ˜ï¼šåœ¨10.xç‰ˆæœ¬ï¼Œä¸€ä¸ªZAIè¿›ç¨‹ä¸€æ¬¡åªèƒ½ç”¨ä¸€ä¸ªcudaï¼Œä¸èƒ½å¹¶è¡ŒåŒ–ä½¿ç”¨cudaï¼Œå¦‚æœæœ‰å¤šç§cudaè®¡ç®—å¤šå¼€è¿›ç¨‹å³å¯
-            // ä½¿ç”¨zAIçš„cudaå¿…è¡Œä¿è¯åœ¨ä¸»è¿›ç¨‹ä¸­è®¡ç®—ï¼Œå¦åˆ™ä¼šå‘ç”Ÿæ˜¾å­˜æ³„æ¼
+            // ZAI¶ÔcudaµÄÖ§³Ö»úÖÆËµÃ÷£ºÔÚ10.x°æ±¾£¬Ò»¸öZAI½ø³ÌÒ»´ÎÖ»ÄÜÓÃÒ»¸öcuda£¬²»ÄÜ²¢ĞĞ»¯Ê¹ÓÃcuda£¬Èç¹ûÓĞ¶àÖÖcuda¼ÆËã¶à¿ª½ø³Ì¼´¿É
+            // Ê¹ÓÃzAIµÄcuda±ØĞĞ±£Ö¤ÔÚÖ÷½ø³ÌÖĞ¼ÆËã£¬·ñÔò»á·¢ÉúÏÔ´æĞ¹Â©
             TThread.Synchronize(TThread.CurrentThread, procedure
               begin
                 tk := GetTimeTick();
-                // ä½¿ç”¨æ®‹å·®ç½‘ç»œå¤„ç†è¿™å¼ å¯¹é½face
-                // è¾“å‡ºLearnå¼•æ“æ¬§æ¨¡å‹å‘é‡åˆ°face_vec
-                // AI.Metric_ResNet_Processæ˜¯ä¸ªapiï¼Œç¬¬ä¸€è°ƒç”¨æ—¶ï¼Œå®ƒä¼šå°†DNNå±•å¼€åˆ°gpuï¼Œè¿™ä¸€éƒ¨åˆ†æ¶‰åŠåˆ°äº†å¤§é‡copyï¼Œä¼šæ¶ˆè€—æ¯”è¾ƒå¤šçš„æ—¶é—´
-                // å½“ç¬¬äºŒæ¬¡æˆ–åˆ™é«˜é¢‘ç‡è°ƒç”¨æ—¶ï¼ŒAI.Metric_ResNet_Processå‡ ä¹éƒ½æ˜¯å®æ—¶çš„
+                // Ê¹ÓÃ²Ğ²îÍøÂç´¦ÀíÕâÕÅ¶ÔÆëface
+                // Êä³öLearnÒıÇæÅ·Ä£ĞÍÏòÁ¿µ½face_vec
+                // AI.Metric_ResNet_ProcessÊÇ¸öapi£¬µÚÒ»µ÷ÓÃÊ±£¬Ëü»á½«DNNÕ¹¿ªµ½gpu£¬ÕâÒ»²¿·ÖÉæ¼°µ½ÁË´óÁ¿copy£¬»áÏûºÄ±È½Ï¶àµÄÊ±¼ä
+                // µ±µÚ¶ş´Î»òÔò¸ßÆµÂÊµ÷ÓÃÊ±£¬AI.Metric_ResNet_Process¼¸ºõ¶¼ÊÇÊµÊ±µÄ
                 face_vec := AI.Metric_ResNet_Process(mdnn_hnd, face_raster);
                 disposeObject(face_raster);
               end);
 
-            // ä½¿ç”¨Learnå¼•æ“åˆ†æè¿™å¼ åº¦é‡äººè„¸ï¼Œè¿”å›äººè„¸æ ‡ç­¾
-            // å› ä¸ºdelphiå’Œfreepascalä½¿ç”¨äº†labelå…³é”®å­—ï¼Œlabelæ— æ³•è¢«å®šä¹‰ï¼Œlabeléƒ½ä»¥tokenæ¥ä»£æ›¿
-            // åœ¨Learnå¼•æ“çš„ProcessMaxIndexTokenæ˜¯åˆ†ç±»å™¨æ–¹æ³•ï¼Œå®ƒä¼šéå†å…¨éƒ¨çš„Kæ¨¡å‹ï¼ŒLearnå¼•æ“æœ‰å¾ˆå¤šæ–¹æ³•å¯ä»¥å¤„ç†æ¬§æ¨¡å‹
-            // ç”¨Learnå¯¹ä»˜ä¸‡äººçº§çš„å‘é‡æ²¡æœ‰é—®é¢˜
-            // äº†è§£æ›´å¤šLearnçš„æŠ€æœ¯ç»†èŠ‚ï¼Œå¯ä»¥è®¿é—®æˆ‘çš„å¼€æºå·¥ç¨‹ï¼Œhttps://github.com/PassByYou888/zAnalysis
+            // Ê¹ÓÃLearnÒıÇæ·ÖÎöÕâÕÅ¶ÈÁ¿ÈËÁ³£¬·µ»ØÈËÁ³±êÇ©
+            // ÒòÎªdelphiºÍfreepascalÊ¹ÓÃÁËlabel¹Ø¼ü×Ö£¬labelÎŞ·¨±»¶¨Òå£¬label¶¼ÒÔtokenÀ´´úÌæ
+            // ÔÚLearnÒıÇæµÄProcessMaxIndexTokenÊÇ·ÖÀàÆ÷·½·¨£¬Ëü»á±éÀúÈ«²¿µÄKÄ£ĞÍ£¬LearnÒıÇæÓĞºÜ¶à·½·¨¿ÉÒÔ´¦ÀíÅ·Ä£ĞÍ
+            // ÓÃLearn¶Ô¸¶ÍòÈË¼¶µÄÏòÁ¿Ã»ÓĞÎÊÌâ
+            // ÁË½â¸ü¶àLearnµÄ¼¼ÊõÏ¸½Ú£¬¿ÉÒÔ·ÃÎÊÎÒµÄ¿ªÔ´¹¤³Ì£¬https://github.com/PassByYou888/zAnalysis
             face_token := L_Engine.ProcessMaxIndexToken(face_vec);
-            DoStatus('åº¦é‡åŒ– "%s" è€—æ—¶:%dms', [face_token, GetTimeTick() - tk]);
+            DoStatus('¶ÈÁ¿»¯ "%s" ºÄÊ±:%dms', [face_token, GetTimeTick() - tk]);
 
-            // ç°åœ¨æˆ‘ä»¬å¯ä»¥æŠŠæ ‡ç­¾ç”»å‡ºæ¥äº†
+            // ÏÖÔÚÎÒÃÇ¿ÉÒÔ°Ñ±êÇ©»­³öÀ´ÁË
 
-            // ç”±äºæˆ‘ä»¬æ˜¯æ”¾å¤§ä¸¤å€åšäººè„¸æ£€æµ‹ï¼Œè¿™é‡Œçš„åæ ‡ç³»è¦è¿˜åŸä¸€ä¸‹
+            // ÓÉÓÚÎÒÃÇÊÇ·Å´óÁ½±¶×öÈËÁ³¼ì²â£¬ÕâÀïµÄ×ø±êÏµÒª»¹Ô­Ò»ÏÂ
             face_rect := RectMul(AI.Face_RectV2(face_hnd, i), 0.5);
 
-            // ç”»æ¡†ä½“
+            // »­¿òÌå
             d.DrawLabelBox(face_token, d.Rasterization.Memory.Font.FontSize, DEColor(1, 1, 1, 1), face_rect, DEColor(1, 0.5, 0.5), 5);
           end;
         d.Flush;
 
-        DoStatus('å°†drawEngineå…‰æ …è½¬æ¢æˆfmxæ˜¾ç¤º');
+        DoStatus('½«drawEngine¹âÕ¤×ª»»³ÉfmxÏÔÊ¾');
         TThread.Synchronize(Sender, procedure
           begin
             MemoryBitmapToBitmap(d.Rasterization.Memory, Image1.Bitmap);
@@ -244,13 +244,13 @@ end;
 procedure TFaceRecForm.FormCreate(Sender: TObject);
 begin
   AddDoStatusHook(Self, DoStatusMethod);
-  // è¯»å–zAIçš„é…ç½®
+  // ¶ÁÈ¡zAIµÄÅäÖÃ
   ReadAIConfig;
-  // è¿™ä¸€æ­¥ä¼šè¿æ¥KeyæœåŠ¡å™¨ï¼ŒéªŒè¯ZAIçš„Key
-  // è¿æ¥æœåŠ¡å™¨éªŒè¯Keyæ˜¯åœ¨å¯åŠ¨å¼•æ“æ—¶ä¸€æ¬¡æ€§çš„éªŒè¯ï¼Œåªä¼šå½“ç¨‹åºå¯åŠ¨æ—¶æ‰ä¼šéªŒè¯ï¼Œå‡å¦‚éªŒè¯ä¸èƒ½é€šè¿‡ï¼ŒzAIå°†ä¼šæ‹’ç»å·¥ä½œ
-  // åœ¨ç¨‹åºè¿è¡Œä¸­ï¼Œåå¤åˆ›å»ºTAIï¼Œä¸ä¼šå‘ç”Ÿè¿œç¨‹éªŒè¯
-  // éªŒè¯éœ€è¦ä¸€ä¸ªuserKeyï¼Œé€šè¿‡userkeyæ¨ç®—å‡ºZAIåœ¨å¯åŠ¨æ—¶ç”Ÿæˆçš„éšæœºKeyï¼Œuserkeyå¯ä»¥é€šè¿‡webç”³è¯·ï¼Œä¹Ÿå¯ä»¥è”ç³»ä½œè€…å‘æ”¾
-  // éªŒè¯keyéƒ½æ˜¯æŠ—é‡å­çº§ï¼Œæ— æ³•è¢«ç ´è§£
+  // ÕâÒ»²½»áÁ¬½ÓKey·şÎñÆ÷£¬ÑéÖ¤ZAIµÄKey
+  // Á¬½Ó·şÎñÆ÷ÑéÖ¤KeyÊÇÔÚÆô¶¯ÒıÇæÊ±Ò»´ÎĞÔµÄÑéÖ¤£¬Ö»»áµ±³ÌĞòÆô¶¯Ê±²Å»áÑéÖ¤£¬¼ÙÈçÑéÖ¤²»ÄÜÍ¨¹ı£¬zAI½«»á¾Ü¾ø¹¤×÷
+  // ÔÚ³ÌĞòÔËĞĞÖĞ£¬·´¸´´´½¨TAI£¬²»»á·¢ÉúÔ¶³ÌÑéÖ¤
+  // ÑéÖ¤ĞèÒªÒ»¸öuserKey£¬Í¨¹ıuserkeyÍÆËã³öZAIÔÚÆô¶¯Ê±Éú³ÉµÄËæ»úKey£¬userkey¿ÉÒÔÍ¨¹ıwebÉêÇë£¬Ò²¿ÉÒÔÁªÏµ×÷Õß·¢·Å
+  // ÑéÖ¤key¶¼ÊÇ¿¹Á¿×Ó¼¶£¬ÎŞ·¨±»ÆÆ½â
   zAI.Prepare_AI_Engine();
 
   FaceRecButton.Enabled := False;
@@ -263,18 +263,18 @@ begin
     begin
       AI := TAI.OpenEngine();
 
-      DoStatus('è¯»å–æ•°æ®é›†.');
+      DoStatus('¶ÁÈ¡Êı¾İ¼¯.');
       imgL := TAI_ImageList.Create;
       fn := umlCombineFileName(TPath.GetLibraryPath, 'lady_face.ImgDataSet');
       imgL.LoadFromFile(fn);
 
-      DoStatus('å°†æ•°æ®é›†å±•å¼€æˆå¹³é“ºå…‰æ ….');
+      DoStatus('½«Êı¾İ¼¯Õ¹¿ª³ÉÆ½ÆÌ¹âÕ¤.');
       m64 := TMemoryStream64.Create;
       imgL.SaveToPictureStream(m64);
       m64.Position := 0;
       face_tile := NewRasterFromStream(m64);
       disposeObject(m64);
-      DoStatus('å°†å…‰æ …è½¬æ¢æˆFMXä½å›¾æ˜¾ç¤º');
+      DoStatus('½«¹âÕ¤×ª»»³ÉFMXÎ»Í¼ÏÔÊ¾');
       TThread.Synchronize(Sender, procedure
         begin
           MemoryBitmapToBitmap(face_tile, Image1.Bitmap);
@@ -282,8 +282,8 @@ begin
           ResetButton.Enabled := True;
         end);
 
-      DoStatus('åˆå§‹åŒ–Learnå¼•æ“åˆ†ç±»å™¨');
-      DoStatus('Learnå¼•æ“Kç»´ï¼š%d', [zAI.C_Metric_Dim]);
+      DoStatus('³õÊ¼»¯LearnÒıÇæ·ÖÀàÆ÷');
+      DoStatus('LearnÒıÇæKÎ¬£º%d', [zAI.C_Metric_Dim]);
       L_Engine := TLearn.CreateClassifier(TLearnType.ltKDT, zAI.C_Metric_Dim);
     end);
 end;

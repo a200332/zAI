@@ -1,4 +1,4 @@
-﻿program TriangleOptimization;
+program TriangleOptimization;
 
 uses
   System.StartUpCopy,
