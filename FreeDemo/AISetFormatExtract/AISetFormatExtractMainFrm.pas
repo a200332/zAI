@@ -1,4 +1,4 @@
-unit AISetFormatExtractMainFrm;
+ï»¿ï»¿unit AISetFormatExtractMainFrm;
 
 interface
 
@@ -58,7 +58,7 @@ begin
       editor_ImgData_Geo: TEditorGeometry;
       editor_ImgData_SegMask: TEditorSegmentationMask;
     begin
-      // .AI_Set ÊÇ±à¼­Æ÷µÄÔ­Ê¼Êı¾İ
+      // .AI_Set æ˜¯ç¼–è¾‘å™¨çš„åŸå§‹æ•°æ®
       editor_dataset := TEditorImageDataList.Create(True);
       fn.Text := umlCombineFileName(TPath.GetLibraryPath, 'demoDataset.AI_Set');
       DoStatus('load .AI_Set file: %s', [fn.Text]);
@@ -67,49 +67,49 @@ begin
 
       for i := 0 to editor_dataset.Count - 1 do
         begin
-          // ÔÚ±à¼­Æ÷ÖĞ editor_ImgData Ã¿ÕÅÍ¼Æ¬µÄÊı¾İ
-          // °üº¬:Í¼Ïñ¹âÕ¤£¬¿òÌåÁ´±í£¬°üÎ§+ËúÏİ¼¸ºÎÁ´±í£¬Í¼Ïñ·Ö¸î¹âÕ¤Á´±í
+          // åœ¨ç¼–è¾‘å™¨ä¸­ editor_ImgData æ¯å¼ å›¾ç‰‡çš„æ•°æ®
+          // åŒ…å«:å›¾åƒå…‰æ …ï¼Œæ¡†ä½“é“¾è¡¨ï¼ŒåŒ…å›´+å¡Œé™·å‡ ä½•é“¾è¡¨ï¼Œå›¾åƒåˆ†å‰²å…‰æ …é“¾è¡¨
           editor_ImgData := editor_dataset[i];
 
           DoStatus('');
 
-          DoStatus('ÕıÔÚ½âÎö %s ÖĞµÄÊı¾İ', [editor_ImgData.FileInfo.Text]);
+          DoStatus('æ­£åœ¨è§£æ %s ä¸­çš„æ•°æ®', [editor_ImgData.FileInfo.Text]);
 
-          // Ô­Ê¼¹âÕ¤Êı¾İ
+          // åŸå§‹å…‰æ …æ•°æ®
           editor_ImgData_raster := editor_ImgData.Raster;
-          DoStatus(' %s Ô­Ê¼µÄ¹âÕ¤³ß´ç %d * %d', [editor_ImgData.FileInfo.Text, editor_ImgData_raster.Width, editor_ImgData_raster.Height]);
+          DoStatus(' %s åŸå§‹çš„å…‰æ …å°ºå¯¸ %d * %d', [editor_ImgData.FileInfo.Text, editor_ImgData_raster.Width, editor_ImgData_raster.Height]);
 
           for j := 0 to editor_ImgData.DetectorDefineList.Count - 1 do
             begin
-              // editor_ImgData_DetÀïÃæÊÇ¼ì²âÆ÷¿òÌå¶¨ÒåºÍShapePredictorÊı¾İ
+              // editor_ImgData_Deté‡Œé¢æ˜¯æ£€æµ‹å™¨æ¡†ä½“å®šä¹‰å’ŒShapePredictoræ•°æ®
               editor_ImgData_Det := editor_ImgData.DetectorDefineList[j];
-              DoStatus(' %s ÖĞµÄ¼ì²âÆ÷¿òÌå%d: %d %d %d %d shapePredictorÊı¾İÓĞ %d ¸ö', [editor_ImgData.FileInfo.Text, j,
+              DoStatus(' %s ä¸­çš„æ£€æµ‹å™¨æ¡†ä½“%d: %d %d %d %d shapePredictoræ•°æ®æœ‰ %d ä¸ª', [editor_ImgData.FileInfo.Text, j,
                 editor_ImgData_Det.R.Left, editor_ImgData_Det.R.Top,
                 editor_ImgData_Det.R.Right, editor_ImgData_Det.R.Bottom, editor_ImgData_Det.Part.Count]);
             end;
 
           for j := 0 to editor_ImgData.GeometryList.Count - 1 do
             begin
-              // editor_ImgData_GeoÀïÃæÊÇÓÃÓÚ¼¸ºÎÃèÊöµÄ¶à±ßĞÎÊı¾İ
-              // ËüµÄÊı¾İÔ­ĞÍÀ´×ÔGeometry2DUnitÖĞµÄT2DPolygonGraph
-              // T2DPolygonGraphÓÉÒ»¸ö°üÎ§¶à±ßĞÎºÍn¸öËúÏİ¶à±ßĞÎ¹²Í¬×é³É
+              // editor_ImgData_Geoé‡Œé¢æ˜¯ç”¨äºå‡ ä½•æè¿°çš„å¤šè¾¹å½¢æ•°æ®
+              // å®ƒçš„æ•°æ®åŸå‹æ¥è‡ªGeometry2DUnitä¸­çš„T2DPolygonGraph
+              // T2DPolygonGraphç”±ä¸€ä¸ªåŒ…å›´å¤šè¾¹å½¢å’Œnä¸ªå¡Œé™·å¤šè¾¹å½¢å…±åŒç»„æˆ
               editor_ImgData_Geo := editor_ImgData.GeometryList[j];
-              DoStatus(' %s ÖĞµÄ¼¸ºÎÃèÊöÌå %s ÓĞ %d ¸öËúÏİ ', [editor_ImgData.FileInfo.Text, editor_ImgData_Geo.Token.Text, editor_ImgData_Geo.CollapsesCount]);
+              DoStatus(' %s ä¸­çš„å‡ ä½•æè¿°ä½“ %s æœ‰ %d ä¸ªå¡Œé™· ', [editor_ImgData.FileInfo.Text, editor_ImgData_Geo.Token.Text, editor_ImgData_Geo.CollapsesCount]);
             end;
 
           for j := 0 to editor_ImgData.SegmentationMaskList.Count - 1 do
             begin
-              // editor_ImgData_SegMask ÀïÃæÊÇÓÃÓÚÍ¼ÏñÓïÒå·Ö¸îµÄÊäÈëÃÉ°æ
-              // ÕâĞ©ÃÉ°æ¿ÉÒÔÊÇ¶à¸öÁªºÏµÄÏñËØÃè»æÌå£¬Ò²¿ÉÒÔÊÇµ¥¶ÀÏñËØÃè»æÌå£¬ËûÃÇµÄ×îÖÕ×÷ÓÃºÍ¼¸ºÎÃèÊö½á¹ûÒ»ÖÂ
+              // editor_ImgData_SegMask é‡Œé¢æ˜¯ç”¨äºå›¾åƒè¯­ä¹‰åˆ†å‰²çš„è¾“å…¥è’™ç‰ˆ
+              // è¿™äº›è’™ç‰ˆå¯ä»¥æ˜¯å¤šä¸ªè”åˆçš„åƒç´ æç»˜ä½“ï¼Œä¹Ÿå¯ä»¥æ˜¯å•ç‹¬åƒç´ æç»˜ä½“ï¼Œä»–ä»¬çš„æœ€ç»ˆä½œç”¨å’Œå‡ ä½•æè¿°ç»“æœä¸€è‡´
               editor_ImgData_SegMask := editor_ImgData.SegmentationMaskList[j];
-              DoStatus(' %s ÖĞÓĞÒ»¸ö½Ğ %s µÄ·Ö¸îÃÉ°æÃèÊö¶ÔÏó ', [editor_ImgData.FileInfo.Text, editor_ImgData_SegMask.Token.Text]);
+              DoStatus(' %s ä¸­æœ‰ä¸€ä¸ªå« %s çš„åˆ†å‰²è’™ç‰ˆæè¿°å¯¹è±¡ ', [editor_ImgData.FileInfo.Text, editor_ImgData_SegMask.Token.Text]);
             end;
 
-          // ÏÖÔÚÎÒÃÇ¿ªÊ¼ÖØ¹¹Ò»´ÎÊı¾İ½á¹¹
-          // ÎÒÃÇµÄÄ¿µÄ£ºÉ¾³ıËùÓĞÊı¾İ£¬È»ºóÓÃÍ¼ÏñÓïÒå·Ö¸îµÄÊäÈëÃÉ°æ×ö¿òÌåÊı¾İ£¬È»ºóÔÙ¸ÉµôËùÓĞÓïÒå·Ö¸îÊı¾İ£¬Ö»±£ÁôĞÂµÄ¿òÌå
+          // ç°åœ¨æˆ‘ä»¬å¼€å§‹é‡æ„ä¸€æ¬¡æ•°æ®ç»“æ„
+          // æˆ‘ä»¬çš„ç›®çš„ï¼šåˆ é™¤æ‰€æœ‰æ•°æ®ï¼Œç„¶åç”¨å›¾åƒè¯­ä¹‰åˆ†å‰²çš„è¾“å…¥è’™ç‰ˆåšæ¡†ä½“æ•°æ®ï¼Œç„¶åå†å¹²æ‰æ‰€æœ‰è¯­ä¹‰åˆ†å‰²æ•°æ®ï¼Œåªä¿ç•™æ–°çš„æ¡†ä½“
 
-          // µÚÒ»²½£¬É¾³ıËùÓĞÊı¾İ£¬Ö»±£Áô Í¼ÏñÓïÒå·Ö¸îµÄÊäÈëÃÉ°æÊı¾İ
-          // ±à¼­Æ÷µÄÊı¾İ½á¹¹ĞèÒªÈ«²¿ÊÖ¶¯ÊÍ·Å
+          // ç¬¬ä¸€æ­¥ï¼Œåˆ é™¤æ‰€æœ‰æ•°æ®ï¼Œåªä¿ç•™ å›¾åƒè¯­ä¹‰åˆ†å‰²çš„è¾“å…¥è’™ç‰ˆæ•°æ®
+          // ç¼–è¾‘å™¨çš„æ•°æ®ç»“æ„éœ€è¦å…¨éƒ¨æ‰‹åŠ¨é‡Šæ”¾
           for j := 0 to editor_ImgData.DetectorDefineList.Count - 1 do
             begin
               editor_ImgData_Det := editor_ImgData.DetectorDefineList[j];
@@ -122,23 +122,23 @@ begin
               DisposeObject(editor_ImgData_Geo);
             end;
           editor_ImgData.GeometryList.Clear;
-          // ÕâÒ»²½ÊÇÒÆ³öËùÓĞÓÉ¼¸ºÎÃèÊöµÄ¶à±ßĞÎÊı¾İ²úÉúµÄÓïÒå·Ö¸îÃÉ°æ£¬¾ßÌåÄÚÈİÇë×ÔĞĞÑĞ¾¿Ô´Âë
+          // è¿™ä¸€æ­¥æ˜¯ç§»å‡ºæ‰€æœ‰ç”±å‡ ä½•æè¿°çš„å¤šè¾¹å½¢æ•°æ®äº§ç”Ÿçš„è¯­ä¹‰åˆ†å‰²è’™ç‰ˆï¼Œå…·ä½“å†…å®¹è¯·è‡ªè¡Œç ”ç©¶æºç 
           editor_ImgData.SegmentationMaskList.RemoveGeometrySegmentationMask;
 
-          // µÚ¶ş²½£¬ÓÃÍ¼ÏñÓïÒå·Ö¸îµÄÊäÈëÃÉ°æ×ö¿òÌåÊı¾İ
+          // ç¬¬äºŒæ­¥ï¼Œç”¨å›¾åƒè¯­ä¹‰åˆ†å‰²çš„è¾“å…¥è’™ç‰ˆåšæ¡†ä½“æ•°æ®
           for j := 0 to editor_ImgData.SegmentationMaskList.Count - 1 do
             begin
               editor_ImgData_SegMask := editor_ImgData.SegmentationMaskList[j];
-              // ´´½¨ĞÂµÄ¿òÌåÊı¾İ½á¹¹
+              // åˆ›å»ºæ–°çš„æ¡†ä½“æ•°æ®ç»“æ„
               editor_ImgData_Det := TEditorDetectorDefine.Create(editor_ImgData);
-              // ÖØĞÂ¼ÆËãÊäÈëÃÉ°æFGColorµÄÏñËØ°üÎ§¿ò
+              // é‡æ–°è®¡ç®—è¾“å…¥è’™ç‰ˆFGColorçš„åƒç´ åŒ…å›´æ¡†
               editor_ImgData_Det.R := editor_ImgData_SegMask.Raster.ColorBoundsRect(editor_ImgData_SegMask.FGColor);
               editor_ImgData_Det.Token := editor_ImgData_SegMask.Token;
               editor_ImgData.DetectorDefineList.Add(editor_ImgData_Det);
             end;
 
-          // °ÑµÚÒ»²½Ã»É¾³ı¸É¾»µÄÎ²°Í´¦ÀíÁË
-          // ÕâÒ»²½Íê³ÉÒÔºó£¬Õû¸öÊı¾İÖ»»áÊ£ÏÂÎÒÃÇ¸Õ²ÅÌáÁ¶³öÀ´µÄ¼ì²âÆ÷¿òÌå
+          // æŠŠç¬¬ä¸€æ­¥æ²¡åˆ é™¤å¹²å‡€çš„å°¾å·´å¤„ç†äº†
+          // è¿™ä¸€æ­¥å®Œæˆä»¥åï¼Œæ•´ä¸ªæ•°æ®åªä¼šå‰©ä¸‹æˆ‘ä»¬åˆšæ‰æç‚¼å‡ºæ¥çš„æ£€æµ‹å™¨æ¡†ä½“
           for j := 0 to editor_ImgData.SegmentationMaskList.Count - 1 do
             begin
               editor_ImgData_SegMask := editor_ImgData.SegmentationMaskList[j];
@@ -149,10 +149,10 @@ begin
 
       DoStatus('all done.');
 
-      // ÏÖÔÚ£¬ÎÒÃÇ°ÑÖØ½¨ºóµÄ.ai_set±£´æ³ÉÁíÒ»¸öÎÄ¼ş£¬È»ºóÓÃ±à¼­Æ÷´ò¿ªËü°É
-      // ³ı·ÇÊÇ±ğÈËÌáÁ¶ºÃµÄÑù±¾£¬·ñÔòÊı¾İÑù±¾ÌáÁ¶¾ÍÊÇ×ö½¨Ä£µÄÇ°ÖÃ¹¤×÷£¬ÈÎºÎÄ£ĞÍ¶¼ĞèÒª×öÊı¾İÌáÁ¶
-      // ÔÚ×öÊı¾İÌáÁ¶µÄ¹ı³ÌÖĞ£¬·¢ÉúÄÚ´æĞ¹Â©£¬ÕâĞ©¶¼ÊÇÎŞËùÎ½µÄ£¬Ö»ÒªÊı¾İÃ»³ö´í£¬ÄÜ±£Ö¤ÎÒÃÇÌáÁ¶µÄ.AI_Set¿ÉÒÔ±»½¨Ä£¹¤¾ß´ò¿ª¾Í¿ÉÒÔÁË
-      // Ê£ÏÂµÄÊÇÅÜÄ£ĞÍÑµÁ·£¬µ÷½Ú²ÎÊıºÍÓ²¼şĞÔÄÜ£¬Çë²Î¿¼Ïà¹Ødemo
+      // ç°åœ¨ï¼Œæˆ‘ä»¬æŠŠé‡å»ºåçš„.ai_setä¿å­˜æˆå¦ä¸€ä¸ªæ–‡ä»¶ï¼Œç„¶åç”¨ç¼–è¾‘å™¨æ‰“å¼€å®ƒå§
+      // é™¤éæ˜¯åˆ«äººæç‚¼å¥½çš„æ ·æœ¬ï¼Œå¦åˆ™æ•°æ®æ ·æœ¬æç‚¼å°±æ˜¯åšå»ºæ¨¡çš„å‰ç½®å·¥ä½œï¼Œä»»ä½•æ¨¡å‹éƒ½éœ€è¦åšæ•°æ®æç‚¼
+      // åœ¨åšæ•°æ®æç‚¼çš„è¿‡ç¨‹ä¸­ï¼Œå‘ç”Ÿå†…å­˜æ³„æ¼ï¼Œè¿™äº›éƒ½æ˜¯æ— æ‰€è°“çš„ï¼Œåªè¦æ•°æ®æ²¡å‡ºé”™ï¼Œèƒ½ä¿è¯æˆ‘ä»¬æç‚¼çš„.AI_Setå¯ä»¥è¢«å»ºæ¨¡å·¥å…·æ‰“å¼€å°±å¯ä»¥äº†
+      // å‰©ä¸‹çš„æ˜¯è·‘æ¨¡å‹è®­ç»ƒï¼Œè°ƒèŠ‚å‚æ•°å’Œç¡¬ä»¶æ€§èƒ½ï¼Œè¯·å‚è€ƒç›¸å…³demo
       fn.Text := umlCombineFileName(TPath.GetLibraryPath, 'demoDataset_rebuild_output.AI_Set');
       DoStatus('rebuild output to: %s', [fn.Text]);
       editor_dataset.SaveToFile(fn);

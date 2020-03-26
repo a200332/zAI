@@ -1,4 +1,4 @@
-unit GeometryIntersectFrm;
+ï»¿ï»¿unit GeometryIntersectFrm;
 
 interface
 
@@ -22,18 +22,18 @@ type
   public
     dIntf: TDrawEngineInterface_FMX;
     {
-      TDeflectionPolygonÊÇÒ»ÖÖÏà¶Ô×ø±êÏµµÄ¼¸ºÎÊı¾İ¼¯,Ëü²¢²»ÊÇÓÃ¾ø¶ÔÖµÀ´ÃèÊö×ø±êÎ»ÖÃ
-      TDeflectionPolygonÃ¿¸ö×ø±êÒÔangle+distance,½Ç¶È+³¤¶ÈÀ´ÃèÊö×ø±ê
-      ±¾Demo»ùÓÚTDeflectionPolygon×ø±êÏµ»æÍ¼Ê±,Ê¹ÓÃÁËTDeflectionPolygon.Points·½·¨½«Ïà¶Ô×ø±êÏµ×ª»»³ÉÁË¾ø¶Ô×ø±êÏµ(Ö»ÓĞ¾ø¶Ô×ø±êÏµ²ÅÄÜÓëÍâ²¿»æÍ¼apiÏà½Ó¿Ú,±ÈÈçd2d,opengl)
-      ÔÚTMemoryRasterÖĞ»­ÎÄ±¾ÊôÓÚ³£ÓÃµÄ¹âÕ¤¹¦ÄÜ,¶ø×ÖÌåµÄĞı×ª,Ëõ·Å,±äĞÎµÈµÈÔÚ´¦Àí,²¢Ã»ÓĞÊ¹ÓÃ¶Ô³Æ¾ØÕó,ËùÓĞµÄÎÄ±¾µÄ×ø±êÏµ¶¼Ê¹ÓÃÁËTDeflectionPolygon½øĞĞ±ä»»
-      ÔÚÍ¼ÏñÓïÒå·Ö¸î(·Ö¸î½á¹¹ÊÇ¼¸ºÎ½á¹¹),ÎÄ×ÖÊ¶±ğµÄÅÅ°æ(×ø±êÏµµÄÅÅ°æÊä³ö¶¼ÊÇ¼¸ºÎ½á¹¹)
-      Àí½â×ø±êÏµµÈÍ¬ÓÚÀí½âTDeflectionPolygon¼¸ºÎÔË×÷Ë¼Â·µÄºËĞÄ
+      TDeflectionPolygonæ˜¯ä¸€ç§ç›¸å¯¹åæ ‡ç³»çš„å‡ ä½•æ•°æ®é›†,å®ƒå¹¶ä¸æ˜¯ç”¨ç»å¯¹å€¼æ¥æè¿°åæ ‡ä½ç½®
+      TDeflectionPolygonæ¯ä¸ªåæ ‡ä»¥angle+distance,è§’åº¦+é•¿åº¦æ¥æè¿°åæ ‡
+      æœ¬DemoåŸºäºTDeflectionPolygonåæ ‡ç³»ç»˜å›¾æ—¶,ä½¿ç”¨äº†TDeflectionPolygon.Pointsæ–¹æ³•å°†ç›¸å¯¹åæ ‡ç³»è½¬æ¢æˆäº†ç»å¯¹åæ ‡ç³»(åªæœ‰ç»å¯¹åæ ‡ç³»æ‰èƒ½ä¸å¤–éƒ¨ç»˜å›¾apiç›¸æ¥å£,æ¯”å¦‚d2d,opengl)
+      åœ¨TMemoryRasterä¸­ç”»æ–‡æœ¬å±äºå¸¸ç”¨çš„å…‰æ …åŠŸèƒ½,è€Œå­—ä½“çš„æ—‹è½¬,ç¼©æ”¾,å˜å½¢ç­‰ç­‰åœ¨å¤„ç†,å¹¶æ²¡æœ‰ä½¿ç”¨å¯¹ç§°çŸ©é˜µ,æ‰€æœ‰çš„æ–‡æœ¬çš„åæ ‡ç³»éƒ½ä½¿ç”¨äº†TDeflectionPolygonè¿›è¡Œå˜æ¢
+      åœ¨å›¾åƒè¯­ä¹‰åˆ†å‰²(åˆ†å‰²ç»“æ„æ˜¯å‡ ä½•ç»“æ„),æ–‡å­—è¯†åˆ«çš„æ’ç‰ˆ(åæ ‡ç³»çš„æ’ç‰ˆè¾“å‡ºéƒ½æ˜¯å‡ ä½•ç»“æ„)
+      ç†è§£åæ ‡ç³»ç­‰åŒäºç†è§£TDeflectionPolygonå‡ ä½•è¿ä½œæ€è·¯çš„æ ¸å¿ƒ
 
-      TVec2ListÀïÃæ´æ´¢µÄ¼¸ºÎÊı¾İÔòÊÇ¾ø¶Ô×ø±êÖµ
+      TVec2Listé‡Œé¢å­˜å‚¨çš„å‡ ä½•æ•°æ®åˆ™æ˜¯ç»å¯¹åæ ‡å€¼
 
-      ÔÚÊ¹ÓÃÊ±ÎÒÃÇÒª×¢ÒâÇø·ÖTVec2ListºÍTDeflectionPolygonµÄ×ø±êÏµ,
-      ÔÚ¶àÊıÇé¿öÏÂ,TVec2ListÓÃÒÔÃè»æ¼¸ºÎĞÎµÄ³¡¾°,Í¼Ïñ×ø±êÖµ
-      TDeflectionPolygonÔòÓÃÒÔÃè»æËæÊ±±ä»¯µÄ³¡¾°ÄÚÈİºÍÍ¼ÏñÄÚÈİ
+      åœ¨ä½¿ç”¨æ—¶æˆ‘ä»¬è¦æ³¨æ„åŒºåˆ†TVec2Listå’ŒTDeflectionPolygonçš„åæ ‡ç³»,
+      åœ¨å¤šæ•°æƒ…å†µä¸‹,TVec2Listç”¨ä»¥æç»˜å‡ ä½•å½¢çš„åœºæ™¯,å›¾åƒåæ ‡å€¼
+      TDeflectionPolygonåˆ™ç”¨ä»¥æç»˜éšæ—¶å˜åŒ–çš„åœºæ™¯å†…å®¹å’Œå›¾åƒå†…å®¹
     }
     geoBuff: TGenericsList<TDeflectionPolygon>;
     ColorBuff: TGenericsList<TPolyDrawOption>;
@@ -64,14 +64,14 @@ begin
   d.DrawOptions := [voFPS, voEdge];
   d.FillBox(d.ScreenRect, DEColor(0, 0, 0, 1));
 
-  // »­poly¼¸ºÎĞÎ
+  // ç”»polyå‡ ä½•å½¢
   for i := 0 to geoBuff.Count - 1 do
       d.DrawPolyInScene(geoBuff[i], True, ColorBuff[i]);
 
-  // ÊµÊ±¼ÆËã½»Ìæ¼¸ºÎĞÎÏà½»
+  // å®æ—¶è®¡ç®—äº¤æ›¿å‡ ä½•å½¢ç›¸äº¤
   intersectVecList := ComputeIntersectVec();
 
-  // °ÑÏà½»×ø±ê»­ÔÚÆÁÄ»ÉÏ
+  // æŠŠç›¸äº¤åæ ‡ç”»åœ¨å±å¹•ä¸Š
   for i := 0 to intersectVecList.Count - 1 do
       d.DrawPoint(intersectVecList[i]^, DEColor(1.0, 1.0, 1.0, 1.0), 5, 1);
 
@@ -85,17 +85,17 @@ var
   d: Double;
   i: Integer;
 begin
-  // ½«internalÕûĞÍÊ±¼ä×ª»»³ÉÃëµ¥Î»µÄ¸¡µãÊ±¼ä
-  // ÕâÖÖ×ª»»ÊÇÂß¼­×ª»»,¸¡µãÊ±¼äÊÇ¹Ì¶¨µÄ,²¢²»ÊÇÎïÀíÊ±¼ä
-  // Èç¹ûÒªÊ¹ÓÃÎïÀíÊ±¼ä¼ÆËãdelta,ĞèÒªÒıÓÃcadencerµÄapi½Ó¿Ú,Çë²Î¿¼Ê¹ÓÃÁËcadencerµÄapiÏà¹Ødemo
+  // å°†internalæ•´å‹æ—¶é—´è½¬æ¢æˆç§’å•ä½çš„æµ®ç‚¹æ—¶é—´
+  // è¿™ç§è½¬æ¢æ˜¯é€»è¾‘è½¬æ¢,æµ®ç‚¹æ—¶é—´æ˜¯å›ºå®šçš„,å¹¶ä¸æ˜¯ç‰©ç†æ—¶é—´
+  // å¦‚æœè¦ä½¿ç”¨ç‰©ç†æ—¶é—´è®¡ç®—delta,éœ€è¦å¼•ç”¨cadencerçš„apiæ¥å£,è¯·å‚è€ƒä½¿ç”¨äº†cadencerçš„apiç›¸å…³demo
   d := Interval2Delta(Timer1.Interval);
-  // »æÍ¼ÒıÇæÖ÷Ñ­»·
+  // ç»˜å›¾å¼•æ“ä¸»å¾ªç¯
   EnginePool.Progress(d);
 
-  // ÈÃpoly¼¸ºÎĞÎ×ª¶¯
-  // polyÊ¹ÓÃµÄÊÇÏà¶Ô×ø±êÏµ,ÎÒÃÇ¿ÉÒÔÖ±½Ó¸ü¸ÄpolyµÄangle,µÈÍ¬ÓÚTVec2ListÖØ¹¹ÁËÒ»´Î¼¸ºÎ,ÔÚPoly×ø±êÏµÖĞ,ÊÇ0¿ªÏúÊµÏÖ¼¸ºÎ±äĞÎ,ÒòÎªpolyÊ¹ÓÃÏà¶Ô×ø±êÏµ
-  // ÒÔÃ¿Ãë45¶ÈµÄËÙ¶È½øĞĞĞı×ª¼ÆËã,È»ºó¹éÒ»»¯°ëÔ²½Ç
-  // ¹éÒ»¸ÅÄîÔÚdegAngleÊÇ½«180¶È×÷ÎªÒ»¸ö¹éÒ»Ìõ¼ş½øĞĞ´¦Àí,Ô½¹ı180ÒÔ-0..-180¶È¿ªÊ¼¼ÆËã,ÖØµşÆğÀ´µÈÍ¬ÓÚ360¶È
+  // è®©polyå‡ ä½•å½¢è½¬åŠ¨
+  // polyä½¿ç”¨çš„æ˜¯ç›¸å¯¹åæ ‡ç³»,æˆ‘ä»¬å¯ä»¥ç›´æ¥æ›´æ”¹polyçš„angle,ç­‰åŒäºTVec2Listé‡æ„äº†ä¸€æ¬¡å‡ ä½•,åœ¨Polyåæ ‡ç³»ä¸­,æ˜¯0å¼€é”€å®ç°å‡ ä½•å˜å½¢,å› ä¸ºpolyä½¿ç”¨ç›¸å¯¹åæ ‡ç³»
+  // ä»¥æ¯ç§’45åº¦çš„é€Ÿåº¦è¿›è¡Œæ—‹è½¬è®¡ç®—,ç„¶åå½’ä¸€åŒ–åŠåœ†è§’
+  // å½’ä¸€æ¦‚å¿µåœ¨degAngleæ˜¯å°†180åº¦ä½œä¸ºä¸€ä¸ªå½’ä¸€æ¡ä»¶è¿›è¡Œå¤„ç†,è¶Šè¿‡180ä»¥-0..-180åº¦å¼€å§‹è®¡ç®—,é‡å èµ·æ¥ç­‰åŒäº360åº¦
   for i := 0 to geoBuff.Count - 1 do
       geoBuff[i].Angle := NormalizeDegAngle(geoBuff[i].Angle + 45 * d);
 
@@ -104,7 +104,7 @@ end;
 
 procedure TGeometryIntersectForm.FormMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
 begin
-  // °´ÏÂÊó±êÈÎÒâ¼üºó,ÖØ½¨¼¸ºÎ½á¹¹
+  // æŒ‰ä¸‹é¼ æ ‡ä»»æ„é”®å,é‡å»ºå‡ ä½•ç»“æ„
   RebuildGeoBuff;
 end;
 
@@ -123,26 +123,26 @@ var
   dpt1, dpt2: TVec2;
   v: TVec2;
 begin
-  // Ïà½»µã¼¼Êõ·Ç³£¿é,ÒÔÃ¿ÃënM/sÊäÈëLineÊıÁ¿Îªµ¥Î»
-  // ±¾Demo¶ÔÏà½»¼ÆËãµÄcpu¿ªÏú¼¸ºõÎª0
+  // ç›¸äº¤ç‚¹æŠ€æœ¯éå¸¸å—,ä»¥æ¯ç§’nM/sè¾“å…¥Lineæ•°é‡ä¸ºå•ä½
+  // æœ¬Demoå¯¹ç›¸äº¤è®¡ç®—çš„cpuå¼€é”€å‡ ä¹ä¸º0
   dpt1 := poly.Points[0];
   for i := 1 to poly.Count - 1 do
     begin
-      // poly.PointsÊÇ½«polyµÄÏà¶Ô×ø±êÏµÒÔ¾ø¶Ô×ø±êÈ¡³öÀ´
-      // polyÖĞ»¹ÓĞExpands·½·¨,±íÊ¾Í¹¶Ô³Æ,³£ÓÃÓÚ±íÊ¾¼¸ºÎ¿Õ¼äµÄ¼ÆËã´¦Àí
-      // ÔÚÆô·¢Ê½¼¸ºÎµ¼º½Ëã·¨ÖĞ,expands±»ÓÃÓÚ¹¹½¨¶à±ßĞÎµÄ°¼Í¹ºËĞÄ¿Õ¼ä,ÕâÊÇµ¼º½ÍøÂçµÄºËĞÄËã·¨µØ»ù
+      // poly.Pointsæ˜¯å°†polyçš„ç›¸å¯¹åæ ‡ç³»ä»¥ç»å¯¹åæ ‡å–å‡ºæ¥
+      // polyä¸­è¿˜æœ‰Expandsæ–¹æ³•,è¡¨ç¤ºå‡¸å¯¹ç§°,å¸¸ç”¨äºè¡¨ç¤ºå‡ ä½•ç©ºé—´çš„è®¡ç®—å¤„ç†
+      // åœ¨å¯å‘å¼å‡ ä½•å¯¼èˆªç®—æ³•ä¸­,expandsè¢«ç”¨äºæ„å»ºå¤šè¾¹å½¢çš„å‡¹å‡¸æ ¸å¿ƒç©ºé—´,è¿™æ˜¯å¯¼èˆªç½‘ç»œçš„æ ¸å¿ƒç®—æ³•åœ°åŸº
       dpt2 := poly.Points[i];
-      // IntersectÊÇ¸öÔ­×Óapi,¼ÆËãÁ½ÌõÒÔ¾øµØ×ø±êÃè»æµÄÏßÌõµÄÏà½»µã
-      // ÔÚPolyÖĞÓĞÏÖ³ÉµÄÏà½»¼ÆËãapi,ÎÒÃÇÔÚÕâÀïÌØµØÊ¹ÓÃÔ­×ÓapiÀ´¼ÆËãÊÇÎªÁË¸üºÃËµÃ÷Ïà½»¼ÆËãµÄÕıÈ·×ö·¨
+      // Intersectæ˜¯ä¸ªåŸå­api,è®¡ç®—ä¸¤æ¡ä»¥ç»åœ°åæ ‡æç»˜çš„çº¿æ¡çš„ç›¸äº¤ç‚¹
+      // åœ¨Polyä¸­æœ‰ç°æˆçš„ç›¸äº¤è®¡ç®—api,æˆ‘ä»¬åœ¨è¿™é‡Œç‰¹åœ°ä½¿ç”¨åŸå­apiæ¥è®¡ç®—æ˜¯ä¸ºäº†æ›´å¥½è¯´æ˜ç›¸äº¤è®¡ç®—çš„æ­£ç¡®åšæ³•
       if Intersect(pt1, pt2, dpt1, dpt2, v) then
           output.Add(v);
       dpt1 := dpt2;
     end;
-  // ±ÕºÏÏß¹æÔò
-  // ÔÚ½áÎ²Ê±,ÈÃ³ÌĞòÂß¼­´¦ÀíÒ»ÏÂÏßÌõµÄ±ÕºÏ²¿·Ö
+  // é—­åˆçº¿è§„åˆ™
+  // åœ¨ç»“å°¾æ—¶,è®©ç¨‹åºé€»è¾‘å¤„ç†ä¸€ä¸‹çº¿æ¡çš„é—­åˆéƒ¨åˆ†
   dpt2 := poly.Points[0];
-  // IntersectÊÇ¸öÔ­×Óapi,¼ÆËãÁ½ÌõÒÔ¾øµØ×ø±êÃè»æµÄÏßÌõµÄÏà½»µã
-  // ÔÚPolyÖĞÓĞÏÖ³ÉµÄÏà½»¼ÆËãapi,ÎÒÃÇÔÚÕâÀïÌØµØÊ¹ÓÃÔ­×ÓapiÀ´¼ÆËãÊÇÎªÁË¸üºÃËµÃ÷Ïà½»¼ÆËãµÄÕıÈ·×ö·¨
+  // Intersectæ˜¯ä¸ªåŸå­api,è®¡ç®—ä¸¤æ¡ä»¥ç»åœ°åæ ‡æç»˜çš„çº¿æ¡çš„ç›¸äº¤ç‚¹
+  // åœ¨Polyä¸­æœ‰ç°æˆçš„ç›¸äº¤è®¡ç®—api,æˆ‘ä»¬åœ¨è¿™é‡Œç‰¹åœ°ä½¿ç”¨åŸå­apiæ¥è®¡ç®—æ˜¯ä¸ºäº†æ›´å¥½è¯´æ˜ç›¸äº¤è®¡ç®—çš„æ­£ç¡®åšæ³•
   if Intersect(pt1, pt2, dpt1, dpt2, v) then
       output.Add(v);
 end;
@@ -154,15 +154,15 @@ var
   i, j: Integer;
   pt1, pt2: TVec2;
 begin
-  // ¸ßËÙ±éÀúGeoBuffËùÓĞ¼¸ºÎĞÍÏà½»µã·¶Ê½
+  // é«˜é€Ÿéå†GeoBuffæ‰€æœ‰å‡ ä½•å‹ç›¸äº¤ç‚¹èŒƒå¼
   Result := TVec2List.Create;
   tmp := TGenericsList<TDeflectionPolygon>.Create;
 
-  // ÏÈ´´½¨Ò»¸öÁ´±íÈİÆ÷
+  // å…ˆåˆ›å»ºä¸€ä¸ªé“¾è¡¨å®¹å™¨
   for i := 0 to geoBuff.Count - 1 do
       tmp.Add(geoBuff[i]);
 
-  // ÔÚÁ´±íÈİÆ÷Ê¹ÓÃ¶Ô³ÆÅÅ³ı·¨±éÀú
+  // åœ¨é“¾è¡¨å®¹å™¨ä½¿ç”¨å¯¹ç§°æ’é™¤æ³•éå†
   while tmp.Count > 0 do
     begin
       poly := tmp.First;
@@ -198,21 +198,21 @@ begin
   geoBuff.Clear;
   ColorBuff.Clear;
 
-  // ¹¹½¨Ëæ»ú¼¸ºÎĞÎ
+  // æ„å»ºéšæœºå‡ ä½•å½¢
   for j := 1 to 10 do
     begin
       vl := TVec2List.Create;
       for i := 1 to 20 do
           vl.Add(umlRandomRange(edge, round(width) - edge), umlRandomRange(edge, round(height) - edge));
 
-      // °Ñ¸´ÔÓ¼¸ºÎ×ª»»³ÉÍ¹°ü,·½±ã²é¿´
+      // æŠŠå¤æ‚å‡ ä½•è½¬æ¢æˆå‡¸åŒ…,æ–¹ä¾¿æŸ¥çœ‹
       vl.ConvexHull();
 
       poly := TDeflectionPolygon.Create;
       poly.Rebuild(vl, True);
       geoBuff.Add(poly);
 
-      // ¼¸ºÎÑÕÉ«,ÏßÌõ¿íµÈµÈ»æÍ¼²ÎÊı
+      // å‡ ä½•é¢œè‰²,çº¿æ¡å®½ç­‰ç­‰ç»˜å›¾å‚æ•°
       pdo.LineWidth := 2;
       pdo.PointScreenRadius := 3;
       pdo.LineColor := DEColor(umlRandomRange(1, 9) * 0.1, umlRandomRange(1, 9) * 0.1, umlRandomRange(1, 9) * 0.1, 0.5);
@@ -222,7 +222,7 @@ begin
       DisposeObject(vl);
     end;
 
-  // ¹¹½¨ÏßÌõ
+  // æ„å»ºçº¿æ¡
   for j := 1 to 15 do
     begin
       vl := TVec2List.Create;
@@ -233,7 +233,7 @@ begin
       poly.Rebuild(vl, True);
       geoBuff.Add(poly);
 
-      // ¼¸ºÎÑÕÉ«,ÏßÌõ¿íµÈµÈ»æÍ¼²ÎÊı
+      // å‡ ä½•é¢œè‰²,çº¿æ¡å®½ç­‰ç­‰ç»˜å›¾å‚æ•°
       pdo.LineWidth := 3;
       pdo.PointScreenRadius := 3;
       pdo.LineColor := DEColor(umlRandomRange(1, 9) * 0.1, umlRandomRange(1, 9) * 0.1, umlRandomRange(1, 9) * 0.1, 1);

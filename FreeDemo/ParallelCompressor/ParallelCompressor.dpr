@@ -1,4 +1,4 @@
-program ParallelCompressor;
+﻿program ParallelCompressor;
 
 {$APPTYPE CONSOLE}
 

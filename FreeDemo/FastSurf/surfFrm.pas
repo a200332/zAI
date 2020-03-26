@@ -1,4 +1,4 @@
-unit surfFrm;
+ï»¿ï»¿unit surfFrm;
 
 interface
 
@@ -49,44 +49,44 @@ var
   tk: TTimeTick;
 begin
   AddDoStatusHookM(Self, DoStatus_Hook_);
-  // ¶ÁÈ¡zAIµÄÅäÖÃ
+  // è¯»å–zAIçš„é…ç½®
   ReadAIConfig;
 
-  // ÕâÒ»²½»áÁ¬½ÓKey·şÎñÆ÷£¬ÑéÖ¤ZAIµÄKey
-  // Á¬½Ó·şÎñÆ÷ÑéÖ¤KeyÊÇÔÚÆô¶¯ÒıÇæÊ±Ò»´ÎĞÔµÄÑéÖ¤£¬Ö»»áµ±³ÌĞòÆô¶¯Ê±²Å»áÑéÖ¤£¬¼ÙÈçÑéÖ¤²»ÄÜÍ¨¹ı£¬zAI½«»á¾Ü¾ø¹¤×÷
-  // ÔÚ³ÌĞòÔËĞĞÖĞ£¬·´¸´´´½¨TAI£¬²»»á·¢ÉúÔ¶³ÌÑéÖ¤
-  // ÑéÖ¤ĞèÒªÒ»¸öuserKey£¬Í¨¹ıuserkeyÍÆËã³öZAIÔÚÆô¶¯Ê±Éú³ÉµÄËæ»úKey£¬userkey¿ÉÒÔÍ¨¹ıwebÉêÇë£¬Ò²¿ÉÒÔÁªÏµ×÷Õß·¢·Å
-  // ÑéÖ¤key¶¼ÊÇ¿¹Á¿×Ó¼¶£¬ÎŞ·¨±»ÆÆ½â
+  // è¿™ä¸€æ­¥ä¼šè¿æ¥KeyæœåŠ¡å™¨ï¼ŒéªŒè¯ZAIçš„Key
+  // è¿æ¥æœåŠ¡å™¨éªŒè¯Keyæ˜¯åœ¨å¯åŠ¨å¼•æ“æ—¶ä¸€æ¬¡æ€§çš„éªŒè¯ï¼Œåªä¼šå½“ç¨‹åºå¯åŠ¨æ—¶æ‰ä¼šéªŒè¯ï¼Œå‡å¦‚éªŒè¯ä¸èƒ½é€šè¿‡ï¼ŒzAIå°†ä¼šæ‹’ç»å·¥ä½œ
+  // åœ¨ç¨‹åºè¿è¡Œä¸­ï¼Œåå¤åˆ›å»ºTAIï¼Œä¸ä¼šå‘ç”Ÿè¿œç¨‹éªŒè¯
+  // éªŒè¯éœ€è¦ä¸€ä¸ªuserKeyï¼Œé€šè¿‡userkeyæ¨ç®—å‡ºZAIåœ¨å¯åŠ¨æ—¶ç”Ÿæˆçš„éšæœºKeyï¼Œuserkeyå¯ä»¥é€šè¿‡webç”³è¯·ï¼Œä¹Ÿå¯ä»¥è”ç³»ä½œè€…å‘æ”¾
+  // éªŒè¯keyéƒ½æ˜¯æŠ—é‡å­çº§ï¼Œæ— æ³•è¢«ç ´è§£
   zAI.Prepare_AI_Engine();
 
-  // Ê¹ÓÃzDrawEngine×öÍâ²¿»æÍ¼Ê±(±ÈÈçÓÎÏ·£¬ÃæÏòpaintbox)£¬¶¼ĞèÒªÒ»¸ö»æÍ¼½Ó¿Ú
-  // TDrawEngineInterface_FMXÊÇÃæÏòFMXµÄ»æÍ¼core½Ó¿Ú
-  // Èç¹û²»Ö¸¶¨»æÍ¼½Ó¿Ú£¬zDrawEngine»áÄ¬ÈÏÊ¹ÓÃÈí¼ş¹âÕ¤»æÍ¼(±È½ÏÂı)
+  // ä½¿ç”¨zDrawEngineåšå¤–éƒ¨ç»˜å›¾æ—¶(æ¯”å¦‚æ¸¸æˆï¼Œé¢å‘paintbox)ï¼Œéƒ½éœ€è¦ä¸€ä¸ªç»˜å›¾æ¥å£
+  // TDrawEngineInterface_FMXæ˜¯é¢å‘FMXçš„ç»˜å›¾coreæ¥å£
+  // å¦‚æœä¸æŒ‡å®šç»˜å›¾æ¥å£ï¼ŒzDrawEngineä¼šé»˜è®¤ä½¿ç”¨è½¯ä»¶å…‰æ …ç»˜å›¾(æ¯”è¾ƒæ…¢)
   drawIntf := TDrawEngineInterface_FMX.Create;
 
   ai := TAI.OpenEngine();
 
-  // ¶ÁÈ¡Í¼Æ¬
+  // è¯»å–å›¾ç‰‡
   r1 := NewRasterFromFile(WhereFileFromConfigure('surf_1.bmp'));
   r2 := NewRasterFromFile(WhereFileFromConfigure('surf_2.bmp'));
 
-  // Ê¹ÓÃsurf±È¶ÔÍ¼Æ¬£¬²¢ÇÒÊä³öµ½surf_out
+  // ä½¿ç”¨surfæ¯”å¯¹å›¾ç‰‡ï¼Œå¹¶ä¸”è¾“å‡ºåˆ°surf_out
   tk := GetTimeTick();
   d1 := ai.fast_surf(r1, 20000, 2.0);
-  DoStatus('·ÖÎö surf_1.bmp ÌØÕ÷ÊıÁ¿:%d ºÄÊ±:%dms', [length(d1), GetTimeTick() - tk]);
+  DoStatus('åˆ†æ surf_1.bmp ç‰¹å¾æ•°é‡:%d è€—æ—¶:%dms', [length(d1), GetTimeTick() - tk]);
 
   tk := GetTimeTick();
   d2 := ai.fast_surf(r2, 20000, 2.0);
-  DoStatus('·ÖÎö surf_1.bmp ÌØÕ÷ÊıÁ¿:%d ºÄÊ±:%dms', [length(d2), GetTimeTick() - tk]);
+  DoStatus('åˆ†æ surf_1.bmp ç‰¹å¾æ•°é‡:%d è€—æ—¶:%dms', [length(d2), GetTimeTick() - tk]);
 
   tk := GetTimeTick();
   ai.BuildFeatureView(r1, d1);
   ai.BuildFeatureView(r2, d2);
-  DoStatus('Í¼ĞÎ¹¹½¨ºÄÊ±:%dms', [GetTimeTick() - tk]);
+  DoStatus('å›¾å½¢æ„å»ºè€—æ—¶:%dms', [GetTimeTick() - tk]);
 
   tk := GetTimeTick();
   matched := ai.Surf_Matched(0.4, r1, r2, d1, d2);
-  DoStatus('surfÌØÕ÷Æ¥ÅäºÄÊ±:%dms', [GetTimeTick() - tk]);
+  DoStatus('surfç‰¹å¾åŒ¹é…è€—æ—¶:%dms', [GetTimeTick() - tk]);
   surf_out := ai.BuildMatchInfoView(matched);
 
   disposeObject(ai);
@@ -97,14 +97,14 @@ procedure TsurfForm.FormPaint(Sender: TObject; Canvas: TCanvas; const ARect: TRe
 var
   d: TDrawEngine;
 begin
-  // ÈÃDrawIntfµÄ»æÍ¼ÊµÀıÊä³öÔÚpaintbox1
+  // è®©DrawIntfçš„ç»˜å›¾å®ä¾‹è¾“å‡ºåœ¨paintbox1
   drawIntf.SetSurface(Canvas, Sender);
   d := DrawPool(Sender, drawIntf);
 
-  // ÏÔÊ¾±ß¿òºÍÖ¡ÂÊ
+  // æ˜¾ç¤ºè¾¹æ¡†å’Œå¸§ç‡
   d.ViewOptions := [voFPS, voEdge];
 
-  // ±³¾°±»Ìî³ä³ÉºÚÉ«£¬ÕâÀïµÄ»­Í¼Ö¸Áî²¢²»ÊÇÁ¢¼´Ö´ĞĞµÄ£¬¶øÊÇĞÎ³ÉÃüÁîÁ÷¶ÓÁĞ´æ·ÅÔÚDrawEngineµÄÒ»¸öÈİÆ÷ÖĞ
+  // èƒŒæ™¯è¢«å¡«å……æˆé»‘è‰²ï¼Œè¿™é‡Œçš„ç”»å›¾æŒ‡ä»¤å¹¶ä¸æ˜¯ç«‹å³æ‰§è¡Œçš„ï¼Œè€Œæ˜¯å½¢æˆå‘½ä»¤æµé˜Ÿåˆ—å­˜æ”¾åœ¨DrawEngineçš„ä¸€ä¸ªå®¹å™¨ä¸­
   d.FillBox(d.ScreenRect, DEColor(0, 0, 0, 1));
 
   d.FitDrawPicture(surf_out, surf_out.BoundsRectV2, d.ScreenRect, 1.0);

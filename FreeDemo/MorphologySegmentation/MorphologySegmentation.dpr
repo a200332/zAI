@@ -1,4 +1,4 @@
-program MorphologySegmentation;
+﻿program MorphologySegmentation;
 
 uses
   System.StartUpCopy,

@@ -1,4 +1,4 @@
-unit realtime_MMOD_Video_FMXClientFrm;
+ï»¿ï»¿unit realtime_MMOD_Video_FMXClientFrm;
 
 interface
 
@@ -29,13 +29,13 @@ type
     procedure OD_Result(Sender: TRealTime_MMOD_VideoClient; video_stream: TMemoryStream64; video_info: TMMOD_Video_Info);
   public
     drawIntf: TDrawEngineInterface_FMX;
-    // ffmpegµÄÊÓÆµÕê½âÂëÒıÇæ£¬DemoÖ»Ö§³ÖÎÄ¼ş£¬ÍÆÁ÷ºÍ´®Á÷£¬×ÔĞĞÊµÏÖ
+    // ffmpegçš„è§†é¢‘è´è§£ç å¼•æ“ï¼ŒDemoåªæ”¯æŒæ–‡ä»¶ï¼Œæ¨æµå’Œä¸²æµï¼Œè‡ªè¡Œå®ç°
     mpeg_r: TFFMPEG_Reader;
-    // ·şÎñÆ÷·¢»ØÀ´µÄµ±Ç°Õê
+    // æœåŠ¡å™¨å‘å›æ¥çš„å½“å‰è´
     mpeg_frame: TDETexture;
-    // ¶¨Ê±Æ÷ÒıÇæ
+    // å®šæ—¶å™¨å¼•æ“
     cadencer_eng: TCadencer;
-    // mmod×¨ÓÃ¿Í»§¶Ë½Ó¿Ú
+    // mmodä¸“ç”¨å®¢æˆ·ç«¯æ¥å£
     realtime_od_cli: TRealTime_MMOD_VideoClient;
     procedure CheckConnect;
     procedure DoInput;
@@ -52,27 +52,27 @@ implementation
 procedure Trealtime_MMOD_Video_FMXClientForm.FormCreate(Sender: TObject);
 begin
   AddDoStatusHook(Self, DoStatusMethod);
-  // Ê¹ÓÃzDrawEngine×öÍâ²¿»æÍ¼Ê±(±ÈÈçÓÎÏ·£¬ÃæÏòpaintbox)£¬¶¼ĞèÒªÒ»¸ö»æÍ¼½Ó¿Ú
-  // TDrawEngineInterface_FMXÊÇÃæÏòFMXµÄ»æÍ¼core½Ó¿Ú
-  // Èç¹û²»Ö¸¶¨»æÍ¼½Ó¿Ú£¬zDrawEngine»áÄ¬ÈÏÊ¹ÓÃÈí¼ş¹âÕ¤»æÍ¼(±È½ÏÂı)
+  // ä½¿ç”¨zDrawEngineåšå¤–éƒ¨ç»˜å›¾æ—¶(æ¯”å¦‚æ¸¸æˆï¼Œé¢å‘paintbox)ï¼Œéƒ½éœ€è¦ä¸€ä¸ªç»˜å›¾æ¥å£
+  // TDrawEngineInterface_FMXæ˜¯é¢å‘FMXçš„ç»˜å›¾coreæ¥å£
+  // å¦‚æœä¸æŒ‡å®šç»˜å›¾æ¥å£ï¼ŒzDrawEngineä¼šé»˜è®¤ä½¿ç”¨è½¯ä»¶å…‰æ …ç»˜å›¾(æ¯”è¾ƒæ…¢)
   drawIntf := TDrawEngineInterface_FMX.Create;
 
-  // ³¬ÊĞDemoµÄÊı¾İ¼¯ÔÚ binary\market_training.OX ÖĞ
-  // Ê¹ÓÃÃüÁîĞĞÑµÁ·£¬TrainingTool.exe "-i:c:\zAI\Binary\market_training.OX" "-o:c:\market_training_output.ox"
-  // ÑµÁ·±È½ÏºÄÊ±£¬ÔÚGTX Titan X nvidia¹«°ægpu¿¨ÖĞ£¬»¨ÁË5-7Ğ¡Ê±¼ä£¬Éè±¸ÅäÖÃÈç¹û²»¹»£¬²»ÓÃÀË·ÑÊ±¼ä×öÑµÁ·
-  // ´ıÑµÁ·Íê³É£¬½«market_training_output.oxÖĞµÄoutput.svm_dnn_od¸´ÖÆ³Éc:\zAI\Binary\RealTime_MMOD.svm_dnn_od£¬ÖØÆô·şÎñÆ÷¼´¿ÉÊ¹ÓÃ
+  // è¶…å¸‚Demoçš„æ•°æ®é›†åœ¨ binary\market_training.OX ä¸­
+  // ä½¿ç”¨å‘½ä»¤è¡Œè®­ç»ƒï¼ŒTrainingTool.exe "-i:c:\zAI\Binary\market_training.OX" "-o:c:\market_training_output.ox"
+  // è®­ç»ƒæ¯”è¾ƒè€—æ—¶ï¼Œåœ¨GTX Titan X nvidiaå…¬ç‰ˆgpuå¡ä¸­ï¼ŒèŠ±äº†5-7å°æ—¶é—´ï¼Œè®¾å¤‡é…ç½®å¦‚æœä¸å¤Ÿï¼Œä¸ç”¨æµªè´¹æ—¶é—´åšè®­ç»ƒ
+  // å¾…è®­ç»ƒå®Œæˆï¼Œå°†market_training_output.oxä¸­çš„output.svm_dnn_odå¤åˆ¶æˆc:\zAI\Binary\RealTime_MMOD.svm_dnn_odï¼Œé‡å¯æœåŠ¡å™¨å³å¯ä½¿ç”¨
 
-  // ´øÓĞÖØµşÑù±¾µÄÑµÁ·³¬²ÎÊıÊ¹ÓÃFilePackageTool.exe´ò¿ªmarket_training.OX£¬ÔÄ¶Áparam.txtµÄ¸³Öµ¼´¿É
-  // ÖÆ×÷ºÍÑµÁ·ÊÓÆµÑù±¾£¬Çë²Î¿¼DNN-ODµÄ½¨Ä£Ö¸ÄÏÎÄµµ
-  // ±¾demoµÄËùÓĞÊ¶±ğ´¦Àí¾ùÓÉgpu·şÎñÆ÷Íê³É£¬Ç°¶ËÖ§³Öandroid£¬ios£¬ÈÎºÎIOTÉè±¸
+  // å¸¦æœ‰é‡å æ ·æœ¬çš„è®­ç»ƒè¶…å‚æ•°ä½¿ç”¨FilePackageTool.exeæ‰“å¼€market_training.OXï¼Œé˜…è¯»param.txtçš„èµ‹å€¼å³å¯
+  // åˆ¶ä½œå’Œè®­ç»ƒè§†é¢‘æ ·æœ¬ï¼Œè¯·å‚è€ƒDNN-ODçš„å»ºæ¨¡æŒ‡å—æ–‡æ¡£
+  // æœ¬demoçš„æ‰€æœ‰è¯†åˆ«å¤„ç†å‡ç”±gpuæœåŠ¡å™¨å®Œæˆï¼Œå‰ç«¯æ”¯æŒandroidï¼Œiosï¼Œä»»ä½•IOTè®¾å¤‡
 
-  // Ê¹ÓÃffmpegµÄÊÓÆµÖ¡½âÂëÆ÷´ò¿ª³¬ÊĞÊÓÆµ£¬market2.mp4ÊÇ½µµÍ¹ı·Ö±æÂÊµÄÊÓÆµ£¬Ô­°æÊÓÆµ·Ö±æÂÊÌ«¸ß£¬ÒòÎª´®Á÷Ê±ĞèÒªjpeg±àÂë½âÂë£¬Ó°ÏìĞÔÄÜ
+  // ä½¿ç”¨ffmpegçš„è§†é¢‘å¸§è§£ç å™¨æ‰“å¼€è¶…å¸‚è§†é¢‘ï¼Œmarket2.mp4æ˜¯é™ä½è¿‡åˆ†è¾¨ç‡çš„è§†é¢‘ï¼ŒåŸç‰ˆè§†é¢‘åˆ†è¾¨ç‡å¤ªé«˜ï¼Œå› ä¸ºä¸²æµæ—¶éœ€è¦jpegç¼–ç è§£ç ï¼Œå½±å“æ€§èƒ½
   mpeg_r := TFFMPEG_Reader.Create(umlCombineFileName(TPath.GetLibraryPath, 'market2.mp4'));
 
-  // µ±Ç°»æÖÆµÄÊÓÆµÖ¡
+  // å½“å‰ç»˜åˆ¶çš„è§†é¢‘å¸§
   mpeg_frame := TDrawEngine.NewTexture;
 
-  // cadencerÒıÇæ
+  // cadencerå¼•æ“
   cadencer_eng := TCadencer.Create;
   cadencer_eng.ProgressInterface := Self;
 
@@ -93,7 +93,7 @@ begin
   d.FillBox(d.ScreenRect, DEColor(0, 0, 0, 1));
   d.FitDrawPicture(mpeg_frame, mpeg_frame.BoundsRectV2, d.ScreenRect, 1.0);
 
-  // Ö´ĞĞ»æÍ¼Ö¸Áî
+  // æ‰§è¡Œç»˜å›¾æŒ‡ä»¤
   d.Flush;
 end;
 

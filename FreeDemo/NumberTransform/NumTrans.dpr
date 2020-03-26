@@ -1,4 +1,4 @@
-program NumTrans;
+﻿program NumTrans;
 
 uses
   Vcl.Forms,

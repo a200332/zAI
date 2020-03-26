@@ -1,4 +1,4 @@
-program Face_Alignment_Parallel;
+﻿program Face_Alignment_Parallel;
 
 uses
   System.StartUpCopy,

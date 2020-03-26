@@ -1,4 +1,4 @@
-program DrawEngineFontEdge;
+﻿program DrawEngineFontEdge;
 
 uses
   System.StartUpCopy,

@@ -1,4 +1,4 @@
-program realtime_OD_Video_FMXClient;
+﻿program realtime_OD_Video_FMXClient;
 
 uses
   System.StartUpCopy,

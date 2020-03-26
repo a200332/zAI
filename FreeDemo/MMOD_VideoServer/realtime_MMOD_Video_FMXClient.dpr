@@ -1,4 +1,4 @@
-program realtime_MMOD_Video_FMXClient;
+﻿program realtime_MMOD_Video_FMXClient;
 
 uses
   System.StartUpCopy,

@@ -1,4 +1,4 @@
-unit zAI_Reponse_FaceServer;
+ï»¿ï»¿unit zAI_Reponse_FaceServer;
 
 interface
 
@@ -18,8 +18,8 @@ type
     SI: TStartupInfo;
     pi: TProcessInformation;
     StdOutPipeRead, StdOutPipeWrite: THandle;
-    // ±ê×¼¿ò¼Ü·¶Ê½£º»ùÓÚÏß³Ì£¬µ÷ÓÃwindowsµÄ.exe¿ÉÖ´ĞĞÎÄ¼ş£¬²¢ÇÒ´òÓ¡ËüµÄÖ´ĞĞ×´Ì¬£¬È»ºóµÈ´ıËüÖ´ĞĞ½áÊøÈ¡µÃexitCode
-    // ×îºóÍ¨Öª³ÌĞò£ºÕâ¸ö.exeÒÑ¾­Ö´ĞĞÍê³ÉÁË£¬ÕûÌ×»úÖÆÈİ´íĞÔÏàµ±¸ß£¬Ïàµ±ÓÚÔÚvmÖĞÖ´ĞĞÈÎÎñ
+    // æ ‡å‡†æ¡†æ¶èŒƒå¼ï¼šåŸºäºçº¿ç¨‹ï¼Œè°ƒç”¨windowsçš„.exeå¯æ‰§è¡Œæ–‡ä»¶ï¼Œå¹¶ä¸”æ‰“å°å®ƒçš„æ‰§è¡ŒçŠ¶æ€ï¼Œç„¶åç­‰å¾…å®ƒæ‰§è¡Œç»“æŸå–å¾—exitCode
+    // æœ€åé€šçŸ¥ç¨‹åºï¼šè¿™ä¸ª.exeå·²ç»æ‰§è¡Œå®Œæˆäº†ï¼Œæ•´å¥—æœºåˆ¶å®¹é”™æ€§ç›¸å½“é«˜ï¼Œç›¸å½“äºåœ¨vmä¸­æ‰§è¡Œä»»åŠ¡
     procedure Execute; override;
   public
     cmd, workPath: U_String;
@@ -41,7 +41,7 @@ type
     function GetFaceRaster: TMemoryRaster;
   end;
 
-  // TPhysicsServer ÊÇZServer4DµÄÎïÀíIO½è¿Ú£¬²Î¿¼ https://github.com/PassByYou888/ZServer4D
+  // TPhysicsServer æ˜¯ZServer4Dçš„ç‰©ç†IOå€Ÿå£ï¼Œå‚è€ƒ https://github.com/PassByYou888/ZServer4D
   TReponse_FaceServer = class(TPhysicsServer)
   private
     Metric: TAI;
@@ -54,54 +54,54 @@ type
     FaceChangedTimeTick: TTimeTick;
     FaceTrainingThread: TTrainingProcessThread;
 
-    // cmd_FaceBufferÊÇÊ¹ÓÃZServer4DµÄ CompleteBuffer »úÖÆ ¸ßËÙ½ÓÊÕÈËÁ³¹âÕ¤Êı¾İ
+    // cmd_FaceBufferæ˜¯ä½¿ç”¨ZServer4Dçš„ CompleteBuffer æœºåˆ¶ é«˜é€Ÿæ¥æ”¶äººè„¸å…‰æ …æ•°æ®
     procedure cmd_FaceBuffer(Sender: TPeerIO; InData: PByte; DataSize: NativeInt);
 
-    // µ±ÈËÁ³Êı¾İ¿â·¢Éú¸Ä±äÊ±£¬ÔÚ cmd_SaveFace,cmd_UploadFace ¾ù»á´¥·¢
+    // å½“äººè„¸æ•°æ®åº“å‘ç”Ÿæ”¹å˜æ—¶ï¼Œåœ¨ cmd_SaveFace,cmd_UploadFace å‡ä¼šè§¦å‘
     procedure DoFaceChanged;
-    // ¿Í»§¶ËsaveFaceÃüÁîµÄÏß³Ì·½·¨£¬ÔÚ cmd_SaveFace ´¥·¢
+    // å®¢æˆ·ç«¯saveFaceå‘½ä»¤çš„çº¿ç¨‹æ–¹æ³•ï¼Œåœ¨ cmd_SaveFace è§¦å‘
     procedure cmd_SaveFaceTh(ThSender: TComputeThread);
-    // ¿Í»§¶ËsaveFaceÃüÁî, ¸ÃÃüÁîµÈÍ¬ÓÚÈËÁ³Èë¿â, µ±¿Í»§¶Ëµ÷ÓÃÁËsaveFaceºó£¬¿ÕÏĞ30Ãë£¬ÏµÍ³»á×Ô¶¯»¯Æô¶¯½¨Ä£³ÌĞò
+    // å®¢æˆ·ç«¯saveFaceå‘½ä»¤, è¯¥å‘½ä»¤ç­‰åŒäºäººè„¸å…¥åº“, å½“å®¢æˆ·ç«¯è°ƒç”¨äº†saveFaceåï¼Œç©ºé—²30ç§’ï¼Œç³»ç»Ÿä¼šè‡ªåŠ¨åŒ–å¯åŠ¨å»ºæ¨¡ç¨‹åº
     procedure cmd_SaveFace(Sender: TPeerIO; InData: TDataFrameEngine);
 
-    // ×Ô¶¯»¯½¨Ä£³ÌĞò
-    // ÈËÁ³½¨Ä£³ÌĞò·Ç³£¿ì£¬µ±ÎÒÃÇÊ¹ÓÃgpu£¬ÑµÁ·ÉÙÁ¿ÈËÁ³£¬2·ÖÖÓ¼´¿ÉÑµÁ·Íê³É½¨Ä£
+    // è‡ªåŠ¨åŒ–å»ºæ¨¡ç¨‹åº
+    // äººè„¸å»ºæ¨¡ç¨‹åºéå¸¸å¿«ï¼Œå½“æˆ‘ä»¬ä½¿ç”¨gpuï¼Œè®­ç»ƒå°‘é‡äººè„¸ï¼Œ2åˆ†é’Ÿå³å¯è®­ç»ƒå®Œæˆå»ºæ¨¡
     function CanRunFaceTraining: Boolean;
     function RunFaceTraining(var report: SystemString): Boolean;
     procedure FaceTrainingRunDone(th: TTrainingProcessThread);
 
     procedure cmd_RecFace_ThRun(ThSender: TStreamCmdThread; ThInData, ThOutData: TDataFrameEngine);
-    // ¿Í»§¶ËÊ¶±ğÈËÁ³µÄÃüÁî
+    // å®¢æˆ·ç«¯è¯†åˆ«äººè„¸çš„å‘½ä»¤
     procedure cmd_RecFace(Sender: TPeerIO; InData, OutData: TDataFrameEngine);
 
-    // »ñÈ¡Êı¾İ¿âÖĞµÄÈËÁ³±êÇ©
+    // è·å–æ•°æ®åº“ä¸­çš„äººè„¸æ ‡ç­¾
     procedure cmd_GetFaceList(Sender: TPeerIO; InData, OutData: TDataFrameEngine);
-    // ¸ù¾İÈËÁ³±êÇ©ÏÂÔØÈËÁ³¹âÕ¤
+    // æ ¹æ®äººè„¸æ ‡ç­¾ä¸‹è½½äººè„¸å…‰æ …
     procedure cmd_DownloadFace(Sender: TPeerIO; InData, OutData: TDataFrameEngine);
-    // ¸ù¾İ±êÇ©É¾³ıÈËÁ³
+    // æ ¹æ®æ ‡ç­¾åˆ é™¤äººè„¸
     procedure cmd_DeleteFace(Sender: TPeerIO; InData, OutData: TDataFrameEngine);
-    // ¸ù¾İ±êÇ©ÉÏ´«Ò»ÅúÈËÁ³£¬Èç¹û±êÇ©·¢ÏÖÖØ¸´£¬»áÖ±½ÓÌæ»»ÒÔÇ°µÄÈËÁ³±êÇ©
+    // æ ¹æ®æ ‡ç­¾ä¸Šä¼ ä¸€æ‰¹äººè„¸ï¼Œå¦‚æœæ ‡ç­¾å‘ç°é‡å¤ï¼Œä¼šç›´æ¥æ›¿æ¢ä»¥å‰çš„äººè„¸æ ‡ç­¾
     procedure cmd_UploadFace(Sender: TPeerIO; InData: TDataFrameEngine);
 
-    // Æô¶¯Ê±£¬¶ÁÈ¡ÈËÁ³Êı¾İ¿â
+    // å¯åŠ¨æ—¶ï¼Œè¯»å–äººè„¸æ•°æ®åº“
     procedure LoadFaceSystem;
   public
     constructor Create;
     destructor Destroy; override;
 
-    // Ö÷Ñ­»·£¬²Î¿¼ZServer4D, https://github.com/PassByYou888/ZServer4D
+    // ä¸»å¾ªç¯ï¼Œå‚è€ƒZServer4D, https://github.com/PassByYou888/ZServer4D
     procedure Progress; override;
   end;
 
-  // ×Ô¶¯»¯ÈËÁ³½¨Ä£µ÷ÓÃµÄAPI
-  // µ±ÈËÁ³¿âºÜ´ó£¬»òÔòÊäÈëµÄÈËÁ³ºÍ±êÇ©·¢Éú´íÎó£¬ÎÒÃÇÊ¹ÓÃ ZAI_IMGMatrix_Tool.exe ÕâÀà¹¤¾ßÀ´Î¬»¤Ëü¼´¿É
+  // è‡ªåŠ¨åŒ–äººè„¸å»ºæ¨¡è°ƒç”¨çš„API
+  // å½“äººè„¸åº“å¾ˆå¤§ï¼Œæˆ–åˆ™è¾“å…¥çš„äººè„¸å’Œæ ‡ç­¾å‘ç”Ÿé”™è¯¯ï¼Œæˆ‘ä»¬ä½¿ç”¨ ZAI_IMGMatrix_Tool.exe è¿™ç±»å·¥å…·æ¥ç»´æŠ¤å®ƒå³å¯
 function GetAlignmentFaceAndMergeToMatrix(FaceDetParallel: TAI_Parallel; FaceDB: TAI_ImageMatrix;
   picture: TMemoryRaster; face_label: SystemString; Scale4x: Boolean): Boolean;
 
 implementation
 
-// ×Ô¶¯»¯ÈËÁ³½¨Ä£µ÷ÓÃµÄAPI
-// µ±ÈËÁ³¿âºÜ´ó£¬»òÔòÊäÈëµÄÈËÁ³ºÍ±êÇ©·¢Éú´íÎó£¬ÎÒÃÇÊ¹ÓÃ ZAI_IMGMatrix_Tool.exe ÕâÀà¹¤¾ßÀ´Î¬»¤Ëü¼´¿É
+// è‡ªåŠ¨åŒ–äººè„¸å»ºæ¨¡è°ƒç”¨çš„API
+// å½“äººè„¸åº“å¾ˆå¤§ï¼Œæˆ–åˆ™è¾“å…¥çš„äººè„¸å’Œæ ‡ç­¾å‘ç”Ÿé”™è¯¯ï¼Œæˆ‘ä»¬ä½¿ç”¨ ZAI_IMGMatrix_Tool.exe è¿™ç±»å·¥å…·æ¥ç»´æŠ¤å®ƒå³å¯
 function GetAlignmentFaceAndMergeToMatrix(FaceDetParallel: TAI_Parallel; FaceDB: TAI_ImageMatrix;
   picture: TMemoryRaster; face_label: SystemString; Scale4x: Boolean): Boolean;
 var
@@ -119,29 +119,29 @@ var
 begin
   ai := FaceDetParallel.GetAndLockAI;
 
-  // Ê¹ÓÃÈËÁ³¶ÔÆë¹¤¾ß
+  // ä½¿ç”¨äººè„¸å¯¹é½å·¥å…·
   if Scale4x then
-      Alignment := TAlignment_Face.Create(ai) // TAlignment_Face »á½«ÕÕÆ¬·Å´ó4±¶ºó×öÈËÁ³¶ÔÆë£¬Ëü·µ»ØµÄ×ø±êÏµÊÇÔ­Ê¼×ø±êÏµ
+      Alignment := TAlignment_Face.Create(ai) // TAlignment_Face ä¼šå°†ç…§ç‰‡æ”¾å¤§4å€ååšäººè„¸å¯¹é½ï¼Œå®ƒè¿”å›çš„åæ ‡ç³»æ˜¯åŸå§‹åæ ‡ç³»
   else
-      Alignment := TAlignment_FastFace.Create(ai); // TAlignment_FastFace ²»»á¶ÔÕÕÆ¬×öÈÎºÎ·Å´ó´¦Àí£¬Ëü·µ»ØµÄ×ø±êÏµÊÇÔ­Ê¼×ø±êÏµ
+      Alignment := TAlignment_FastFace.Create(ai); // TAlignment_FastFace ä¸ä¼šå¯¹ç…§ç‰‡åšä»»ä½•æ”¾å¤§å¤„ç†ï¼Œå®ƒè¿”å›çš„åæ ‡ç³»æ˜¯åŸå§‹åæ ‡ç³»
 
-  // ¹¹½¨ZAIµÄÍ¼ÏñÊı¾İ¿â
+  // æ„å»ºZAIçš„å›¾åƒæ•°æ®åº“
   imgL := TAI_ImageList.Create;
-  // ½«¹âÕ¤ÊäÈëµ½Êı¾İ¿âÖĞ
+  // å°†å…‰æ …è¾“å…¥åˆ°æ•°æ®åº“ä¸­
   imgL.AddPicture(picture);
 
-  // Ê¹ÓÃÈËÁ³¶ÔÆä¹¤¾ß£¬¶ÔÊı¾İ¿â×ö¶ÔÆä
+  // ä½¿ç”¨äººè„¸å¯¹å…¶å·¥å…·ï¼Œå¯¹æ•°æ®åº“åšå¯¹å…¶
   Alignment.Alignment(imgL);
-  // ĞŞ¸ÄÈËÁ³±êÇ©
+  // ä¿®æ”¹äººè„¸æ ‡ç­¾
   imgL.CalibrationNullToken(face_label);
   imgL.FileInfo := face_label;
-  // ÊÍ·Å¶ÔÆë¹¤¾ß
+  // é‡Šæ”¾å¯¹é½å·¥å…·
   disposeObject(Alignment);
   FaceDetParallel.UnLockAI(ai);
 
   img := imgL.First;
-  // ÕâÒ»²½³ÌĞòµÄ×÷ÓÃÊÇÖ»±£ÁôÒ»ÕÅÀëÕÕÆ¬ÖĞĞÄ×î½üµÄÈËÁ³
-  // ±ÈÈçÒ»ÕÅÕÕÆ¬ÖĞÓĞ3ÕÅÈËÁ³£¬ÔËĞĞÕâÒ»¶Î´úÂëÒÔºó£¬»áÓĞ2ÕÅ±»É¾³ı£¬Ö»±£ÁôÒ»ÕÅÀëÕÕÆ¬ÖĞĞÄ×î½üµÄÈËÁ³
+  // è¿™ä¸€æ­¥ç¨‹åºçš„ä½œç”¨æ˜¯åªä¿ç•™ä¸€å¼ ç¦»ç…§ç‰‡ä¸­å¿ƒæœ€è¿‘çš„äººè„¸
+  // æ¯”å¦‚ä¸€å¼ ç…§ç‰‡ä¸­æœ‰3å¼ äººè„¸ï¼Œè¿è¡Œè¿™ä¸€æ®µä»£ç ä»¥åï¼Œä¼šæœ‰2å¼ è¢«åˆ é™¤ï¼Œåªä¿ç•™ä¸€å¼ ç¦»ç…§ç‰‡ä¸­å¿ƒæœ€è¿‘çš„äººè„¸
   if img.DetectorDefineList.Count > 1 then
     begin
       near_det := img.DetectorDefineList[0];
@@ -164,9 +164,9 @@ begin
         end;
     end;
 
-  // ÕâÒ»²½ÊÇ½«¸Õ²ÅÎÒÃÇ´¦ÀíºÃ¿¿ÖĞĞÄµÄÈËÁ³Êı¾İÓë×¡Êı¾İ¿âfaceDBºÏ²¢ÁË
-  // ÕâÒ»²½²¢²»»áÅĞ¶ÏÕÕÆ¬Ö¸ÎÆ£¬Èç¹û²»¶ÏµÄÊäÈëÏàÍ¬µÄÕÕÆ¬£¬¿ÉÄÜÕÕ³ÉÈËÁ³¿âºÜ´ó
-  // µ±ÈËÁ³¿âºÜ´ó£¬»òÔòÊäÈëµÄÈËÁ³ºÍ±êÇ©·¢Éú´íÎó£¬ÎÒÃÇÊ¹ÓÃ ZAI_IMGMatrix_Tool.exe ÕâÀà¹¤¾ßÀ´Î¬»¤Ëü¼´¿É
+  // è¿™ä¸€æ­¥æ˜¯å°†åˆšæ‰æˆ‘ä»¬å¤„ç†å¥½é ä¸­å¿ƒçš„äººè„¸æ•°æ®ä¸ä½æ•°æ®åº“faceDBåˆå¹¶äº†
+  // è¿™ä¸€æ­¥å¹¶ä¸ä¼šåˆ¤æ–­ç…§ç‰‡æŒ‡çº¹ï¼Œå¦‚æœä¸æ–­çš„è¾“å…¥ç›¸åŒçš„ç…§ç‰‡ï¼Œå¯èƒ½ç…§æˆäººè„¸åº“å¾ˆå¤§
+  // å½“äººè„¸åº“å¾ˆå¤§ï¼Œæˆ–åˆ™è¾“å…¥çš„äººè„¸å’Œæ ‡ç­¾å‘ç”Ÿé”™è¯¯ï¼Œæˆ‘ä»¬ä½¿ç”¨ ZAI_IMGMatrix_Tool.exe è¿™ç±»å·¥å…·æ¥ç»´æŠ¤å®ƒå³å¯
   if img.DetectorDefineList.Count = 1 then
     begin
       LockObject(FaceDB);
@@ -203,8 +203,8 @@ var
   BytesRead: Cardinal;
   line, n: TPascalString;
 begin
-  // ±ê×¼¿ò¼Ü·¶Ê½£º»ùÓÚÏß³Ì£¬µ÷ÓÃwindowsµÄ.exe¿ÉÖ´ĞĞÎÄ¼ş£¬²¢ÇÒ´òÓ¡ËüµÄÖ´ĞĞ×´Ì¬£¬È»ºóµÈ´ıËüÖ´ĞĞ½áÊøÈ¡µÃexitCode
-  // ×îºóÍ¨Öª³ÌĞò£ºÕâ¸ö.exeÒÑ¾­Ö´ĞĞÍê³ÉÁË£¬ÕûÌ×»úÖÆÈİ´íĞÔÏàµ±¸ß£¬Ïàµ±ÓÚÔÚvmÖĞÖ´ĞĞÈÎÎñ
+  // æ ‡å‡†æ¡†æ¶èŒƒå¼ï¼šåŸºäºçº¿ç¨‹ï¼Œè°ƒç”¨windowsçš„.exeå¯æ‰§è¡Œæ–‡ä»¶ï¼Œå¹¶ä¸”æ‰“å°å®ƒçš„æ‰§è¡ŒçŠ¶æ€ï¼Œç„¶åç­‰å¾…å®ƒæ‰§è¡Œç»“æŸå–å¾—exitCode
+  // æœ€åé€šçŸ¥ç¨‹åºï¼šè¿™ä¸ª.exeå·²ç»æ‰§è¡Œå®Œæˆäº†ï¼Œæ•´å¥—æœºåˆ¶å®¹é”™æ€§ç›¸å½“é«˜ï¼Œç›¸å½“äºåœ¨vmä¸­æ‰§è¡Œä»»åŠ¡
   TThread.Synchronize(Self, procedure
     begin
       DoStatus(cmd);
@@ -426,9 +426,9 @@ var
   th: TTrainingProcessThread;
 begin
   {
-    ×Ô¶¯»¯ÑµÁ·Ãæ²¿Ê¶±ğ
-    ÑµÁ·³ÌĞòÊ¹ÓÃvm·½Ê½Õ¹¿ª£¬ÎÒÃÇÏÈÉú³ÉÒ»¸öÓÃÓÚÊäÈëµÄÊı¾İ¿â£¬È»ºóµ÷ÓÃtrainingtool.exe½øĞĞÑµÁ·
-    ¸ÃdemoÈç¹ûÒªÕı³£¹¤×÷ÇëÈ·±£ÒÔÏÂtrainingtool.exeÄÜ¹»±»ÕıÈ·Æô¶¯
+    è‡ªåŠ¨åŒ–è®­ç»ƒé¢éƒ¨è¯†åˆ«
+    è®­ç»ƒç¨‹åºä½¿ç”¨vmæ–¹å¼å±•å¼€ï¼Œæˆ‘ä»¬å…ˆç”Ÿæˆä¸€ä¸ªç”¨äºè¾“å…¥çš„æ•°æ®åº“ï¼Œç„¶åè°ƒç”¨trainingtool.exeè¿›è¡Œè®­ç»ƒ
+    è¯¥demoå¦‚æœè¦æ­£å¸¸å·¥ä½œè¯·ç¡®ä¿ä»¥ä¸‹trainingtool.exeèƒ½å¤Ÿè¢«æ­£ç¡®å¯åŠ¨
   }
   Result := False;
   if TrainRuning then
@@ -461,8 +461,8 @@ begin
   DoStatus('build training data.');
 
   {
-    ÕâÀïÊÇÑµÁ·ÈËÁ³Ê¶±ğµÄ²ÎÊı
-    ÒòÎªÈËÁ³Ê¶±ğÒÑ¾­ÓĞÏà¹Ødemo¾Í²»¶ÔÕâĞ©²ÎÊı×÷¹ı¶àµÄ½éÉÜÁË
+    è¿™é‡Œæ˜¯è®­ç»ƒäººè„¸è¯†åˆ«çš„å‚æ•°
+    å› ä¸ºäººè„¸è¯†åˆ«å·²ç»æœ‰ç›¸å…³demoå°±ä¸å¯¹è¿™äº›å‚æ•°ä½œè¿‡å¤šçš„ä»‹ç»äº†
   }
   tt := TTrainingTask.CreateTask;
   Param := THashVariantList.Create;
@@ -491,12 +491,12 @@ begin
   d := umlNow();
   DecodeDate(d, Year, Month, Day);
 
-  // Éú³ÉËæ»úÊäÈëµÄÊı¾İÎÄ¼ş£¬Êı¾İÎÄ¼ş¸ñÊ½À´×ÔTTrainingTask
+  // ç”Ÿæˆéšæœºè¾“å…¥çš„æ•°æ®æ–‡ä»¶ï¼Œæ•°æ®æ–‡ä»¶æ ¼å¼æ¥è‡ªTTrainingTask
   datafile := umlCombineFileName(umlGetFilePath(AI_TrainingTool), PFormat('face-Training %d-%d-%d.input', [Year, Month, Day]));
   tt.SaveToFile(datafile);
   disposeObject(tt);
 
-  // Êä³öÊı¾İÎÄ¼ş
+  // è¾“å‡ºæ•°æ®æ–‡ä»¶
   i := 1;
   train_out := umlChangeFileExt(datafile, '.output');
   while umlFileExists(train_out) do
@@ -508,7 +508,7 @@ begin
   TrainRuning := True;
   FaceChanged := False;
 
-  // Ê¹ÓÃshell·½Ê½µ÷ÓÃtrainingtool.exe½øĞĞÈËÁ³ÑµÁ·
+  // ä½¿ç”¨shellæ–¹å¼è°ƒç”¨trainingtool.exeè¿›è¡Œäººè„¸è®­ç»ƒ
   FaceTrainingThread := TTrainingProcessThread.Create;
   FaceTrainingThread.cmd := PFormat('"%s" "-ai:%s" "-i:%s" "-p:param.txt" "-o:%s" "-k:%s" "-product:%s"',
     [AI_TrainingTool.Text, AI_Engine_Library.Text, datafile.Text, train_out.Text, AI_UserKey.Text, 'TrainingTool']);
@@ -535,57 +535,57 @@ var
   tokens: TArrayPascalString;
   n: TPascalString;
 begin
-  // ×Ô¶¯ÑµÁ·ÈËÁ³Ä£ĞÍÍê³Éºó
+  // è‡ªåŠ¨è®­ç»ƒäººè„¸æ¨¡å‹å®Œæˆå
   DoStatus('Training done: "%s"', [th.cmd.Text]);
   if th.ExecCode = 1 then
     begin
-      // Ê¹ÓÃ TTrainingTask ´ò¿ª TrainingTool.exe Éú³ÉµÄÊä³öÎÄ¼ş
+      // ä½¿ç”¨ TTrainingTask æ‰“å¼€ TrainingTool.exe ç”Ÿæˆçš„è¾“å‡ºæ–‡ä»¶
       tt := TTrainingTask.OpenTask(th.train_out);
 
-      // ·ÖÎöÑµÁ·½á¹û£¬ÊÇ·ñ³É¹¦ÁË
+      // åˆ†æè®­ç»ƒç»“æœï¼Œæ˜¯å¦æˆåŠŸäº†
       DoStatus('check training result.');
       check_result_successed := tt.CheckTrainingAfter('param.txt', report);
       DoStatus(report);
 
-      // µ±·ÖÎöÁËÑµÁ·½á¹ûºó£¬Èç¹ûÑµÁ·Ä£ĞÍÒÑ¾­³É¹¦ÁË
+      // å½“åˆ†æäº†è®­ç»ƒç»“æœåï¼Œå¦‚æœè®­ç»ƒæ¨¡å‹å·²ç»æˆåŠŸäº†
       if check_result_successed then
         begin
 
-          // ÎÒÃÇÊ¹ÓÃTTrainingTask ´ÓÊä³öÎÄ¼ş£¬ÌáÈ¡ÎÄ¼şÃû 'output' + C_Metric_Ext µÄ ¶ÈÁ¿»¯Ä£ĞÍÎÄ¼ş
+          // æˆ‘ä»¬ä½¿ç”¨TTrainingTask ä»è¾“å‡ºæ–‡ä»¶ï¼Œæå–æ–‡ä»¶å 'output' + C_Metric_Ext çš„ åº¦é‡åŒ–æ¨¡å‹æ–‡ä»¶
           m64 := TMemoryStream64.Create;
           tt.Read('output' + C_Metric_Ext, m64);
           DoStatus('rebuild metric.');
-          // ÎÒÃÇÔØÈëĞÂµÄ¶ÈÁ¿»¯Ä£ĞÍÎÄ¼ş
+          // æˆ‘ä»¬è½½å…¥æ–°çš„åº¦é‡åŒ–æ¨¡å‹æ–‡ä»¶
           n_metric := Metric.Metric_ResNet_Open_Stream(m64);
-          // ¹Ø±ÕÒÔÇ°µÄ¶ÈÁ¿»¯Ä£ĞÍÎÄ¼ş
+          // å…³é—­ä»¥å‰çš„åº¦é‡åŒ–æ¨¡å‹æ–‡ä»¶
           Metric.Metric_ResNet_Close(Metric_Resnet_Hnd);
-          // Ê¹ÓÃĞÂµÄ¶ÈÁ¿»¯Ä£ĞÍ£¬Ìæ»»ÀÏµÄ
+          // ä½¿ç”¨æ–°çš„åº¦é‡åŒ–æ¨¡å‹ï¼Œæ›¿æ¢è€çš„
           Metric_Resnet_Hnd := n_metric;
-          // ½«¶ÈÁ¿»¯Ä£ĞÍÖØĞÂ±£´æÒ»ÏÂ£¬±ãÓÚÏÂ´Î³ÌĞòÆô¶¯Ê±¿ÉÒÔÖ±½ÓÊ¹ÓÃ
+          // å°†åº¦é‡åŒ–æ¨¡å‹é‡æ–°ä¿å­˜ä¸€ä¸‹ï¼Œä¾¿äºä¸‹æ¬¡ç¨‹åºå¯åŠ¨æ—¶å¯ä»¥ç›´æ¥ä½¿ç”¨
           fn := umlCombineFileName(TPath.GetLibraryPath, 'face' + C_Metric_Ext);
           m64.SaveToFile(fn);
           disposeObject(m64);
 
-          // ¿ªÊ¼ÖØ½¨ÈËÁ³ĞÂÄ£ĞÍµÄÏßĞÔÏòÁ¿Êı¾İ¿â£¬Õâ¸öÊı¾İ¿âÊÇ»ùÓÚTLearnÒıÇæ¹¤×÷µÄ
+          // å¼€å§‹é‡å»ºäººè„¸æ–°æ¨¡å‹çš„çº¿æ€§å‘é‡æ•°æ®åº“ï¼Œè¿™ä¸ªæ•°æ®åº“æ˜¯åŸºäºTLearnå¼•æ“å·¥ä½œçš„
           DoStatus('rebuild face vector.');
           Face_Learn.Clear;
-          // Metric_ResNet_SaveToLearnEngine ÊÇ×Ô¶¯»¯µÄ½«FaceDBÖĞËùÓĞÈËÁ³£¬È«²¿¹¹½¨³ÉTLearnµÄÊı¾İ
+          // Metric_ResNet_SaveToLearnEngine æ˜¯è‡ªåŠ¨åŒ–çš„å°†FaceDBä¸­æ‰€æœ‰äººè„¸ï¼Œå…¨éƒ¨æ„å»ºæˆTLearnçš„æ•°æ®
           Metric.Metric_ResNet_SaveToLearnEngine(Metric_Resnet_Hnd, False, FaceDB, Face_Learn);
-          // TLearnµÄÊı¾İ¿â¹¹½¨Íê³Éºó£¬ĞèÒªÖØĞÂÑµÁ·Ò»ÏÂTLearn
+          // TLearnçš„æ•°æ®åº“æ„å»ºå®Œæˆåï¼Œéœ€è¦é‡æ–°è®­ç»ƒä¸€ä¸‹TLearn
           Face_Learn.Training();
-          // ÏÖÔÚÎÒÃÇÔÙTLearnµÄÊı¾İ±£´æÁË£¬±ãÓÚÏÂ´ÎÆô¶¯Ê±Ê¹ÓÃ
+          // ç°åœ¨æˆ‘ä»¬å†TLearnçš„æ•°æ®ä¿å­˜äº†ï¼Œä¾¿äºä¸‹æ¬¡å¯åŠ¨æ—¶ä½¿ç”¨
           fn := umlCombineFileName(TPath.GetLibraryPath, 'face.learn');
           Face_Learn.SaveToFile(fn);
 
-          // ÌáÊ¾ÑµÁ·Íê³É
+          // æç¤ºè®­ç»ƒå®Œæˆ
           DoStatus('reload finished.');
 
-          // ÕâÀïÓĞ¸ö×´Ì¬»ú×ÓÏµÍ³
-          // º¬Òå£ºÈç¹ûÎÒÃÇÕıÔÚÑµÁ·ÖĞ£¬¿Í»§¶ËÓÖÅÜÀ´ÊäÈëÈËÁ³£¬ÄÇÃ´ÕâÊ±ºò£¬faceChanged¾Í»áÊÇtrue
-          // ¼ì²éfaceChangedÈç¹ûÃ»ÓĞ¸ÅÄî£¬´ú±íÎÒÃÇÕâÒ»´ÎÑµÁ·ÍêÄ£ĞÍ£¬ÊÇºÍfacedbÍêÈ«ÎÇºÏµÄ
+          // è¿™é‡Œæœ‰ä¸ªçŠ¶æ€æœºå­ç³»ç»Ÿ
+          // å«ä¹‰ï¼šå¦‚æœæˆ‘ä»¬æ­£åœ¨è®­ç»ƒä¸­ï¼Œå®¢æˆ·ç«¯åˆè·‘æ¥è¾“å…¥äººè„¸ï¼Œé‚£ä¹ˆè¿™æ—¶å€™ï¼ŒfaceChangedå°±ä¼šæ˜¯true
+          // æ£€æŸ¥faceChangedå¦‚æœæ²¡æœ‰æ¦‚å¿µï¼Œä»£è¡¨æˆ‘ä»¬è¿™ä¸€æ¬¡è®­ç»ƒå®Œæ¨¡å‹ï¼Œæ˜¯å’Œfacedbå®Œå…¨å»åˆçš„
           if not FaceChanged then
             begin
-              // ÕâÀïÎÒÃ»ÓĞdemo¹ı¶àµÄ´¦Àí£¬Ö»ÊÇ´òÓ¡ÁËÒ»ÏÂ×´Ì¬
+              // è¿™é‡Œæˆ‘æ²¡æœ‰demoè¿‡å¤šçš„å¤„ç†ï¼Œåªæ˜¯æ‰“å°äº†ä¸€ä¸‹çŠ¶æ€
               LockObject(FaceDB);
               tokens := FaceDB.DetectorTokens;
               DoStatus('total %d classifier', [length(tokens)]);
@@ -620,7 +620,7 @@ var
   mr: TMemoryRaster;
   ai: TAI;
 
-  // runrec·½·¨ÊÇ¹¤×÷ÔÚ×ÓÏß³ÌÖĞµÄ£¬ÔÚserviceÖ÷Ïß³ÌÖĞ²¢²»»áÓĞ¿¨¶ÙµÄ¸Ğ¾õ
+  // runrecæ–¹æ³•æ˜¯å·¥ä½œåœ¨å­çº¿ç¨‹ä¸­çš„ï¼Œåœ¨serviceä¸»çº¿ç¨‹ä¸­å¹¶ä¸ä¼šæœ‰å¡é¡¿çš„æ„Ÿè§‰
   //
   function RunRec(const k: TGeoFloat): Boolean;
   var
@@ -631,34 +631,34 @@ var
     i: Integer;
   begin
     Result := False;
-    // ½«´ıÊ¶±ğµÄ¹âÕ¤³ß´ç´òÓ¡³öÀ´
+    // å°†å¾…è¯†åˆ«çš„å…‰æ …å°ºå¯¸æ‰“å°å‡ºæ¥
     DoStatus('detector face from %d * %d', [mr.Width, mr.Height]);
-    // ¶ÔÕâÕÅ¹âÕ¤×öÈËÁ³¶ÔÆë´¦Àí
-    // ÕâÒ»²½AIÔÚµ÷ÓÃÊ±Ã»ÓĞÊ¹ÓÃcpuµÄ²¢ĞĞ´¦Àí£¬»áÈÃcpu·¢ÉúÒ»¶¨µÄ¿¨¶Ù
+    // å¯¹è¿™å¼ å…‰æ …åšäººè„¸å¯¹é½å¤„ç†
+    // è¿™ä¸€æ­¥AIåœ¨è°ƒç”¨æ—¶æ²¡æœ‰ä½¿ç”¨cpuçš„å¹¶è¡Œå¤„ç†ï¼Œä¼šè®©cpuå‘ç”Ÿä¸€å®šçš„å¡é¡¿
     face_hnd := ai.Face_Detector_All(mr);
 
-    // Èç¹ûÈËÁ³¶ÔÆë´¦Àí³É¹¦ÁË£¬face_hnd»áÊÇÒ»¸öÖ¸ÕëÖ¸£¬·ñÔòface_hnd¾ÍÊÇnil
+    // å¦‚æœäººè„¸å¯¹é½å¤„ç†æˆåŠŸäº†ï¼Œface_hndä¼šæ˜¯ä¸€ä¸ªæŒ‡é’ˆæŒ‡ï¼Œå¦åˆ™face_hndå°±æ˜¯nil
     if face_hnd <> nil then
       begin
-        // Face_chips_num·½·¨ÊÇÅĞ¶Ï·¢ÏÖÁË¶àÉÙÕÅÈËÁ³
-        // Èç¹ûÒ»ÕÅÕÕÆ¬ÖĞÓĞ¶à¸öÈËÁ³£¬ÕâÀï»á·µ»Ø¾ßÌåÊıÁ¿
+        // Face_chips_numæ–¹æ³•æ˜¯åˆ¤æ–­å‘ç°äº†å¤šå°‘å¼ äººè„¸
+        // å¦‚æœä¸€å¼ ç…§ç‰‡ä¸­æœ‰å¤šä¸ªäººè„¸ï¼Œè¿™é‡Œä¼šè¿”å›å…·ä½“æ•°é‡
         if ai.Face_chips_num(face_hnd) > 0 then
           begin
-            // ÓÃ±éÀú·½Ê½½«ÈËÁ³Ò»ÕÅÒ»ÕÅÌáÈ¡³ÉTMemoryRaster£¬²¢ÇÒ´æ´¢µ½face_arryÖĞ
+            // ç”¨éå†æ–¹å¼å°†äººè„¸ä¸€å¼ ä¸€å¼ æå–æˆTMemoryRasterï¼Œå¹¶ä¸”å­˜å‚¨åˆ°face_arryä¸­
             SetLength(face_arry, ai.Face_chips_num(face_hnd));
             for i := 0 to ai.Face_chips_num(face_hnd) - 1 do
                 face_arry[i] := ai.Face_chips(face_hnd, i);
 
-            // ÏÖÔÚ£¬ÎÒÃÇÊ¹ÓÃ¶ÈÁ¿»¯Ä£ĞÍ½«Ã¿ÕÅÈËÁ³µÄÌØÕ÷ÌáÈ¡³ÉÏßĞÔÏòÁ¿
-            // ÕâÀïÒ»°ãÊ¹ÓÃGPUÀ´´¦Àí£¬ÒòÎªGPU¸ü¿ìËÙ
+            // ç°åœ¨ï¼Œæˆ‘ä»¬ä½¿ç”¨åº¦é‡åŒ–æ¨¡å‹å°†æ¯å¼ äººè„¸çš„ç‰¹å¾æå–æˆçº¿æ€§å‘é‡
+            // è¿™é‡Œä¸€èˆ¬ä½¿ç”¨GPUæ¥å¤„ç†ï¼Œå› ä¸ºGPUæ›´å¿«é€Ÿ
             TThread.Synchronize(ThSender.Thread, procedure
               begin
-                // Metric_ResNet_Process ·½·¨¿ÉÒÔÒ»´ÎÊäÈëÒ»ÅúÈËÁ³£¬È»ºó¿ìËÙµÄ¶ÈÁ¿³öÕâÒ»ÅúÈËÁ³µÄÏßĞÔÏòÁ¿
-                // Metric_ResNet_Process»á·µ»ØÒ»¸öºÍÊäÈëµÄÕâÅúÈËÁ³Í¬µÈlengthµÄface_matrix£¬Õâ¸öface_matrix[n]´ú±í¶ÔÓ¦face_arry[n]µÄÈËÁ³¹âÕ¤
+                // Metric_ResNet_Process æ–¹æ³•å¯ä»¥ä¸€æ¬¡è¾“å…¥ä¸€æ‰¹äººè„¸ï¼Œç„¶åå¿«é€Ÿçš„åº¦é‡å‡ºè¿™ä¸€æ‰¹äººè„¸çš„çº¿æ€§å‘é‡
+                // Metric_ResNet_Processä¼šè¿”å›ä¸€ä¸ªå’Œè¾“å…¥çš„è¿™æ‰¹äººè„¸åŒç­‰lengthçš„face_matrixï¼Œè¿™ä¸ªface_matrix[n]ä»£è¡¨å¯¹åº”face_arry[n]çš„äººè„¸å…‰æ …
                 face_matrix := ai.Metric_ResNet_Process(Metric_Resnet_Hnd, face_arry);
 
-                // ´Ó face_matrix ½«¸÷¸öÈËÁ³¶ÈÁ¿»¯ÒÔºóµÄÏßĞÔÏòÁ¿ÌáÈ¡³öÀ´£¬²¢ÇÒÊ¹ÓÃLearnÒıÇæ½øĞĞ½Ó½ü¶ÈµÄÆ¥Åä¼ÆËã
-                // ×îºó½«¼ÆËã³öÀ´µÄ½Ó½ü¶ÈĞ´ÈëÊ¶±ğµÄ·µ»ØÊı¾İ½á¹¹ face_result ÖĞÈ¥
+                // ä» face_matrix å°†å„ä¸ªäººè„¸åº¦é‡åŒ–ä»¥åçš„çº¿æ€§å‘é‡æå–å‡ºæ¥ï¼Œå¹¶ä¸”ä½¿ç”¨Learnå¼•æ“è¿›è¡Œæ¥è¿‘åº¦çš„åŒ¹é…è®¡ç®—
+                // æœ€åå°†è®¡ç®—å‡ºæ¥çš„æ¥è¿‘åº¦å†™å…¥è¯†åˆ«çš„è¿”å›æ•°æ®ç»“æ„ face_result ä¸­å»
                 SetLength(face_Result, length(face_matrix));
                 DelphiParallelFor(Low(face_matrix), high(face_matrix), procedure(pass: Integer)
                   var
@@ -673,17 +673,17 @@ var
                   end);
               end);
 
-            // ÊÍ·Å¸Õ²ÅÊ¹ÓÃÈËÁ³¹âÕ¤
+            // é‡Šæ”¾åˆšæ‰ä½¿ç”¨äººè„¸å…‰æ …
             for i := low(face_arry) to high(face_arry) do
                 disposeObject(face_arry[i]);
 
-            // ¹Ø±Õface¾ä±ú
+            // å…³é—­faceå¥æŸ„
             ai.Face_Close(face_hnd);
 
-            // Ğ´Èë×´Ì¬·µ»ØÖµ£¬¸æËß¿Í»§¶Ë£¬ÎÒÊ¶±ğ³É¹¦ÁË
+            // å†™å…¥çŠ¶æ€è¿”å›å€¼ï¼Œå‘Šè¯‰å®¢æˆ·ç«¯ï¼Œæˆ‘è¯†åˆ«æˆåŠŸäº†
             ThOutData.WriteBool(True);
 
-            // ÕâÒ»²½ÊÇ½«¸÷¸öÈËÁ³µÄÆ¥ÅäÇé¿ö£¬±êÇ©£¬ÒÔTDataFrameEngineµÄ½á¹¹±£´æ£¬²¢ÇÒ·´À¡¸øÇëÇóÊ¶±ğµÄ¿Í»§¶Ë
+            // è¿™ä¸€æ­¥æ˜¯å°†å„ä¸ªäººè„¸çš„åŒ¹é…æƒ…å†µï¼Œæ ‡ç­¾ï¼Œä»¥TDataFrameEngineçš„ç»“æ„ä¿å­˜ï¼Œå¹¶ä¸”åé¦ˆç»™è¯·æ±‚è¯†åˆ«çš„å®¢æˆ·ç«¯
             for i := low(face_Result) to high(face_Result) do
               begin
                 ThOutData.WriteString(face_Result[i].token);
@@ -691,43 +691,43 @@ var
                 ThOutData.WriteRectV2(RectMul(face_Result[i].R, k));
               end;
 
-            // Ê¶±ğ³É¹¦
+            // è¯†åˆ«æˆåŠŸ
             Result := True;
           end
-        else // Èç¹ûÕÕÆ¬ÖĞÃ»ÓĞÈËÁ³
+        else // å¦‚æœç…§ç‰‡ä¸­æ²¡æœ‰äººè„¸
           begin
-            // ÏÈ¹Ø±Õ¸Õ²ÅÎÒÃÇ´ò¿ªµÄÈËÁ³¾ä±ú
+            // å…ˆå…³é—­åˆšæ‰æˆ‘ä»¬æ‰“å¼€çš„äººè„¸å¥æŸ„
             ai.Face_Close(face_hnd);
 
-            // ¼ì²éÕÕÆ¬³ß´ç£¬Èç¹ûµÍÓÚ1200*1200£¬ÄÇÃ´¾Í°ÑÕÕÆ¬·Å´ó£¬ÔÙÈ¥Ê¶±ğ
+            // æ£€æŸ¥ç…§ç‰‡å°ºå¯¸ï¼Œå¦‚æœä½äº1200*1200ï¼Œé‚£ä¹ˆå°±æŠŠç…§ç‰‡æ”¾å¤§ï¼Œå†å»è¯†åˆ«
             if (depthRec) and (mr.Width * mr.Height < 1200 * 1200) then
               begin
-                // °Ñ¿Í»§¶Ë·¢À´µÄÕÕÆ¬·Å´ó2±¶
+                // æŠŠå®¢æˆ·ç«¯å‘æ¥çš„ç…§ç‰‡æ”¾å¤§2å€
                 mr.Scale(2.0);
 
-                // ±ÈÈçÎÒÃÇ½«mr·Å´óÁË2±¶£¬×ø±êÏµµÄ»¹Ô­±ÈÀıĞèÒªÊÇk*0.5
+                // æ¯”å¦‚æˆ‘ä»¬å°†mræ”¾å¤§äº†2å€ï¼Œåæ ‡ç³»çš„è¿˜åŸæ¯”ä¾‹éœ€è¦æ˜¯k*0.5
                 if RunRec(k * 0.5) then
                     exit;
               end;
 
-            // Èç¹ûÕÕÆ¬ÒÑ¾­·Å´óµ½³¬¹ıÁË1200*1200µÄ³ß´ç£¬µ«ÊÇÈÔÈ»ÎŞ·¨¼ì²âµ½ÈËÁ³
-            // ÕâÊ±ºò£¬²»ÔÙÈ¥×ö¼ì²âÁË£¬Ö±½Ó¸æËß¸ø¿Í»§¶Ë£ºÎÒÃ»ÓĞ·¢ÏÖÈËÁ³
+            // å¦‚æœç…§ç‰‡å·²ç»æ”¾å¤§åˆ°è¶…è¿‡äº†1200*1200çš„å°ºå¯¸ï¼Œä½†æ˜¯ä»ç„¶æ— æ³•æ£€æµ‹åˆ°äººè„¸
+            // è¿™æ—¶å€™ï¼Œä¸å†å»åšæ£€æµ‹äº†ï¼Œç›´æ¥å‘Šè¯‰ç»™å®¢æˆ·ç«¯ï¼šæˆ‘æ²¡æœ‰å‘ç°äººè„¸
             ThOutData.WriteBool(False);
             ThOutData.WriteString('no detection face.');
           end;
       end
     else
       begin
-        // Èç¹û Face_Detector_All ·½·¨µ÷ÓÃÒì³££¬°üÀ¨£º¹âÕ¤Êı¾İ´íÎó£¬ÏµÍ³ÅäÖÃµÄZAIÒıÇæ°æ±¾²»¶ÔºÅ£¬»òÔòÄÚÖÃµÄÈËÁ³Ä£ĞÍ´íÎó
-        // ·¢ÉúÕâÒ»²½´íÎó£¬ÎÒÃÇĞèÒª¼ì²é zAI_BuildIn.OXC ÖĞÊÇ·ñÓĞ build_in_face_shape.dat Õâ¸öÎÄ¼ş
-        // ÎÒÃÇÍ¨¹ı¹¤¾ßÁ´ÖĞ FilePackage.exe ¿ÉÒÔ´ò¿ª zAI_BuildIn.OXC
+        // å¦‚æœ Face_Detector_All æ–¹æ³•è°ƒç”¨å¼‚å¸¸ï¼ŒåŒ…æ‹¬ï¼šå…‰æ …æ•°æ®é”™è¯¯ï¼Œç³»ç»Ÿé…ç½®çš„ZAIå¼•æ“ç‰ˆæœ¬ä¸å¯¹å·ï¼Œæˆ–åˆ™å†…ç½®çš„äººè„¸æ¨¡å‹é”™è¯¯
+        // å‘ç”Ÿè¿™ä¸€æ­¥é”™è¯¯ï¼Œæˆ‘ä»¬éœ€è¦æ£€æŸ¥ zAI_BuildIn.OXC ä¸­æ˜¯å¦æœ‰ build_in_face_shape.dat è¿™ä¸ªæ–‡ä»¶
+        // æˆ‘ä»¬é€šè¿‡å·¥å…·é“¾ä¸­ FilePackage.exe å¯ä»¥æ‰“å¼€ zAI_BuildIn.OXC
         ThOutData.WriteBool(False);
         ThOutData.WriteString('no detection face.');
       end;
   end;
 
 begin
-  // ¼ì²é¶ÈÁ¿»¯Ä£ĞÍÊÇ·ñ±»Õı³£´ò¿ª
+  // æ£€æŸ¥åº¦é‡åŒ–æ¨¡å‹æ˜¯å¦è¢«æ­£å¸¸æ‰“å¼€
   if Metric_Resnet_Hnd = nil then
     begin
       ThOutData.WriteBool(False);
@@ -735,7 +735,7 @@ begin
       exit;
     end;
 
-  // Ê¹ÓÃÍ¬²½·½Ê½´ÓIO½ÓÊÕ´ıÊ¶±ğÈËÁ³¹âÕ¤Êı¾İ
+  // ä½¿ç”¨åŒæ­¥æ–¹å¼ä»IOæ¥æ”¶å¾…è¯†åˆ«äººè„¸å…‰æ …æ•°æ®
   TThread.Synchronize(ThSender.Thread, procedure
     begin
       p_io := TPeerIO(ThSender.Framework.IOPool[ThSender.workID]);
@@ -746,7 +746,7 @@ begin
       mr := f_io.GetFaceRaster;
     end);
 
-  // ¼ì²éÈËÁ³¹âÕ¤Êı¾İÊÇ·ñÕı³£
+  // æ£€æŸ¥äººè„¸å…‰æ …æ•°æ®æ˜¯å¦æ­£å¸¸
   if mr = nil then
     begin
       ThOutData.WriteBool(False);
@@ -756,22 +756,22 @@ begin
 
   depthRec := ThInData.Reader.ReadBool;
 
-  // Ê¹ÓÃZAIµÄ²¢ĞĞ»¯»úÖÆ¶ÔÈËÁ³½øĞĞ¶ÔÆë´¦Àí·¶Ê½
+  // ä½¿ç”¨ZAIçš„å¹¶è¡ŒåŒ–æœºåˆ¶å¯¹äººè„¸è¿›è¡Œå¯¹é½å¤„ç†èŒƒå¼
   ai := FaceDetParallel.GetAndLockAI;
 
   try
-      RunRec(1.0); // ¿ªÊ¼Ö´ĞĞÈËÁ³Ê¶±ğ£¬1.0ÊÇÖ¸ÕâÕÅÈËÁ³µÄ×ø±êÏµ·Å´ó»¹Ô­±ÈÀı£¬±ÈÈçÎÒÃÇ½«mr·Å´óÁË2±¶£¬ÄÇÃ´¾ÍÓ¦¸ÃRunRec(0.5)
+      RunRec(1.0); // å¼€å§‹æ‰§è¡Œäººè„¸è¯†åˆ«ï¼Œ1.0æ˜¯æŒ‡è¿™å¼ äººè„¸çš„åæ ‡ç³»æ”¾å¤§è¿˜åŸæ¯”ä¾‹ï¼Œæ¯”å¦‚æˆ‘ä»¬å°†mræ”¾å¤§äº†2å€ï¼Œé‚£ä¹ˆå°±åº”è¯¥RunRec(0.5)
   finally
-    // Ê¹ÓÃZAIµÄ²¢ĞĞ»¯»úÖÆ¶ÔÈËÁ³½øĞĞ¶ÔÆë´¦Àí·¶Ê½
+    // ä½¿ç”¨ZAIçš„å¹¶è¡ŒåŒ–æœºåˆ¶å¯¹äººè„¸è¿›è¡Œå¯¹é½å¤„ç†èŒƒå¼
     FaceDetParallel.UnLockAI(ai);
-    // Ê¶±ğÍê³Éºó£¬ÎÒÃÇÊÍ·Åµô¸Õ²Å´ÓIO½ÓÊÕµ½µÄÈËÁ³¹âÕ¤
+    // è¯†åˆ«å®Œæˆåï¼Œæˆ‘ä»¬é‡Šæ”¾æ‰åˆšæ‰ä»IOæ¥æ”¶åˆ°çš„äººè„¸å…‰æ …
     disposeObject(mr);
   end;
 end;
 
 procedure TReponse_FaceServer.cmd_RecFace(Sender: TPeerIO; InData, OutData: TDataFrameEngine);
 begin
-  // ÕâÀïÎÒÃÇÊ¹ÓÃZServer4DµÄHPC»úÖÆÔÚÒ»¸öºóÌ¨Ïß³ÌÖĞ×öÈËÁ³Ê¶±ğ´¦Àí
+  // è¿™é‡Œæˆ‘ä»¬ä½¿ç”¨ZServer4Dçš„HPCæœºåˆ¶åœ¨ä¸€ä¸ªåå°çº¿ç¨‹ä¸­åšäººè„¸è¯†åˆ«å¤„ç†
   RunStreamWithDelayThreadM(Sender, nil, nil, InData, OutData, cmd_RecFace_ThRun);
 end;
 
@@ -901,7 +901,7 @@ begin
       tokens := FaceDB.DetectorTokens;
       DoStatus('total %d classifier', [length(tokens)]);
 
-      // Èç¹ûÃ»ÓĞÕı³£´ò¿ª¶ÈÁ¿»¯Ä£ĞÍ£¬ÕâÊ±ºò³¢ÊÔÊ¹ÓÃÒÑÓĞµÄfaceÊı¾İ¿âÈ¥ÑµÁ·Ò»¸öĞÂÄ£ĞÍ
+      // å¦‚æœæ²¡æœ‰æ­£å¸¸æ‰“å¼€åº¦é‡åŒ–æ¨¡å‹ï¼Œè¿™æ—¶å€™å°è¯•ä½¿ç”¨å·²æœ‰çš„faceæ•°æ®åº“å»è®­ç»ƒä¸€ä¸ªæ–°æ¨¡å‹
       if Metric_Resnet_Hnd = nil then
         begin
           RunFaceTraining(s);
@@ -969,7 +969,7 @@ var
 begin
   inherited Progress;
 
-  // Èç¹ûÎÒÃÇsave¹ıÈËÁ³µ½Êı¾İ¿â£¬ÔÚ¿ÕÏĞÊ±¼ä´ïµ½30Ãë£¬ÏµÍ³»á×Ô¶¯ÖØĞÂ¶ÔÈËÁ³Êı¾İ¿â½¨Ä£
+  // å¦‚æœæˆ‘ä»¬saveè¿‡äººè„¸åˆ°æ•°æ®åº“ï¼Œåœ¨ç©ºé—²æ—¶é—´è¾¾åˆ°30ç§’ï¼Œç³»ç»Ÿä¼šè‡ªåŠ¨é‡æ–°å¯¹äººè„¸æ•°æ®åº“å»ºæ¨¡
   if FaceChanged and (GetTimeTick - FaceChangedTimeTick > 30 * C_Tick_Second) and CanRunFaceTraining() then
     begin
       fn := umlCombineFileName(TPath.GetLibraryPath, 'face' + C_ImageMatrix_Ext);

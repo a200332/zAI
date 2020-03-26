@@ -1,4 +1,4 @@
-program GradientBasedNetImageClassifier;
+﻿program GradientBasedNetImageClassifier;
 
 uses
   System.StartUpCopy,

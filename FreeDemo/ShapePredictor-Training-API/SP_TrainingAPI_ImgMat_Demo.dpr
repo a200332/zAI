@@ -1,4 +1,4 @@
-program SP_TrainingAPI_ImgMat_Demo;
+﻿program SP_TrainingAPI_ImgMat_Demo;
 
 uses
   Vcl.Forms,

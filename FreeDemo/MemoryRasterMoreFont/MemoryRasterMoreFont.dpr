@@ -1,4 +1,4 @@
-program MemoryRasterMoreFont;
+﻿program MemoryRasterMoreFont;
 
 uses
   System.StartUpCopy,

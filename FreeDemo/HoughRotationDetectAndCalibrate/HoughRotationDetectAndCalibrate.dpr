@@ -1,4 +1,4 @@
-program HoughRotationDetectAndCalibrate;
+﻿program HoughRotationDetectAndCalibrate;
 
 uses
   System.StartUpCopy,

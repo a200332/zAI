@@ -1,4 +1,4 @@
-program Render2Video;
+﻿program Render2Video;
 
 uses
   System.StartUpCopy,

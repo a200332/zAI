@@ -1,4 +1,4 @@
-unit TriangleOptimizationMainFrm;
+锘匡豢unit TriangleOptimizationMainFrm;
 
 interface
 
@@ -98,7 +98,7 @@ begin
 
   d.FillBox(d.ScreenRect, DEColor(0.2, 0.2, 0.2, 1));
 
-  d.DrawText('|s:16|原始多边形||' + #13#10 + 'craete by.qq600585', 12, d.ScreenRect, DEColor(1, 1, 1, 1), False);
+  d.DrawText('|s:16|鍘熷澶氳竟褰|' + #13#10 + 'craete by.qq600585', 12, d.ScreenRect, DEColor(1, 1, 1, 1), False);
 
   d.DrawPL(DemoPolygon.Surround, True, DEColor(1, 1, 1, 1), 1);
   for i := 0 to DemoPolygon.CollapsesCount - 1 do
@@ -117,7 +117,7 @@ begin
 
   d.FillBox(d.ScreenRect, DEColor(0.2, 0.2, 0.2, 1));
 
-  d.DrawText('|s:16|三角切割方式1||' + #13#10 + 'craete by.qq600585', 12, d.ScreenRect, DEColor(1, 1, 1, 1), False);
+  d.DrawText('|s:16|涓夎鍒囧壊鏂瑰紡1||' + #13#10 + 'craete by.qq600585', 12, d.ScreenRect, DEColor(1, 1, 1, 1), False);
 
   d.DrawPL(DemoPolygon.Surround, True, DEColor(1, 1, 1, 1), 1);
   for i := 0 to DemoPolygon.CollapsesCount - 1 do
@@ -138,7 +138,7 @@ begin
 
   d.FillBox(d.ScreenRect, DEColor(0.2, 0.2, 0.2, 1));
 
-  d.DrawText('|s:16|三角切割方式2||' + #13#10 + 'craete by.qq600585', 12, d.ScreenRect, DEColor(1, 1, 1, 1), False);
+  d.DrawText('|s:16|涓夎鍒囧壊鏂瑰紡2||' + #13#10 + 'craete by.qq600585', 12, d.ScreenRect, DEColor(1, 1, 1, 1), False);
 
   d.DrawPL(DemoPolygon.Surround, True, DEColor(1, 1, 1, 1), 1);
   for i := 0 to DemoPolygon.CollapsesCount - 1 do
@@ -159,7 +159,7 @@ begin
 
   d.FillBox(d.ScreenRect, DEColor(0.2, 0.2, 0.2, 1));
 
-  d.DrawText('|s:16|三角切割方式3||' + #13#10 + 'craete by.qq600585', 12, d.ScreenRect, DEColor(1, 1, 1, 1), False);
+  d.DrawText('|s:16|涓夎鍒囧壊鏂瑰紡3||' + #13#10 + 'craete by.qq600585', 12, d.ScreenRect, DEColor(1, 1, 1, 1), False);
 
   d.DrawPL(DemoPolygon.Surround, True, DEColor(1, 1, 1, 1), 1);
   for i := 0 to DemoPolygon.CollapsesCount - 1 do

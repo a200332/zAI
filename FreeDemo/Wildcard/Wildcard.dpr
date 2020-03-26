@@ -1,4 +1,4 @@
-program Wildcard;
+﻿program Wildcard;
 
 uses
   Vcl.Forms,

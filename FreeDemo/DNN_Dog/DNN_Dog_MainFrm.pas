@@ -1,4 +1,4 @@
-unit DNN_Dog_MainFrm;
+ï»¿ï»¿unit DNN_Dog_MainFrm;
 
 interface
 
@@ -90,11 +90,11 @@ begin
       img: TAI_Image;
       det: TAI_DetectorDefine;
     begin
-      // Ê¹ÓÃTTrainingTask´ò¿ªÄ£ĞÍÑµÁ·ºóµÄÊä³öÊı¾İ
+      // ä½¿ç”¨TTrainingTaskæ‰“å¼€æ¨¡å‹è®­ç»ƒåçš„è¾“å‡ºæ•°æ®
       with TTrainingTask.OpenTask(WhereFileFromConfigure('dog_train_output_detector.OX')) do
         begin
           stream := TMemoryStream64.Create;
-          // ´ÓÑµÁ·Êä³ö½á¹û¶ÁÈ¡Ğ¡¹·¼ì²âÆ÷Ä£ĞÍ
+          // ä»è®­ç»ƒè¾“å‡ºç»“æœè¯»å–å°ç‹—æ£€æµ‹å™¨æ¨¡å‹
           Read('output.svm_dnn_od', stream);
           TCompute.Sync(procedure
             begin
@@ -105,11 +105,11 @@ begin
           Free;
         end;
 
-      // Ê¹ÓÃTTrainingTask´ò¿ªÄ£ĞÍÑµÁ·ºóµÄÊä³öÊı¾İ
+      // ä½¿ç”¨TTrainingTaskæ‰“å¼€æ¨¡å‹è®­ç»ƒåçš„è¾“å‡ºæ•°æ®
       with TTrainingTask.OpenTask(WhereFileFromConfigure('dog_train_output_metric.OX')) do
         begin
           stream := TMemoryStream64.Create;
-          // ´ÓÑµÁ·Êä³ö½á¹û¶ÁÈ¡Ğ¡¹·¶ÈÁ¿»¯Ä£ĞÍ
+          // ä»è®­ç»ƒè¾“å‡ºç»“æœè¯»å–å°ç‹—åº¦é‡åŒ–æ¨¡å‹
           Read('output.metric', stream);
           TCompute.Sync(procedure
             begin
@@ -118,7 +118,7 @@ begin
           DisposeObject(stream);
           DoStatus('load dog metric done..');
 
-          // ´ÓÑµÁ·Êä³ö½á¹û¶ÁÈ¡Ğ¡¹·¶ÈÁ¿»¯µÄkdtreeÄ£ĞÍ
+          // ä»è®­ç»ƒè¾“å‡ºç»“æœè¯»å–å°ç‹—åº¦é‡åŒ–çš„kdtreeæ¨¡å‹
           stream := TMemoryStream64.Create;
           Read('output.learn', stream);
           Metric_Learn := TLearn.CreateClassifier(ltKDT, zAI.C_Metric_Dim);
@@ -130,24 +130,24 @@ begin
           Free;
         end;
 
-      // ¶ÁÈ¡±à¼­Æ÷Ñù±¾
+      // è¯»å–ç¼–è¾‘å™¨æ ·æœ¬
       EditImgList := TEditorImageDataList.Create(True);
       EditImgList.LoadFromFile(WhereFileFromConfigure('dog_metric.AI_Set'));
       DoStatus('load Editor Dataset done.');
       stream := TMemoryStream64.Create;
-      // ½«±à¼­Æ÷Ñù±¾×ª»»³ÉTAI_ImageList
+      // å°†ç¼–è¾‘å™¨æ ·æœ¬è½¬æ¢æˆTAI_ImageList
       EditImgList.SaveToStream_AI(stream, TRasterSaveFormat.rsRGB);
       DisposeObject(EditImgList);
       DoStatus('Editor Dataset export done.');
 
       stream.Position := 0;
       imgList := TAI_ImageList.Create;
-      // ¶ÁÈ¡TAI_ImageListÊı¾İ
+      // è¯»å–TAI_ImageListæ•°æ®
       imgList.LoadFromStream(stream);
       DisposeObject(stream);
       DoStatus('ImageList load done.');
 
-      // ½«TAI_ImageListÊı¾İÌí¼Óµ½Listbox
+      // å°†TAI_ImageListæ•°æ®æ·»åŠ åˆ°Listbox
       for j := 0 to imgList.Count - 1 do
         begin
           img := imgList[j];
@@ -184,10 +184,10 @@ begin
       exit;
   while viewIntf.Count > 2 do
       viewIntf.Delete(2);
-  // Ö´ĞĞ¼ì²âÆ÷
+  // æ‰§è¡Œæ£€æµ‹å™¨
   desc := AI.MMOD_DNN_Process(OD_Hnd, viewIntf[0].raster);
 
-  // Èç¹ûÕÒµ½Ğ¡¹·
+  // å¦‚æœæ‰¾åˆ°å°ç‹—
   if length(desc) > 0 then
     begin
       DoStatus('found dog of %d', [length(desc)]);
@@ -199,14 +199,14 @@ begin
       d.Rasterization.UsedAgg := True;
       for i := 0 to length(desc) - 1 do
         begin
-          // °´³ß¶È¿ÙÍ¼
+          // æŒ‰å°ºåº¦æŠ å›¾
           tmp := viewIntf[0].raster.BuildAreaOffsetScaleSpace(desc[i].R, zAI.C_Metric_Input_Size, zAI.C_Metric_Input_Size);
-          // ¼ÆËã¿ÙÍ¼µÄ¶ÈÁ¿»¯
+          // è®¡ç®—æŠ å›¾çš„åº¦é‡åŒ–
           vec := AI.Metric_ResNet_Process(Metric_Hnd, tmp);
           DisposeObject(tmp);
-          // °ÑÕÒµ½Ğ¡¹·µÄ¿òÌå»­³öÀ´
+          // æŠŠæ‰¾åˆ°å°ç‹—çš„æ¡†ä½“ç”»å‡ºæ¥
           d.DrawLabelBox(
-            Metric_Learn.ProcessMaxIndexToken(vec), // ´Ókdtree²éÑ¯¶ÈÁ¿»¯±êÇ©
+            Metric_Learn.ProcessMaxIndexToken(vec), // ä»kdtreeæŸ¥è¯¢åº¦é‡åŒ–æ ‡ç­¾
           12, DEColor(0.5, 0.5, 1), desc[i].R, DEColor(1, 1, 1), 2);
         end;
       d.Flush;
@@ -226,9 +226,9 @@ var
 begin
   if viewIntf.Count < 2 then
       exit;
-  // Ğ¡¹·ÅÔ±ßÓĞ¸ö³ß¶È¹æ·¶µÄÍ¼,ÎÒÃÇ²»¼ì²âĞ¡¹·,Ö±½Ó´Ó¸ÃÍ¼¼ÆËã¶ÈÁ¿»¯
+  // å°ç‹—æ—è¾¹æœ‰ä¸ªå°ºåº¦è§„èŒƒçš„å›¾,æˆ‘ä»¬ä¸æ£€æµ‹å°ç‹—,ç›´æ¥ä»è¯¥å›¾è®¡ç®—åº¦é‡åŒ–
   vec := AI.Metric_ResNet_Process(Metric_Hnd, viewIntf[1].raster);
-  // ´Ólearn²éÑ¯¶ÈÁ¿»¯±êÇ©,²¢´òÓ¡³öÀ´
+  // ä»learnæŸ¥è¯¢åº¦é‡åŒ–æ ‡ç­¾,å¹¶æ‰“å°å‡ºæ¥
   DoStatus(Metric_Learn.ProcessMaxIndexToken(vec));
 end;
 
@@ -286,9 +286,9 @@ var
 begin
   viewIntf.Clear;
   det := TAI_DetectorDefine(TListBoxItem(Sender).TagObject);
-  viewIntf.InputPicture(det.Owner.raster, '¸ÃÍ¼ÓÃÓÚ¼ì²âÆ÷¼ÆËã' + #13#10 + 'µã|color(1,0,0)|Run Detector||Ê±¼ÆËã´ËÍ¼', True, False, False);
+  viewIntf.InputPicture(det.Owner.raster, 'è¯¥å›¾ç”¨äºæ£€æµ‹å™¨è®¡ç®—' + #13#10 + 'ç‚¹|color(1,0,0)|Run Detector||æ—¶è®¡ç®—æ­¤å›¾', True, False, False);
   scaleSpace_raster := det.Owner.raster.BuildAreaOffsetScaleSpace(det.R, zAI.C_Metric_Input_Size, zAI.C_Metric_Input_Size);
-  viewIntf.InputPicture(scaleSpace_raster, '¸ÃÍ¼ÓÃÓÚ¶ÈÁ¿¼ÆËã)' + #13#10 + 'µã|color(1,0,0)|Run Metric||Ê±¼ÆËã´ËÍ¼', True, False, True);
+  viewIntf.InputPicture(scaleSpace_raster, 'è¯¥å›¾ç”¨äºåº¦é‡è®¡ç®—)' + #13#10 + 'ç‚¹|color(1,0,0)|Run Metric||æ—¶è®¡ç®—æ­¤å›¾', True, False, True);
 end;
 
 procedure TDNN_Dog_MainForm.OpenEditorForDogDetectorButtonClick(Sender: TObject);

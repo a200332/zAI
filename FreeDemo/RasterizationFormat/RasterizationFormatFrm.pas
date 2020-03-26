@@ -1,4 +1,4 @@
-unit RasterizationFormatFrm;
+﻿﻿unit RasterizationFormatFrm;
 
 interface
 

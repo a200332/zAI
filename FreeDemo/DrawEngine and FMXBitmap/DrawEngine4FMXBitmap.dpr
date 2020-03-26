@@ -1,4 +1,4 @@
-program DrawEngine4FMXBitmap;
+ï»¿program DrawEngine4FMXBitmap;
 
 {$APPTYPE CONSOLE}
 
@@ -19,7 +19,7 @@ uses
 {$R *.res}
 
 
-// dorenderÊÇsoftRenderer demoÖĞµÄ·½·¨£¬ÎÒÃÇÖ±½Ó½«ËüÕ³Ìù¹ıÀ´Ê¹ÓÃ
+// dorenderæ˜¯softRenderer demoä¸­çš„æ–¹æ³•ï¼Œæˆ‘ä»¬ç›´æ¥å°†å®ƒç²˜è´´è¿‡æ¥ä½¿ç”¨
 procedure DoRender(Draw: TDrawEngine);
 begin
   if not Draw.ReadyOK then
@@ -50,25 +50,25 @@ begin
   bmp := FMX.Graphics.TBitmap.Create;
   bmp.SetSize(512, 512);
 
-  // TDrawEngineInterface_FMXÊÇDrawEngine»æÍ¼ÖĞ¼ä²ã£¬ÎÒÃÇ½«ËüµÄÊä³öÖ¸¶¨ÎªÒ»ÕÅfmxÄÚÖÃµÄbmpÎ»Í¼
+  // TDrawEngineInterface_FMXæ˜¯DrawEngineç»˜å›¾ä¸­é—´å±‚ï¼Œæˆ‘ä»¬å°†å®ƒçš„è¾“å‡ºæŒ‡å®šä¸ºä¸€å¼ fmxå†…ç½®çš„bmpä½å›¾
   dIntf := TDrawEngineInterface_FMX.Create;
   dIntf.SetSurface(bmp.Canvas, bmp);
 
-  // drawEngine³õÊ¼»¯
+  // drawEngineåˆå§‹åŒ–
   d := TDrawEngine.Create;
   d.DrawInterface := dIntf;
   d.SetSize;
 
-  // »­Í¼
-  // FMXÔÚwindowsÆ½Ì¨ÏÂBitmap»áÄ¬ÈÏÊ¹ÓÃd2d»æÍ¼api£¬ÌìÉúÖ§³Ö·´¾â³İ£¬²¢ÇÒ¾ß±¸Ó²¼ş¼ÓËÙ¹¦ÄÜ
-  // bmpµÄÓ²¼ş¼ÓËÙÊÇÖ¸»­Í¼¹ı³Ì¼ÓËÙ£¬´ı»­Í¼Íê³É£¬ÏµÍ³»á½«gpuÏÔ´æÖĞµÄÏñËØÖØĞÂcopyµ½bmpµÄ¹âÕ¤ÖĞ£¬copyÕâÒ»²½¶¼ÊÇºÜÂıµÄ
+  // ç”»å›¾
+  // FMXåœ¨windowså¹³å°ä¸‹Bitmapä¼šé»˜è®¤ä½¿ç”¨d2dç»˜å›¾apiï¼Œå¤©ç”Ÿæ”¯æŒåé”¯é½¿ï¼Œå¹¶ä¸”å…·å¤‡ç¡¬ä»¶åŠ é€ŸåŠŸèƒ½
+  // bmpçš„ç¡¬ä»¶åŠ é€Ÿæ˜¯æŒ‡ç”»å›¾è¿‡ç¨‹åŠ é€Ÿï¼Œå¾…ç”»å›¾å®Œæˆï¼Œç³»ç»Ÿä¼šå°†gpuæ˜¾å­˜ä¸­çš„åƒç´ é‡æ–°copyåˆ°bmpçš„å…‰æ …ä¸­ï¼Œcopyè¿™ä¸€æ­¥éƒ½æ˜¯å¾ˆæ…¢çš„
   DoRender(d);
 
-  // ÊÍ·Å½Ó¿Ú
+  // é‡Šæ”¾æ¥å£
   disposeObject(dIntf);
   disposeObject(d);
 
-  // ½«bmp±£´æÏÂÀ´±ãÓÚÎÒÃÇ¹Û¿´
+  // å°†bmpä¿å­˜ä¸‹æ¥ä¾¿äºæˆ‘ä»¬è§‚çœ‹
   bmp.SaveToFile(umlCombineFileName(TPath.GetLibraryPath, 'fmx_bitmap_demo_output.bmp'));
   DoStatus('FMX bitmap file ' + umlCombineFileName(TPath.GetLibraryPath, 'fmx_bitmap_demo_output.bmp'));
   disposeObject(bmp);

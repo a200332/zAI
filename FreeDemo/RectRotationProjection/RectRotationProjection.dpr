@@ -1,4 +1,4 @@
-program RectRotationProjection;
+﻿program RectRotationProjection;
 
 uses
   System.StartUpCopy,

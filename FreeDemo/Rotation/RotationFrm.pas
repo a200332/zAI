@@ -1,4 +1,4 @@
-unit RotationFrm;
+ï»¿ï»¿unit RotationFrm;
 
 interface
 
@@ -57,11 +57,11 @@ type
     sour_rect, dest_rect: TV2R4;
     procedure DoStatusMethod(Text_: SystemString; const ID: Integer);
   public
-    // raster£¬¹âÕ¤
-    // angle£¬Ğı×ª½Ç¶È£¬0..360£¬-180-180
-    // scale£¬Ëõ·ÅÁ¿£¬¼È0..1Ö®¼äµÄ¸¡µã
-    // axis£¬Ğı×ªÖá×ø±ê£¬ÕâÀïÊÇÓÃ³ß¶ÈÀ´¶¨Òå£¬¼È0..1Ö®¼äµÄ¸¡µã£¬ÕâÑù¸ü·ûºÏÏòÁ¿Ô­Ôò
-    // offset£¬Æ«ÒÆÁ¿£¬ÕâÀïÊÇÓÃ³ß¶ÈÀ´¶¨Òå£¬¼È0..1Ö®¼äµÄ¸¡µã£¬ÕâÑù¸ü·ûºÏÏòÁ¿Ô­Ôò
+    // rasterï¼Œå…‰æ …
+    // angleï¼Œæ—‹è½¬è§’åº¦ï¼Œ0..360ï¼Œ-180-180
+    // scaleï¼Œç¼©æ”¾é‡ï¼Œæ—¢0..1ä¹‹é—´çš„æµ®ç‚¹
+    // axisï¼Œæ—‹è½¬è½´åæ ‡ï¼Œè¿™é‡Œæ˜¯ç”¨å°ºåº¦æ¥å®šä¹‰ï¼Œæ—¢0..1ä¹‹é—´çš„æµ®ç‚¹ï¼Œè¿™æ ·æ›´ç¬¦åˆå‘é‡åŸåˆ™
+    // offsetï¼Œåç§»é‡ï¼Œè¿™é‡Œæ˜¯ç”¨å°ºåº¦æ¥å®šä¹‰ï¼Œæ—¢0..1ä¹‹é—´çš„æµ®ç‚¹ï¼Œè¿™æ ·æ›´ç¬¦åˆå‘é‡åŸåˆ™
     function RebuildRect(raster: TMemoryRaster; Angle_, scale_: TGeoFloat; rotate_axis_, offset_: TVec2): TV2R4;
     procedure DoProjection;
   end;
@@ -101,13 +101,13 @@ begin
   d.ViewOptions := [voEdge];
   d.EdgeColor := DEColor(1, 0, 0);
 
-  // »­±³¾°
+  // ç”»èƒŒæ™¯
   d.DrawTile(bk, bk.BoundsRectV2, 1.0);
 
-  // µÈ³ß¶È»æÖÆºóÈ¡³ö»æÖÆÄ¿±êÆÁÄ»µÄ¿òÌå£¬ÔÙÓÃsour_rectÍ¶Ó°µ½box
+  // ç­‰å°ºåº¦ç»˜åˆ¶åå–å‡ºç»˜åˆ¶ç›®æ ‡å±å¹•çš„æ¡†ä½“ï¼Œå†ç”¨sour_rectæŠ•å½±åˆ°box
   box := sour_rect.Projection(sour.BoundsRectV20, d.FitDrawPicture(sour, sour.BoundsRectV20, RectEdge(d.ScreenRectV2, -20), 1.0));
 
-  // °Ñbox»­³öÀ´
+  // æŠŠboxç”»å‡ºæ¥
   d.DrawDotLineBox(box, DEColor(1, 1, 1, 1), 2);
   with box do
     begin
@@ -118,7 +118,7 @@ begin
     end;
 
   d.BeginCaptureShadow(Vec2(2, 2), 1);
-  d.DrawText('Ô­Í¼Ïñ |color(1,0,0)|°×ĞéÏßÊÇÍ¶Ó°¿òÌå ||XÊÇ4¸ö¶¥µã×ø±ê', 14, DEColor(1, 1, 1), Vec2(5, 5));
+  d.DrawText('åŸå›¾åƒ |color(1,0,0)|ç™½è™šçº¿æ˜¯æŠ•å½±æ¡†ä½“ ||Xæ˜¯4ä¸ªé¡¶ç‚¹åæ ‡', 14, DEColor(1, 1, 1), Vec2(5, 5));
   d.EndCaptureShadow;
   d.Flush;
 end;
@@ -134,14 +134,14 @@ begin
   d.ViewOptions := [voEdge];
   d.EdgeColor := DEColor(1, 0, 0);
 
-  // »­±³¾°
+  // ç”»èƒŒæ™¯
   d.DrawTile(bk, bk.BoundsRectV2, 1.0);
 
-  // µÈ³ß¶È»æÖÆºóÈ¡³ö»æÖÆÄ¿±êÆÁÄ»µÄ¿òÌå£¬ÔÙÓÃsour_rectÍ¶Ó°µ½box
+  // ç­‰å°ºåº¦ç»˜åˆ¶åå–å‡ºç»˜åˆ¶ç›®æ ‡å±å¹•çš„æ¡†ä½“ï¼Œå†ç”¨sour_rectæŠ•å½±åˆ°box
   oriBox := d.FitDrawPicture(dest, dest.BoundsRectV20, RectEdge(d.ScreenRectV2, -20), 1.0);
   box := dest_rect.Projection(dest.BoundsRectV20, oriBox);
 
-  // °Ñbox»­³öÀ´
+  // æŠŠboxç”»å‡ºæ¥
   d.DrawDotLineBox(box, DEColor(0.5, 0.5, 1, 1), 2);
   with box do
     begin
@@ -151,11 +151,11 @@ begin
       d.DrawCross(LeftBottom, DEColor(0.5, 0.5, 1.0), 10, 3);
     end;
 
-  // °ÑÔ­Ê¼Í¼Æ¬µÄ¿ò»­³öÀ´
+  // æŠŠåŸå§‹å›¾ç‰‡çš„æ¡†ç”»å‡ºæ¥
   d.DrawBox(oriBox, DEColor(1, 1, 0, 1), 2);
 
   d.BeginCaptureShadow(Vec2(2, 2), 1);
-  d.DrawText('Ğı×ªºóµÄÍ¼Ïñ |color(1,1,0)|Ä¿±êÍ¼Æ¬Îª»Æ¿ò(Ä¿±ê´øÓĞalpha) ||À¶ÏßÎªÍ¶Ó°¹âÕ¤×ø±ê', 14, DEColor(1, 1, 1), Vec2(5, 5));
+  d.DrawText('æ—‹è½¬åçš„å›¾åƒ |color(1,1,0)|ç›®æ ‡å›¾ç‰‡ä¸ºé»„æ¡†(ç›®æ ‡å¸¦æœ‰alpha) ||è“çº¿ä¸ºæŠ•å½±å…‰æ …åæ ‡', 14, DEColor(1, 1, 1), Vec2(5, 5));
   d.EndCaptureShadow;
   d.Flush;
 end;
@@ -193,16 +193,16 @@ end;
 
 function TApproximatePolygonForm.RebuildRect(raster: TMemoryRaster; Angle_, scale_: TGeoFloat; rotate_axis_, offset_: TVec2): TV2R4;
 begin
-  // TV2R4=TV2Rect4£¬Êı¾İ½á¹¹ÓÃ4¸ö2D VectorÉêÃ÷£¬ÕâÊÇÓÉ4¶¥µã×é³ÉµÄ²»¹æÔò¿òÌå
-  // TV2R4.InitµÈÍ¬ÓÚ¹¹½¨¾ØÕó
-  // TV2R4µÄ»»Ëã»á±È¾ØÕó¸ü¿ì
-  // TV2R4µÄÒ×²Ù×÷ĞÔÓÅÓÚ¾ØÕó£¬²Ù×÷ĞÔ=¿É²ğ·ÖĞÔ£¬¿É·ÖÎöĞÔ
+  // TV2R4=TV2Rect4ï¼Œæ•°æ®ç»“æ„ç”¨4ä¸ª2D Vectorç”³æ˜ï¼Œè¿™æ˜¯ç”±4é¡¶ç‚¹ç»„æˆçš„ä¸è§„åˆ™æ¡†ä½“
+  // TV2R4.Initç­‰åŒäºæ„å»ºçŸ©é˜µ
+  // TV2R4çš„æ¢ç®—ä¼šæ¯”çŸ©é˜µæ›´å¿«
+  // TV2R4çš„æ˜“æ“ä½œæ€§ä¼˜äºçŸ©é˜µï¼Œæ“ä½œæ€§=å¯æ‹†åˆ†æ€§ï¼Œå¯åˆ†ææ€§
 
-  // raster£¬¹âÕ¤
-  // angle£¬Ğı×ª½Ç¶È£¬0..360£¬-180-180
-  // scale£¬sizeËõ·ÅÁ¿£¬¼È0..1Ö®¼äµÄ¸¡µã
-  // axis£¬Ğı×ªÖá×ø±ê£¬ÕâÀïÊÇÓÃ³ß¶ÈÀ´¶¨Òå£¬¼È0..1Ö®¼äµÄ¸¡µã£¬ÕâÑù¸ü·ûºÏÏòÁ¿Ô­Ôò
-  // offset£¬Æ«ÒÆÁ¿£¬ÕâÀïÊÇÓÃ³ß¶ÈÀ´¶¨Òå£¬¼È0..1Ö®¼äµÄ¸¡µã£¬ÕâÑù¸ü·ûºÏÏòÁ¿Ô­Ôò
+  // rasterï¼Œå…‰æ …
+  // angleï¼Œæ—‹è½¬è§’åº¦ï¼Œ0..360ï¼Œ-180-180
+  // scaleï¼Œsizeç¼©æ”¾é‡ï¼Œæ—¢0..1ä¹‹é—´çš„æµ®ç‚¹
+  // axisï¼Œæ—‹è½¬è½´åæ ‡ï¼Œè¿™é‡Œæ˜¯ç”¨å°ºåº¦æ¥å®šä¹‰ï¼Œæ—¢0..1ä¹‹é—´çš„æµ®ç‚¹ï¼Œè¿™æ ·æ›´ç¬¦åˆå‘é‡åŸåˆ™
+  // offsetï¼Œåç§»é‡ï¼Œè¿™é‡Œæ˜¯ç”¨å°ºåº¦æ¥å®šä¹‰ï¼Œæ—¢0..1ä¹‹é—´çš„æµ®ç‚¹ï¼Œè¿™æ ·æ›´ç¬¦åˆå‘é‡åŸåˆ™
   Result := TV2R4.Init(
     RectMul(RectAdd(raster.BoundsRectV2, Vec2Mul(offset_, raster.Size2D)), scale_), // rect
     Vec2Mul(raster.Size2D, rotate_axis_),                                           // rotation axis
@@ -212,17 +212,17 @@ end;
 
 procedure TApproximatePolygonForm.DoProjection;
 begin
-  // ÖØÖÃÄ¿±ê¹âÕ¤
+  // é‡ç½®ç›®æ ‡å…‰æ …
   dest.Clear(RColor(0, 0, 0, 0));
 
-  // Í¶Ó°¾ÍÊÇÒ»¸öº¯Êı
-  // ¹âÕ¤Í¶Ó°µÄ¼ÆËãÄÚºËÊ¹ÓÃÈı½ÇÌî³ä£¬ÓÃÁ½¸öÈı½ÇĞÎ½«Ò»¸ö²»¹æÔò¿òÌå²Ã¿ªÀ´»­
-  // Èı½ÇÌî³äÔÚdest.VertexÖĞÊµÏÖ£¬Çë×ÔĞĞÊ¹ÓÃdebug×·
-  // Èı½ÇÌî³ä»á×Ô¶¯Ö§³Ö²¢ĞĞ£ºµ±Ìî³ä¹æÄ£·Ç³£´ó£¬¸ßÓÚ1000·Ö±æÂÊÊ±£¬VertexÒıÇæ»á×Ô¶¯Æô¶¯²¢ĞĞÌî³äÒıÇæ
-  // Êµ²â£ºÔÚ8000*8000·Ö±æÂÊµÄÍ¼Æ¬Ìî³äÊ±£¬²¢ĞĞ¼¼Êõ¿ÉÒÔÌáËÙ¸ß´ï4-8±¶£¬Õû¸öÌî³ä¹ı³Ì²»»á³öÏÖµÄÄÚ´æÉêÇëºÍÊÍ·Å
+  // æŠ•å½±å°±æ˜¯ä¸€ä¸ªå‡½æ•°
+  // å…‰æ …æŠ•å½±çš„è®¡ç®—å†…æ ¸ä½¿ç”¨ä¸‰è§’å¡«å……ï¼Œç”¨ä¸¤ä¸ªä¸‰è§’å½¢å°†ä¸€ä¸ªä¸è§„åˆ™æ¡†ä½“è£å¼€æ¥ç”»
+  // ä¸‰è§’å¡«å……åœ¨dest.Vertexä¸­å®ç°ï¼Œè¯·è‡ªè¡Œä½¿ç”¨debugè¿½
+  // ä¸‰è§’å¡«å……ä¼šè‡ªåŠ¨æ”¯æŒå¹¶è¡Œï¼šå½“å¡«å……è§„æ¨¡éå¸¸å¤§ï¼Œé«˜äº1000åˆ†è¾¨ç‡æ—¶ï¼ŒVertexå¼•æ“ä¼šè‡ªåŠ¨å¯åŠ¨å¹¶è¡Œå¡«å……å¼•æ“
+  // å®æµ‹ï¼šåœ¨8000*8000åˆ†è¾¨ç‡çš„å›¾ç‰‡å¡«å……æ—¶ï¼Œå¹¶è¡ŒæŠ€æœ¯å¯ä»¥æé€Ÿé«˜è¾¾4-8å€ï¼Œæ•´ä¸ªå¡«å……è¿‡ç¨‹ä¸ä¼šå‡ºç°çš„å†…å­˜ç”³è¯·å’Œé‡Šæ”¾
   sour.ProjectionTo(dest, sour_rect, dest_rect, True, 1.0);
 
-  // ÖØÖÃÎÆÀí£¬Ê¹Ëû¿ÉÒÔÔÚfmxÖĞ¸üĞÂ
+  // é‡ç½®çº¹ç†ï¼Œä½¿ä»–å¯ä»¥åœ¨fmxä¸­æ›´æ–°
   dest.NoUsage;
 end;
 

@@ -1,4 +1,4 @@
-unit SPTrainAPIDemoFrm;
+ï»¿ï»¿unit SPTrainAPIDemoFrm;
 
 interface
 
@@ -44,19 +44,19 @@ end;
 procedure TForm2.FormCreate(Sender: TObject);
 begin
   AddDoStatusHook(Self, DoStatusMethod);
-  // ¶ÁÈ¡zAIµÄÅäÖÃ
+  // è¯»å–zAIçš„é…ç½®
   ReadAIConfig;
-  // ÕâÒ»²½»áÁ¬½ÓKey·şÎñÆ÷£¬ÑéÖ¤ZAIµÄKey
-  // Á¬½Ó·şÎñÆ÷ÑéÖ¤KeyÊÇÔÚÆô¶¯ÒıÇæÊ±Ò»´ÎĞÔµÄÑéÖ¤£¬Ö»»áµ±³ÌĞòÆô¶¯Ê±²Å»áÑéÖ¤£¬¼ÙÈçÑéÖ¤²»ÄÜÍ¨¹ı£¬zAI½«»á¾Ü¾ø¹¤×÷
-  // ÔÚ³ÌĞòÔËĞĞÖĞ£¬·´¸´´´½¨TAI£¬²»»á·¢ÉúÔ¶³ÌÑéÖ¤
-  // ÑéÖ¤ĞèÒªÒ»¸öuserKey£¬Í¨¹ıuserkeyÍÆËã³öZAIÔÚÆô¶¯Ê±Éú³ÉµÄËæ»úKey£¬userkey¿ÉÒÔÍ¨¹ıwebÉêÇë£¬Ò²¿ÉÒÔÁªÏµ×÷Õß·¢·Å
-  // ÑéÖ¤key¶¼ÊÇ¿¹Á¿×Ó¼¶£¬ÎŞ·¨±»ÆÆ½â
+  // è¿™ä¸€æ­¥ä¼šè¿æ¥KeyæœåŠ¡å™¨ï¼ŒéªŒè¯ZAIçš„Key
+  // è¿æ¥æœåŠ¡å™¨éªŒè¯Keyæ˜¯åœ¨å¯åŠ¨å¼•æ“æ—¶ä¸€æ¬¡æ€§çš„éªŒè¯ï¼Œåªä¼šå½“ç¨‹åºå¯åŠ¨æ—¶æ‰ä¼šéªŒè¯ï¼Œå‡å¦‚éªŒè¯ä¸èƒ½é€šè¿‡ï¼ŒzAIå°†ä¼šæ‹’ç»å·¥ä½œ
+  // åœ¨ç¨‹åºè¿è¡Œä¸­ï¼Œåå¤åˆ›å»ºTAIï¼Œä¸ä¼šå‘ç”Ÿè¿œç¨‹éªŒè¯
+  // éªŒè¯éœ€è¦ä¸€ä¸ªuserKeyï¼Œé€šè¿‡userkeyæ¨ç®—å‡ºZAIåœ¨å¯åŠ¨æ—¶ç”Ÿæˆçš„éšæœºKeyï¼Œuserkeyå¯ä»¥é€šè¿‡webç”³è¯·ï¼Œä¹Ÿå¯ä»¥è”ç³»ä½œè€…å‘æ”¾
+  // éªŒè¯keyéƒ½æ˜¯æŠ—é‡å­çº§ï¼Œæ— æ³•è¢«ç ´è§£
   zAI.Prepare_AI_Engine();
 end;
 
 procedure TForm2.Timer1Timer(Sender: TObject);
 begin
-  // dostatus²»¸ø²ÎÊı£¬ÊÇË¢ĞÂÔÚÏß³ÌÖĞµÄStatusIO×´Ì¬£¬¿ÉÒÔË¢ĞÂparallelÏß³ÌÖĞµÄstatus
+  // dostatusä¸ç»™å‚æ•°ï¼Œæ˜¯åˆ·æ–°åœ¨çº¿ç¨‹ä¸­çš„StatusIOçŠ¶æ€ï¼Œå¯ä»¥åˆ·æ–°parallelçº¿ç¨‹ä¸­çš„status
   DoStatus;
 end;
 
@@ -78,15 +78,15 @@ begin
 
       imgList := TAI_ImageList.Create;
       imgList.LoadFromFile(fn);
-      DoStatus('µ÷ÕûÊı¾İ¼¯³ß´ç');
+      DoStatus('è°ƒæ•´æ•°æ®é›†å°ºå¯¸');
       imgList.Scale(0.5);
       ai := TAI.OpenEngine();
-      DoStatus('¿ªÊ¼ÑµÁ·');
+      DoStatus('å¼€å§‹è®­ç»ƒ');
       dt := GetTimeTick();
       m64 := ai.SP_Train_Stream(imgList, 300, 3, 8);
       if m64 <> nil then
         begin
-          DoStatus('ÑµÁ·³É¹¦.ºÄÊ± %d ºÁÃë', [GetTimeTick() - dt]);
+          DoStatus('è®­ç»ƒæˆåŠŸ.è€—æ—¶ %d æ¯«ç§’', [GetTimeTick() - dt]);
           TThread.Synchronize(Sender, procedure
             begin
               SaveDialog.FileName := 'output' + C_SP_Ext;
@@ -99,7 +99,7 @@ begin
           DisposeObject(m64);
         end
       else
-          DoStatus('ÑµÁ·Ê§°Ü.');
+          DoStatus('è®­ç»ƒå¤±è´¥.');
       DisposeObject(ai);
       DisposeObject(imgList);
     end);

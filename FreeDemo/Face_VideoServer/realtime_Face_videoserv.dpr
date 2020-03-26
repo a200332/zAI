@@ -1,4 +1,4 @@
-program realtime_Face_videoserv;
+﻿program realtime_Face_videoserv;
 
 {$APPTYPE CONSOLE}
 

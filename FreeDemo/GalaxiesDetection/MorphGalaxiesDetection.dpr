@@ -1,4 +1,4 @@
-program MorphGalaxiesDetection;
+﻿program MorphGalaxiesDetection;
 
 uses
   System.StartUpCopy,

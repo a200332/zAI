@@ -1,4 +1,4 @@
-program realtime_Face_Video_FMXClient_GPU;
+﻿program realtime_Face_Video_FMXClient_GPU;
 
 uses
   System.StartUpCopy,

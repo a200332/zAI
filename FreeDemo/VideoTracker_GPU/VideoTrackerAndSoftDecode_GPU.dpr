@@ -1,4 +1,4 @@
-program VideoTrackerAndSoftDecode_GPU;
+﻿program VideoTrackerAndSoftDecode_GPU;
 
 uses
   System.StartUpCopy,

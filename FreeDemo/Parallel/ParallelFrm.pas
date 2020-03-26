@@ -1,4 +1,4 @@
-unit ParallelFrm;
+ï»¿ï»¿unit ParallelFrm;
 
 interface
 
@@ -37,8 +37,8 @@ type
   private
     procedure Backcall_DoStatus(Text_: SystemString; const ID: Integer);
   public
-    atomNum: TAtomInt64;     // ÒÔTAtomXXXÃüÃûµÄ½á¹¹Ö§³Ö£¬¶àÏß³ÌºÍ²¢ĞĞ³ÌĞòÊ¹ÓÃ£¬ÓëÆÕÍ¨±äÁ¿²îÒìÔÚÓÚ£ºÊ¹ÓÃÇ°ĞèÒª³õÊ¼»¯£¬²»ÓÃÊ±ĞèÒªÊÍ·Å
-    atomString: TAtomString; // ÒÔTAtomXXXÃüÃûµÄ½á¹¹Ö§³Ö£¬¶àÏß³ÌºÍ²¢ĞĞ³ÌĞòÊ¹ÓÃ£¬ÓëÆÕÍ¨±äÁ¿²îÒìÔÚÓÚ£ºÊ¹ÓÃÇ°ĞèÒª³õÊ¼»¯£¬²»ÓÃÊ±ĞèÒªÊÍ·Å
+    atomNum: TAtomInt64;     // ä»¥TAtomXXXå‘½åçš„ç»“æ„æ”¯æŒï¼Œå¤šçº¿ç¨‹å’Œå¹¶è¡Œç¨‹åºä½¿ç”¨ï¼Œä¸æ™®é€šå˜é‡å·®å¼‚åœ¨äºï¼šä½¿ç”¨å‰éœ€è¦åˆå§‹åŒ–ï¼Œä¸ç”¨æ—¶éœ€è¦é‡Šæ”¾
+    atomString: TAtomString; // ä»¥TAtomXXXå‘½åçš„ç»“æ„æ”¯æŒï¼Œå¤šçº¿ç¨‹å’Œå¹¶è¡Œç¨‹åºä½¿ç”¨ï¼Œä¸æ™®é€šå˜é‡å·®å¼‚åœ¨äºï¼šä½¿ç”¨å‰éœ€è¦åˆå§‹åŒ–ï¼Œä¸ç”¨æ—¶éœ€è¦é‡Šæ”¾
   end;
 
 var
@@ -59,11 +59,11 @@ procedure TParallelForm.FormCreate(Sender: TObject);
 begin
   AddDoStatusHook(Self, Backcall_DoStatus);
 
-  // WorkInParallelCoreÔÚ·Çide»·¾³ÏÂ²Å»á´ò¿ª£¬ÔÚDebugÄ£Ê½ÏÂÊÇ¹Ø±ÕµÄ£¬ÎÒÃÇ½«ËüÇ¿ÖÆ´ò¿ª
+  // WorkInParallelCoreåœ¨éideç¯å¢ƒä¸‹æ‰ä¼šæ‰“å¼€ï¼Œåœ¨Debugæ¨¡å¼ä¸‹æ˜¯å…³é—­çš„ï¼Œæˆ‘ä»¬å°†å®ƒå¼ºåˆ¶æ‰“å¼€
   WorkInParallelCore.V := True;
 
-  atomNum := TAtomInt64.Create(0);      // ÒÔTAtomXXXÃüÃûµÄ½á¹¹Ö§³Ö£¬¶àÏß³ÌºÍ²¢ĞĞ³ÌĞòÊ¹ÓÃ£¬ÓëÆÕÍ¨±äÁ¿²îÒìÔÚÓÚ£ºÊ¹ÓÃÇ°ĞèÒª³õÊ¼»¯£¬²»ÓÃÊ±ĞèÒªÊÍ·Å
-  atomString := TAtomString.Create(''); // ÒÔTAtomXXXÃüÃûµÄ½á¹¹Ö§³Ö£¬¶àÏß³ÌºÍ²¢ĞĞ³ÌĞòÊ¹ÓÃ£¬ÓëÆÕÍ¨±äÁ¿²îÒìÔÚÓÚ£ºÊ¹ÓÃÇ°ĞèÒª³õÊ¼»¯£¬²»ÓÃÊ±ĞèÒªÊÍ·Å
+  atomNum := TAtomInt64.Create(0);      // ä»¥TAtomXXXå‘½åçš„ç»“æ„æ”¯æŒï¼Œå¤šçº¿ç¨‹å’Œå¹¶è¡Œç¨‹åºä½¿ç”¨ï¼Œä¸æ™®é€šå˜é‡å·®å¼‚åœ¨äºï¼šä½¿ç”¨å‰éœ€è¦åˆå§‹åŒ–ï¼Œä¸ç”¨æ—¶éœ€è¦é‡Šæ”¾
+  atomString := TAtomString.Create(''); // ä»¥TAtomXXXå‘½åçš„ç»“æ„æ”¯æŒï¼Œå¤šçº¿ç¨‹å’Œå¹¶è¡Œç¨‹åºä½¿ç”¨ï¼Œä¸æ™®é€šå˜é‡å·®å¼‚åœ¨äºï¼šä½¿ç”¨å‰éœ€è¦åˆå§‹åŒ–ï¼Œä¸ç”¨æ—¶éœ€è¦é‡Šæ”¾
 end;
 
 procedure TParallelForm.ParaAddButtonClick(Sender: TObject);
@@ -71,35 +71,35 @@ begin
   atomNum.Value := 0;
   DelphiParallelFor(0, 100000 - 1, procedure(pass: Integer)
     begin
-      // ²Ù×÷·½·¨1£¬Ëø×¡ºóÈ¡Öµ£¬×öÒ»´Îinc²Ù×÷£¬ÔÙ½âËø
-      // 1,2Á½ÖÖ²Ù×÷·½·¨¿ÉÒÔ¼æÈİÊ¹ÓÃ
+      // æ“ä½œæ–¹æ³•1ï¼Œé”ä½åå–å€¼ï¼Œåšä¸€æ¬¡incæ“ä½œï¼Œå†è§£é”
+      // 1,2ä¸¤ç§æ“ä½œæ–¹æ³•å¯ä»¥å…¼å®¹ä½¿ç”¨
       atomNum.UnLock(atomNum.Lock + 1);
-      // ²Ù×÷·½·¨2£¬Ëø×¡ºóÈ¡Öµ£¬×öÒ»´Îinc²Ù×÷£¬ÔÙ½âËø
-      // 1,2Á½ÖÖ²Ù×÷·½·¨¿ÉÒÔ¼æÈİÊ¹ÓÃ
+      // æ“ä½œæ–¹æ³•2ï¼Œé”ä½åå–å€¼ï¼Œåšä¸€æ¬¡incæ“ä½œï¼Œå†è§£é”
+      // 1,2ä¸¤ç§æ“ä½œæ–¹æ³•å¯ä»¥å…¼å®¹ä½¿ç”¨
       inc(atomNum.LockP^);
       atomNum.UnLock();
-      // Í¬Ñù£¬ÎÒÃ´Ò²¿ÉÒÔĞ´³É
+      // åŒæ ·ï¼Œæˆ‘ä¹ˆä¹Ÿå¯ä»¥å†™æˆ
       atomNum.Lock;
       atomNum.p^ := atomNum.p^ + 1;
       atomNum.UnLock();
 
-      // Òª±ÜÃâµÄ³£Ê¶ĞÔ³ÌĞò´íÎó
-      // ÒÔÏÂ´úÂëµÄ¹¤×÷Á÷³ÌÈçÏÂ
-      // 1,Ëø×¡ºóÈ¡ÖµÔÙ½âËø
-      // 2,Öµ+1
-      // 3,Ëø×¡ºó¸³ÖµÔÙ½âËø
+      // è¦é¿å…çš„å¸¸è¯†æ€§ç¨‹åºé”™è¯¯
+      // ä»¥ä¸‹ä»£ç çš„å·¥ä½œæµç¨‹å¦‚ä¸‹
+      // 1,é”ä½åå–å€¼å†è§£é”
+      // 2,å€¼+1
+      // 3,é”ä½åèµ‹å€¼å†è§£é”
       // atomNum.V := atomNum.V + 1;
     end);
   DelphiParallelFor(0, 100000 - 1, procedure(pass: Integer)
     begin
-      // Ô­×ÓapiµÄ²Ù×÷·½·¨ÓëËø·½·¨²»¼æÈİ£¬²»ÄÜÍ¬Ê±²Ù×÷
-      // ²Ù×÷·½·¨3£¬Í¨¹ıÔ­×ÓapiÖ±½Ó²Ù×÷Ö¸ÕëÖµ£¬Ô­×ÓapiÖ»ÄÜÖ§³ÖÕûÊı²Ù×÷
+      // åŸå­apiçš„æ“ä½œæ–¹æ³•ä¸é”æ–¹æ³•ä¸å…¼å®¹ï¼Œä¸èƒ½åŒæ—¶æ“ä½œ
+      // æ“ä½œæ–¹æ³•3ï¼Œé€šè¿‡åŸå­apiç›´æ¥æ“ä½œæŒ‡é’ˆå€¼ï¼ŒåŸå­apiåªèƒ½æ”¯æŒæ•´æ•°æ“ä½œ
       AtomInc(atomNum.p^);
     end);
   DelphiParallelFor(0, 100000 - 1, procedure(pass: Integer)
     begin
-      // Ô­×ÓapiµÄ²Ù×÷·½·¨ÓëËø·½·¨²»¼æÈİ£¬²»ÄÜÍ¬Ê±²Ù×÷
-      // ²Ù×÷·½·¨4£¬Í¨¹ıÔ­×ÓapiÖ±½Ó²Ù×÷Ö¸ÕëÖµ£¬Ô­×ÓapiÖ»ÄÜÖ§³ÖÕûÊı²Ù×÷
+      // åŸå­apiçš„æ“ä½œæ–¹æ³•ä¸é”æ–¹æ³•ä¸å…¼å®¹ï¼Œä¸èƒ½åŒæ—¶æ“ä½œ
+      // æ“ä½œæ–¹æ³•4ï¼Œé€šè¿‡åŸå­apiç›´æ¥æ“ä½œæŒ‡é’ˆå€¼ï¼ŒåŸå­apiåªèƒ½æ”¯æŒæ•´æ•°æ“ä½œ
       AtomicIncrement(atomNum.p^);
     end);
   DoStatus(umlIntToStr(atomNum.Value));
@@ -110,16 +110,16 @@ begin
   atomString.Value := '';
   DelphiParallelFor(0, 10000 - 1, procedure(pass: Integer)
     begin
-      // Ëø×¡ºó¸³ÖµÔÙ½âËø
+      // é”ä½åèµ‹å€¼å†è§£é”
       atomString.Value := umlIntToStr(pass);
 
-      // Ëø×¡£¬È¡Öµ£¬Èç¹ûÖµÊÇ'55'£¬´¦Àí£¬½âËø
+      // é”ä½ï¼Œå–å€¼ï¼Œå¦‚æœå€¼æ˜¯'55'ï¼Œå¤„ç†ï¼Œè§£é”
       atomString.Lock;
       if atomString.p^ = '55' then
           DoStatus(atomString.p^);
       atomString.UnLock();
 
-      // Ëø×¡ºóÈ¡ÖµÔÙ½âËø£¬Èç¹ûÖµÊÇ'99'
+      // é”ä½åå–å€¼å†è§£é”ï¼Œå¦‚æœå€¼æ˜¯'99'
       if atomString.Value = '99' then
           DoStatus('99');
     end);
@@ -139,15 +139,15 @@ begin
       SetMT19937Seed(0);
       n := '';
 
-      // ÅúÁ¿Ëæ»úÊıÉú³É£¬ÕâÖÖ·½Ê½¼òµ¥±©Á¦£¬ÊÊÓÃÓÚÉú³ÉÔëÒôÍ¼ÕâÖÖ¶«Î÷
+      // æ‰¹é‡éšæœºæ•°ç”Ÿæˆï¼Œè¿™ç§æ–¹å¼ç®€å•æš´åŠ›ï¼Œé€‚ç”¨äºç”Ÿæˆå™ªéŸ³å›¾è¿™ç§ä¸œè¥¿
       SetLength(Buff, 100);
       MT19937Rand32(10, @Buff[0], 100);
 
       for i := 1 to 20 do
         begin
-          // Ò»´Î²úÉúÒ»¸öËæ»úÊı
-          // MT19937Rand32Ã¿´Îµ÷ÓÃÊ±»áÕÒÏß³ÌÀ¦°óµÄMT19937ÊµÀı£¬Ïß³ÌÔÚÕâÀï»á·¢Éú¶ÌÔİ¿¨¶Ù
-          // ¸ßÆµÂÊµ÷ÓÃÓ¦¸Ã²ÉÓÃTRandomÀàÀ´´úÌæMT19937Rand32
+          // ä¸€æ¬¡äº§ç”Ÿä¸€ä¸ªéšæœºæ•°
+          // MT19937Rand32æ¯æ¬¡è°ƒç”¨æ—¶ä¼šæ‰¾çº¿ç¨‹æ†ç»‘çš„MT19937å®ä¾‹ï¼Œçº¿ç¨‹åœ¨è¿™é‡Œä¼šå‘ç”ŸçŸ­æš‚å¡é¡¿
+          // é«˜é¢‘ç‡è°ƒç”¨åº”è¯¥é‡‡ç”¨TRandomç±»æ¥ä»£æ›¿MT19937Rand32
           num := MT19937Rand32(10);
 
           if n.L > 0 then
@@ -156,7 +156,7 @@ begin
         end;
 
       atomString.Lock;
-      atomString.p^ := atomString.p^ + Format('Ïß³Ì[%d]Ëæ»úÊıĞòÁĞ: %s'#13#10, [TCompute.CurrentThread.ThreadID, n.Text]);
+      atomString.p^ := atomString.p^ + Format('çº¿ç¨‹[%d]éšæœºæ•°åºåˆ—: %s'#13#10, [TCompute.CurrentThread.ThreadID, n.Text]);
       atomString.UnLock;
     end);
   DoStatus(atomString.V);
@@ -178,7 +178,7 @@ begin
 
       for i := 1 to 20 do
         begin
-          // Í¨¹ıTRandomÀà²úÉúËæ»úÊı£¬Í¨¹ıTRandomÀà²úÉúËæ»úÊı²»»á¶ÔÏß³ÌÔì³É¿¨¶Ù£¬ÊÊÓÃÓÚ×·Çó¼«ÖÂĞÔÄÜµÄ²¢·¢³ÌĞò
+          // é€šè¿‡TRandomç±»äº§ç”Ÿéšæœºæ•°ï¼Œé€šè¿‡TRandomç±»äº§ç”Ÿéšæœºæ•°ä¸ä¼šå¯¹çº¿ç¨‹é€ æˆå¡é¡¿ï¼Œé€‚ç”¨äºè¿½æ±‚æè‡´æ€§èƒ½çš„å¹¶å‘ç¨‹åº
           num := rnd.Rand32(10);
 
           if n.L > 0 then
@@ -187,7 +187,7 @@ begin
         end;
 
       atomString.Lock;
-      atomString.p^ := atomString.p^ + Format('Ïß³Ì[%d]Ëæ»úÊıĞòÁĞ: %s'#13#10, [TCompute.CurrentThread.ThreadID, n.Text]);
+      atomString.p^ := atomString.p^ + Format('çº¿ç¨‹[%d]éšæœºæ•°åºåˆ—: %s'#13#10, [TCompute.CurrentThread.ThreadID, n.Text]);
       atomString.UnLock;
 
       rnd.Free;
@@ -199,10 +199,10 @@ procedure TParallelForm.ParaDelphiRandomButtonClick(Sender: TObject);
 begin
   if not MT19937CoreToDelphi then
     begin
-      DoStatus('Î´´ò¿ªInstallMT19937CoreToDelphi±àÒëÑ¡Ïî' + #13#10 +
-        'Çë±à¼­ÎÄ¼ş zDefine.inc'#13#10 +
-        '´ò¿ª±àÒëÑ¡Ïî: InstallMT19937CoreToDelphi'#13#10 +
-        '´ò¿ª±àÒëÑ¡Ïî: MT19937SeedOnTComputeThreadIs0'#13#10);
+      DoStatus('æœªæ‰“å¼€InstallMT19937CoreToDelphiç¼–è¯‘é€‰é¡¹' + #13#10 +
+        'è¯·ç¼–è¾‘æ–‡ä»¶ zDefine.inc'#13#10 +
+        'æ‰“å¼€ç¼–è¯‘é€‰é¡¹: InstallMT19937CoreToDelphi'#13#10 +
+        'æ‰“å¼€ç¼–è¯‘é€‰é¡¹: MT19937SeedOnTComputeThreadIs0'#13#10);
       exit;
     end;
   atomString.Value := '';
@@ -212,13 +212,13 @@ begin
       n: U_String;
       num: Integer;
     begin
-      // Í¨¹ıdelphi×Ô´øRandomº¯Êı²úÉúÏß³ÌÍ³Ò»ĞÔËæ»úÊı£¬Ê¹ÓÃ¸Ã¹¦ÄÜÇ°£¬±ØĞë³õÊ¼»¯
+      // é€šè¿‡delphiè‡ªå¸¦Randomå‡½æ•°äº§ç”Ÿçº¿ç¨‹ç»Ÿä¸€æ€§éšæœºæ•°ï¼Œä½¿ç”¨è¯¥åŠŸèƒ½å‰ï¼Œå¿…é¡»åˆå§‹åŒ–
       SetMT19937Seed(0);
 
       n := '';
       for i := 1 to 20 do
         begin
-          // Í¨¹ıdelphi×Ô´øRandomº¯Êı²úÉúÏß³ÌÍ³Ò»ĞÔËæ»úÊı
+          // é€šè¿‡delphiè‡ªå¸¦Randomå‡½æ•°äº§ç”Ÿçº¿ç¨‹ç»Ÿä¸€æ€§éšæœºæ•°
           num := Random(10);
           if n.L > 0 then
               n.Append(#32);
@@ -226,7 +226,7 @@ begin
         end;
 
       atomString.Lock;
-      atomString.p^ := atomString.p^ + Format('Ïß³Ì[%d]Ëæ»úÊıĞòÁĞ: %s'#13#10, [TCompute.CurrentThread.ThreadID, n.Text]);
+      atomString.p^ := atomString.p^ + Format('çº¿ç¨‹[%d]éšæœºæ•°åºåˆ—: %s'#13#10, [TCompute.CurrentThread.ThreadID, n.Text]);
       atomString.UnLock;
     end);
   DoStatus(atomString.V);
@@ -239,50 +239,50 @@ var
 begin
   MyThreadNum := TAtomInteger.Create(0);
 
-  // ÎÒÃÇ¿ª10¸öTComputeÏß³Ì
+  // æˆ‘ä»¬å¼€10ä¸ªTComputeçº¿ç¨‹
   for i := 0 to 10 - 1 do
     begin
-      // MyThreadNumÊÇÎÒÃÇ×Ô¶¨ÒåµÄÏß³Ì¼ÆÊıÆ÷£¬´´½¨Ïß³Ì¾ÍÈÃËü+1
+      // MyThreadNumæ˜¯æˆ‘ä»¬è‡ªå®šä¹‰çš„çº¿ç¨‹è®¡æ•°å™¨ï¼Œåˆ›å»ºçº¿ç¨‹å°±è®©å®ƒ+1
       MyThreadNum.UnLock(MyThreadNum.Lock + 1);
-      // RunP_NP = Run procedure no parameterËõĞ´, ¸Ã·½·¨Ìá¹©ÁËÎŞ²ÎÊıµÄÄäÃûÏß³Ì
+      // RunP_NP = Run procedure no parameterç¼©å†™, è¯¥æ–¹æ³•æä¾›äº†æ— å‚æ•°çš„åŒ¿åçº¿ç¨‹
       TCompute.RunP_NP(procedure
         var
           delTick: Integer;
         begin
-          // TCompute.Sync ÊÇÒ»ÖÖÏà¶Ô¸ü¿ì½İµÄÍ¬²½·½Ê½,µÈÍ¬ÓÚ TThread.Synchronize
+          // TCompute.Sync æ˜¯ä¸€ç§ç›¸å¯¹æ›´å¿«æ·çš„åŒæ­¥æ–¹å¼,ç­‰åŒäº TThread.Synchronize
           TCompute.Sync(procedure
             begin
               TCompute.Sleep(umlRandomRange(10, 200));
             end);
-          // ´òÂÒËæ»úÊıÖÖ×Ó
+          // æ‰“ä¹±éšæœºæ•°ç§å­
           MT19937Randomize;
-          // DoStatusNoLn=DoStatus No line£¬²»´òÓ¡»»ĞĞ£¬²»¸ø²ÎÊıÊÇ´òÓ¡²¢Çå¿Õµ±Ç°ĞĞ£¬ËüÊÇÏß³Ì°²È«µÄ
+          // DoStatusNoLn=DoStatus No lineï¼Œä¸æ‰“å°æ¢è¡Œï¼Œä¸ç»™å‚æ•°æ˜¯æ‰“å°å¹¶æ¸…ç©ºå½“å‰è¡Œï¼Œå®ƒæ˜¯çº¿ç¨‹å®‰å…¨çš„
           DoStatusNoLn;
-          DoStatusNoLn('Ïß³ÌÆô¶¯');
-          // Ëæ»úÑÓ³Ù1-5Ãë
+          DoStatusNoLn('çº¿ç¨‹å¯åŠ¨');
+          // éšæœºå»¶è¿Ÿ1-5ç§’
           delTick := umlRandomRange(1000, 5000);
           TCompute.Sleep(delTick);
-          // doStatus ÊÇ×´Ì¬´òÓ¡Ö§³Ö·½·¨£¬ËüÊÇÏß³Ì°²È«µÄ
-          DoStatusNoLn(' Ä£ÄâÑÓ³Ù %d ms', [delTick]);
-          // MyThreadNumÊÇÎÒÃÇ×Ô¶¨ÒåµÄÏß³Ì¼ÆÊıÆ÷£¬Ïß³Ì½áÊø¾ÍÈÃËü-1
+          // doStatus æ˜¯çŠ¶æ€æ‰“å°æ”¯æŒæ–¹æ³•ï¼Œå®ƒæ˜¯çº¿ç¨‹å®‰å…¨çš„
+          DoStatusNoLn(' æ¨¡æ‹Ÿå»¶è¿Ÿ %d ms', [delTick]);
+          // MyThreadNumæ˜¯æˆ‘ä»¬è‡ªå®šä¹‰çš„çº¿ç¨‹è®¡æ•°å™¨ï¼Œçº¿ç¨‹ç»“æŸå°±è®©å®ƒ-1
           MyThreadNum.UnLock(MyThreadNum.Lock - 1);
-          DoStatusNoLn(' Íê³É.');
+          DoStatusNoLn(' å®Œæˆ.');
           DoStatusNoLn;
         end);
     end;
 
-  // ¼òµ¥ÊµÏÖµÈ´ıÕâ10¸öTComputeÏß³Ì¼ÆËã½áÊø
+  // ç®€å•å®ç°ç­‰å¾…è¿™10ä¸ªTComputeçº¿ç¨‹è®¡ç®—ç»“æŸ
   while MyThreadNum.V > 0 do
     begin
-      // Èç¹ûÔÚ×ÓÏß³ÌÖĞµÈTCompute£¬Ö±½ÓĞ´³É TThread.Sleep(10)
+      // å¦‚æœåœ¨å­çº¿ç¨‹ä¸­ç­‰TComputeï¼Œç›´æ¥å†™æˆ TThread.Sleep(10)
 
-      // Èç¹ûÔÚÖ÷Ïß³ÌµÈTCompute¿ÉÒÔÓÃÈçÏÂ·½·¨
+      // å¦‚æœåœ¨ä¸»çº¿ç¨‹ç­‰TComputeå¯ä»¥ç”¨å¦‚ä¸‹æ–¹æ³•
       CheckThreadSynchronize(10);
       Application.ProcessMessages;
     end;
 
   MyThreadNum.Free;
-  DoStatus('ËùÓĞÏß³ÌÒÑ½áÊø');
+  DoStatus('æ‰€æœ‰çº¿ç¨‹å·²ç»“æŸ');
 end;
 
 procedure TParallelForm.Backcall_DoStatus(Text_: SystemString; const ID: Integer);

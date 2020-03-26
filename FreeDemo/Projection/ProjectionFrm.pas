@@ -1,4 +1,4 @@
-unit ProjectionFrm;
+﻿﻿unit ProjectionFrm;
 
 interface
 
@@ -140,14 +140,14 @@ begin
   dest.SetSize(round(d_Image.Width), round(d_Image.Height));
   FillBlackGrayBackgroundTexture(dest, 32);
 
-  // ProjectionTo�ǻ��ڿ���ͶӰ��ԭ�ӷ���(���ײ��������vertex)
-  // ԭ������4�����ԭ��ͶӰ��Ŀ��4�����Ŀ��
-  // MemoryRasterͶӰʹ����4���������������������(TV2Rect4)��TRect���������������ȱ߿���
-  // TV2Rect4ӵ�м������ţ�������ת������ƽ�ƣ���Χ������ȵȻ������ܣ���MemoryRasterӵ�����ػ�Ϲ��ܣ����߽�Ͼ���2dͶӰ�������
-  // MemoryRasterͶӰʹ��˫����ƴ�ӳɲ�������壬���ڲ����������΢��ͶӰ����ͬ�����ǳ��õ��ǶԳƾ���ͶӰ������ͶӰ�Ǹ��Ӽ���ͶӰ�ĵػ�֧��
-  // ��zAI��ͼ�����У�ͶӰ������Ӧ���ڶ��룬���գ��߶ȿռ䣬������MemoryRaster���ֶ���ͶӰ
-  // ͶӰ�����ض��ǰ�alpha��ϵ��ӵģ����Ǹ���
-  // �����ֿ�ͶӰ��Draw�ĸ��ͶӰ�����������draw�ǵ�һ�����
+  // ProjectionTo是基于框体投影的原子方法(更底层的是三角vertex)
+  // 原理：将4顶点的原，投影到目标4顶点的目标
+  // MemoryRaster投影使用了4个顶点来描述不规则框体(TV2Rect4)，TRect是两个顶点描述等边框体
+  // TV2Rect4拥有几何缩放，几何旋转，几何平移，包围边延伸等等基础功能，而MemoryRaster拥有像素混合功能，两者结合就是2d投影解决方案
+  // MemoryRaster投影使用双三角拼接成不规则框体，属于不多见的三角微分投影，不同于我们常用的是对称矩阵投影，三角投影是复杂几何投影的地基支持
+  // 在zAI的图像处理中，投影被大量应用于对齐，快照，尺度空间，甚至在MemoryRaster画字都是投影
+  // 投影的像素都是按alpha混合叠加的，不是覆盖
+  // 请区分开投影和Draw的概念，投影是输入输出，draw是单一的输出
 
   if TriangleCheckBox.IsChecked then
     begin
@@ -166,7 +166,7 @@ begin
     0: sour.ProjectionTo(dest, ps, pd, True, 1.0);
     1:
       begin
-        // ����ĳ�����Ҫ���˽��°汾����̬ѧ֧��ϵͳ
+        // 这里的程序需要先了解新版本的形态学支持系统
         tmpMorph := dest.BuildMorphomatics(TMPix.mpGrayscale);
         with sour.BuildMorphomatics(TMPix.mpA) do
           begin
@@ -178,7 +178,7 @@ begin
       end;
     2:
       begin
-        // ����ĳ�����Ҫ���˽��°汾����̬ѧ֧��ϵͳ
+        // 这里的程序需要先了解新版本的形态学支持系统
         with dest.BuildMorphomatics(TMPix.mpGrayscale) do
           begin
             tmpBin := Binarization_OTSU;

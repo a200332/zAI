@@ -1,4 +1,4 @@
-unit VideoTrackerFrm_GPU;
+ï»¿ï»¿unit VideoTrackerFrm_GPU;
 
 interface
 
@@ -47,38 +47,38 @@ implementation
 
 procedure TForm1.FormCreate(Sender: TObject);
 begin
-  // ¶ÁÈ¡zAIµÄÅäÖÃ
+  // è¯»å–zAIçš„é…ç½®
   ReadAIConfig;
 
-  // ÕâÒ»²½»áÁ¬½ÓKey·şÎñÆ÷£¬ÑéÖ¤ZAIµÄKey
-  // Á¬½Ó·şÎñÆ÷ÑéÖ¤KeyÊÇÔÚÆô¶¯ÒıÇæÊ±Ò»´ÎĞÔµÄÑéÖ¤£¬Ö»»áµ±³ÌĞòÆô¶¯Ê±²Å»áÑéÖ¤£¬¼ÙÈçÑéÖ¤²»ÄÜÍ¨¹ı£¬zAI½«»á¾Ü¾ø¹¤×÷
-  // ÔÚ³ÌĞòÔËĞĞÖĞ£¬·´¸´´´½¨TAI£¬²»»á·¢ÉúÔ¶³ÌÑéÖ¤
-  // ÑéÖ¤ĞèÒªÒ»¸öuserKey£¬Í¨¹ıuserkeyÍÆËã³öZAIÔÚÆô¶¯Ê±Éú³ÉµÄËæ»úKey£¬userkey¿ÉÒÔÍ¨¹ıwebÉêÇë£¬Ò²¿ÉÒÔÁªÏµ×÷Õß·¢·Å
-  // ÑéÖ¤key¶¼ÊÇ¿¹Á¿×Ó¼¶£¬ÎŞ·¨±»ÆÆ½â
+  // è¿™ä¸€æ­¥ä¼šè¿æ¥KeyæœåŠ¡å™¨ï¼ŒéªŒè¯ZAIçš„Key
+  // è¿æ¥æœåŠ¡å™¨éªŒè¯Keyæ˜¯åœ¨å¯åŠ¨å¼•æ“æ—¶ä¸€æ¬¡æ€§çš„éªŒè¯ï¼Œåªä¼šå½“ç¨‹åºå¯åŠ¨æ—¶æ‰ä¼šéªŒè¯ï¼Œå‡å¦‚éªŒè¯ä¸èƒ½é€šè¿‡ï¼ŒzAIå°†ä¼šæ‹’ç»å·¥ä½œ
+  // åœ¨ç¨‹åºè¿è¡Œä¸­ï¼Œåå¤åˆ›å»ºTAIï¼Œä¸ä¼šå‘ç”Ÿè¿œç¨‹éªŒè¯
+  // éªŒè¯éœ€è¦ä¸€ä¸ªuserKeyï¼Œé€šè¿‡userkeyæ¨ç®—å‡ºZAIåœ¨å¯åŠ¨æ—¶ç”Ÿæˆçš„éšæœºKeyï¼Œuserkeyå¯ä»¥é€šè¿‡webç”³è¯·ï¼Œä¹Ÿå¯ä»¥è”ç³»ä½œè€…å‘æ”¾
+  // éªŒè¯keyéƒ½æ˜¯æŠ—é‡å­çº§ï¼Œæ— æ³•è¢«ç ´è§£
   zAI.Prepare_AI_Engine();
 
-  // Ê¹ÓÃzDrawEngine×öÍâ²¿»æÍ¼Ê±(±ÈÈçÓÎÏ·£¬ÃæÏòpaintbox)£¬¶¼ĞèÒªÒ»¸ö»æÍ¼½Ó¿Ú
-  // TDrawEngineInterface_FMXÊÇÃæÏòFMXµÄ»æÍ¼core½Ó¿Ú
-  // Èç¹û²»Ö¸¶¨»æÍ¼½Ó¿Ú£¬zDrawEngine»áÄ¬ÈÏÊ¹ÓÃÈí¼ş¹âÕ¤»æÍ¼(±È½ÏÂı)
+  // ä½¿ç”¨zDrawEngineåšå¤–éƒ¨ç»˜å›¾æ—¶(æ¯”å¦‚æ¸¸æˆï¼Œé¢å‘paintbox)ï¼Œéƒ½éœ€è¦ä¸€ä¸ªç»˜å›¾æ¥å£
+  // TDrawEngineInterface_FMXæ˜¯é¢å‘FMXçš„ç»˜å›¾coreæ¥å£
+  // å¦‚æœä¸æŒ‡å®šç»˜å›¾æ¥å£ï¼ŒzDrawEngineä¼šé»˜è®¤ä½¿ç”¨è½¯ä»¶å…‰æ …ç»˜å›¾(æ¯”è¾ƒæ…¢)
   drawIntf := TDrawEngineInterface_FMX.Create;
 
-  // mpeg yv12ÊÓÆµÖ¡¸ñÊ½
+  // mpeg yv12è§†é¢‘å¸§æ ¼å¼
   mpeg_y4m := TY4MReader.CreateOnFile(umlCombineFileName(TPath.GetLibraryPath, 'dog.y4m'));
 
-  // µ±Ç°»æÖÆµÄÊÓÆµÖ¡
+  // å½“å‰ç»˜åˆ¶çš„è§†é¢‘å¸§
   frame := TDrawEngine.NewTexture;
 
-  // cadencerÒıÇæ
+  // cadencerå¼•æ“
   cadencer_eng := TCadencer.Create;
   cadencer_eng.ProgressInterface := Self;
 
-  // aiÒıÇæ
+  // aiå¼•æ“
   ai := TAI.OpenEngine();
 
-  // ¼ÓÔØdnn-odµÄ¼ì²âÆ÷
+  // åŠ è½½dnn-odçš„æ£€æµ‹å™¨
   mmod_hnd := ai.MMOD_DNN_Open_Stream(umlCombineFileName(TPath.GetLibraryPath, 'dog.svm_dnn_od'));
 
-  // ³õÊ¼»¯×·×ÙÆ÷
+  // åˆå§‹åŒ–è¿½è¸ªå™¨
   tracker_hnd := nil;
 end;
 
@@ -95,27 +95,27 @@ procedure TForm1.PaintBox1Paint(Sender: TObject; Canvas: TCanvas);
     tracker_r: TRectV2;
     k: Double;
   begin
-    // Ê¹ÓÃdnn-odÀ´¼ì²âĞ¡¹·
+    // ä½¿ç”¨dnn-odæ¥æ£€æµ‹å°ç‹—
     mmod_desc := ai.MMOD_DNN_Process(mmod_hnd, mr);
 
     d := TDrawEngine.Create;
     d.ViewOptions := [];
 
-    // drawEngineµÄÊä³ö·½Ê½ÊÇÖ±½ÓÄÚ´æÓ³Éä
-    // ÕâÖÖ·½Ê½ÊÇ0ÏñËØcopy£¬Ö±½ÓĞ´Èëµ½mrµÄbitÄÚ´æ
-    // ÎÒÃÇ´¦ÀíffmpegÊÓÆµÁ÷¶¼¿ÉÒÔÊ¹ÓÃdrawengineÊµÏÖÁ¢¼´»æÍ¼£¬ÒòÎªËü²»»á×öÈÎºÎ¶àÓàµÄÏñËØcopy
+    // drawEngineçš„è¾“å‡ºæ–¹å¼æ˜¯ç›´æ¥å†…å­˜æ˜ å°„
+    // è¿™ç§æ–¹å¼æ˜¯0åƒç´ copyï¼Œç›´æ¥å†™å…¥åˆ°mrçš„bitå†…å­˜
+    // æˆ‘ä»¬å¤„ç†ffmpegè§†é¢‘æµéƒ½å¯ä»¥ä½¿ç”¨drawengineå®ç°ç«‹å³ç»˜å›¾ï¼Œå› ä¸ºå®ƒä¸ä¼šåšä»»ä½•å¤šä½™çš„åƒç´ copy
     d.Rasterization.SetWorkMemory(mr);
     d.SetSize(mr);
 
-    // ÅĞ¶ÏÊÇ·ñ¼ì²âµ½Ğ¡¹·
+    // åˆ¤æ–­æ˜¯å¦æ£€æµ‹åˆ°å°ç‹—
     if length(mmod_desc) = 0 then
       begin
         if Tracker_CheckBox.IsChecked then
           if tracker_hnd <> nil then
             begin
-              // Èç¹ûodÃ»ÓĞ¼ì²âµ½Ğ¡¹·£¬²¢ÇÒÎÒÃÇÈ·¶¨×·×ÙÆ÷ÊÇ¿ªÆôµÄ£¬¿ªÊ¼×·×ÙÉÏÒ»¸öod³É¹¦µÄ¿òÌå
+              // å¦‚æœodæ²¡æœ‰æ£€æµ‹åˆ°å°ç‹—ï¼Œå¹¶ä¸”æˆ‘ä»¬ç¡®å®šè¿½è¸ªå™¨æ˜¯å¼€å¯çš„ï¼Œå¼€å§‹è¿½è¸ªä¸Šä¸€ä¸ªodæˆåŠŸçš„æ¡†ä½“
               k := ai.Tracker_Update(tracker_hnd, mr, tracker_r);
-              // °Ñtracker×·×ÙÆ÷µÄ¿òÌåÒÔ·ÛºìÉ«»­³öÀ´
+              // æŠŠtrackerè¿½è¸ªå™¨çš„æ¡†ä½“ä»¥ç²‰çº¢è‰²ç”»å‡ºæ¥
               d.DrawCorner(TV2Rect4.Init(tracker_r, 45), DEColor(1, 0.5, 0.5, 1), 20, 3);
 
               d.BeginCaptureShadow(vec2(1, 1), 0.9);
@@ -125,9 +125,9 @@ procedure TForm1.PaintBox1Paint(Sender: TObject; Canvas: TCanvas);
       end
     else
       begin
-        // Èç¹ûOD¼ì²â³öÁËĞ¡¹·
-        // ÎÒÃÇÖØ¿ªÒ»¸ö×·×ÙÆ÷
-        // TrackerÒ²ÊÇ¶ÔÒ»¸ö¿òÌå½øĞĞÑ§Ï°£¬²»¹ıËü²»ÏñodÄÇÑù»á×öºÜ¶àÊÕÁ²´¦Àí£¬tracker¼¸ºõÊÇÊµÊ±Ñ§Ï°µÄ
+        // å¦‚æœODæ£€æµ‹å‡ºäº†å°ç‹—
+        // æˆ‘ä»¬é‡å¼€ä¸€ä¸ªè¿½è¸ªå™¨
+        // Trackerä¹Ÿæ˜¯å¯¹ä¸€ä¸ªæ¡†ä½“è¿›è¡Œå­¦ä¹ ï¼Œä¸è¿‡å®ƒä¸åƒodé‚£æ ·ä¼šåšå¾ˆå¤šæ”¶æ•›å¤„ç†ï¼Œtrackerå‡ ä¹æ˜¯å®æ—¶å­¦ä¹ çš„
         ai.Tracker_Close(tracker_hnd);
 
         if Tracker_CheckBox.IsChecked then
@@ -135,11 +135,11 @@ procedure TForm1.PaintBox1Paint(Sender: TObject; Canvas: TCanvas);
             ai.Tracker_Close(tracker_hnd);
             tracker_hnd := ai.Tracker_Open(mr, mmod_desc[0].R);
             tracker_r := mmod_desc[0].R;
-            // °Ñtracker×·×ÙÆ÷µÄ¿òÌåÒÔ·ÛºìÉ«»­³öÀ´
+            // æŠŠtrackerè¿½è¸ªå™¨çš„æ¡†ä½“ä»¥ç²‰çº¢è‰²ç”»å‡ºæ¥
             d.DrawCorner(TV2Rect4.Init(tracker_r, 45), DEColor(1, 0.5, 0.5, 1), 20, 3);
           end;
 
-        // °ÑODµÄ¿òÌåÒÔÀ¶É«»­³öÀ´
+        // æŠŠODçš„æ¡†ä½“ä»¥è“è‰²ç”»å‡ºæ¥
         d.DrawCorner(TV2Rect4.Init(mmod_desc[0].R, 0), DEColor(0.5, 0.5, 1, 1), 20, 2);
 
         d.BeginCaptureShadow(vec2(1, 1), 0.9);
@@ -147,26 +147,26 @@ procedure TForm1.PaintBox1Paint(Sender: TObject; Canvas: TCanvas);
         d.EndCaptureShadow;
       end;
 
-    // Ö´ĞĞ»æÍ¼Á÷Ö¸Áî
+    // æ‰§è¡Œç»˜å›¾æµæŒ‡ä»¤
     d.Flush;
     disposeObject(d);
 
-    // ÕâÀïÑİÊ¾ÁË¶ÔÊÓÆµÊä³ö×öºóÆÚ´¦ÀíµÄ²¿·Ö·½·¨
+    // è¿™é‡Œæ¼”ç¤ºäº†å¯¹è§†é¢‘è¾“å‡ºåšåæœŸå¤„ç†çš„éƒ¨åˆ†æ–¹æ³•
 
-    // SepiaÊÇ·Ç³£Æ¯ÁÁµÄÉ«²ÊÏµ£¬³£ÓÃÓÚÃÀ¹¤·ç¸ñ¶¨Òå
+    // Sepiaæ˜¯éå¸¸æ¼‚äº®çš„è‰²å½©ç³»ï¼Œå¸¸ç”¨äºç¾å·¥é£æ ¼å®šä¹‰
     if SepiaCheckBox.IsChecked then
         Sepia32(mr, 12);
 
-    // Ê¹ÓÃÉ«²ÊÖ±·½Í¼ĞŞ¸´yv12¶ªÊ§µÄÉ«²Ê
-    // ÈÃÍ¼ÏñÊä³ö¿´ÆğÀ´¸üÓĞµçÊÓ¸Ğ¾õ
+    // ä½¿ç”¨è‰²å½©ç›´æ–¹å›¾ä¿®å¤yv12ä¸¢å¤±çš„è‰²å½©
+    // è®©å›¾åƒè¾“å‡ºçœ‹èµ·æ¥æ›´æœ‰ç”µè§†æ„Ÿè§‰
     if HistogramEqualizeCheckBox.IsChecked then
         HistogramEqualize(mr);
 
-    // ·´¾â³İ
+    // åé”¯é½¿
     if AntialiasCheckBox.IsChecked then
         Antialias32(mr, 1);
 
-    // Èñ»¯
+    // é”åŒ–
     if SharpenCheckBox.IsChecked then
         Sharpen(mr, False);
   end;
@@ -193,7 +193,7 @@ begin
       ai.Tracker_Close(tracker_hnd);
     end;
 
-  // Ö´ĞĞ»æÍ¼Ö¸Áî
+  // æ‰§è¡Œç»˜å›¾æŒ‡ä»¤
   d.Flush;
 end;
 

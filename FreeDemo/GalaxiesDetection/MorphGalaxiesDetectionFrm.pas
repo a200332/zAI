@@ -1,4 +1,4 @@
-unit MorphGalaxiesDetectionFrm;
+ï»¿ï»¿unit MorphGalaxiesDetectionFrm;
 
 interface
 
@@ -66,7 +66,7 @@ begin
   viewIntf.ShowPictureInfo := False;
   viewIntf.ShowBackground := True;
   viewIntf.PictureViewerStyle := pvsLeft2Right;
-  viewIntf.InputPicture(NewRasterFromFile(WhereFileFromConfigure('galaxies.jpg')), 'Ô­Ê¼Í¼Æ¬', True);
+  viewIntf.InputPicture(NewRasterFromFile(WhereFileFromConfigure('galaxies.jpg')), 'åŸå§‹å›¾ç‰‡', True);
   DetectedList := TRectV2List.Create;
 end;
 
@@ -111,13 +111,13 @@ begin
       for i := 0 to DetectedList.Count - 1 do
           d.DrawBox(RectProjection(viewIntf.First.Raster.BoundsRectV2, box, DetectedList[i]), DEColor(1, 0.5, 0.5), 2);
       d.BeginCaptureShadow(vec2(2, 2), 0.9);
-      d.DrawText(Format('¼ì²âµ½ %d ¸öÏÔÖøÄ¿±ê', [DetectedList.Count]), 18, d.ScreenRect, DEColor(1, 1, 0), False);
+      d.DrawText(Format('æ£€æµ‹åˆ° %d ä¸ªæ˜¾è‘—ç›®æ ‡', [DetectedList.Count]), 18, d.ScreenRect, DEColor(1, 1, 0), False);
       d.EndCaptureShadow;
     end
   else
     begin
       d.BeginCaptureShadow(vec2(2, 2), 0.9);
-      d.DrawText('ÊÓ¾õ´°¿ÚÖ§³ÖÊó±êÍÏ¶¯ÒÔ¼°¹öÂÖËõ·Å.', 18, d.ScreenRect, DEColor(1, 1, 0), False);
+      d.DrawText('è§†è§‰çª—å£æ”¯æŒé¼ æ ‡æ‹–åŠ¨ä»¥åŠæ»šè½®ç¼©æ”¾.', 18, d.ScreenRect, DEColor(1, 1, 0), False);
       d.EndCaptureShadow;
     end;
   d.Flush;
@@ -133,21 +133,21 @@ begin
       r: TRectV2;
       TK: TTimeTick;
     begin
-      // °´µÈ³ß¶ÈËõÍ¼
+      // æŒ‰ç­‰å°ºåº¦ç¼©å›¾
       with viewIntf.First.Raster.FitScaleAsNew(1024, 1024) do
         begin
-          // ÌáÈ¡YIQÖĞµÄYÖµÎªĞÎÌ¬Êı¾İ£¬µÈÍ¬ÓÚ»Ò¶ÈÍ¼£¬YÏà±È(R+G+B)/3ÁÁ¶ÈÏ¸½Ú¸ü¶à
+          // æå–YIQä¸­çš„Yå€¼ä¸ºå½¢æ€æ•°æ®ï¼Œç­‰åŒäºç°åº¦å›¾ï¼ŒYç›¸æ¯”(R+G+B)/3äº®åº¦ç»†èŠ‚æ›´å¤š
           with BuildMorphomatics(TMPix.mpYIQ_Y) do
             begin
-              DoStatus('ÌáÈ¡³É»Ò¶ÈÍ¼');
+              DoStatus('æå–æˆç°åº¦å›¾');
               with Binarization(0.4) do
                 begin
-                  DoStatus('´¦ÀíÒ×±æ±ğÄ¿±ê');
+                  DoStatus('å¤„ç†æ˜“è¾¨åˆ«ç›®æ ‡');
                   OpeningAndClosing(3, 3);
-                  DoStatus('¿ªÊ¼·Ö¸î');
+                  DoStatus('å¼€å§‹åˆ†å‰²');
                   TK := GetTimeTick();
                   seg := BuildMorphologySegmentation;
-                  DoStatus('·Ö¸îºÄÊ± ' + umlTimeTickToStr(GetTimeTick - TK) + ' Ãë');
+                  DoStatus('åˆ†å‰²è€—æ—¶ ' + umlTimeTickToStr(GetTimeTick - TK) + ' ç§’');
                   Free;
                 end;
               Free;
@@ -155,19 +155,19 @@ begin
           Free;
         end;
 
-      DoStatus('¹¹½¨°üÎ§ºĞ');
+      DoStatus('æ„å»ºåŒ…å›´ç›’');
       for i := 0 to seg.PoolCount - 1 do
         begin
-          // Í¶Ó°²Ù×÷£º½«µÈ³ß¶ÈËõĞ¡¹ıµÄ·Ö¸î×ø±êÍ¶Ó°µ½Ô­Ê¼³ß´çÉÏ
+          // æŠ•å½±æ“ä½œï¼šå°†ç­‰å°ºåº¦ç¼©å°è¿‡çš„åˆ†å‰²åæ ‡æŠ•å½±åˆ°åŸå§‹å°ºå¯¸ä¸Š
           r := RectProjection(seg.BoundsRectV2, viewIntf.First.Raster.BoundsRectV2, seg[i].BoundsRectV2());
           TCompute.Sync(procedure
             begin
               DetectedList.Add(r);
             end);
         end;
-      DoStatus('ÊÍ·ÅÁÙÊ±ÄÚ´æ');
+      DoStatus('é‡Šæ”¾ä¸´æ—¶å†…å­˜');
       disposeObject(seg);
-      DoStatus('·Ö¸îÍê³É');
+      DoStatus('åˆ†å‰²å®Œæˆ');
     end);
 end;
 

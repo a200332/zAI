@@ -1,4 +1,4 @@
-unit GaussPyramidsFrm;
+ï»¿ï»¿unit GaussPyramidsFrm;
 
 interface
 
@@ -44,8 +44,8 @@ type
 
 var
   GaussPyramidsForm: TGaussPyramidsForm;
-  { ÏÂÁĞº¯ÊıÊÇ´Ó zDrawEngine->FMX ½Ó¿Ú°Î³öµÄ }
-  { ÒòÎªzDrawEngineµÄÌåÏµÓĞµã¾Ş´ó£¬ÀÁÓÚÕûÀí£¬²»±ã¿ªÔ´ }
+  { ä¸‹åˆ—å‡½æ•°æ˜¯ä» zDrawEngine->FMX æ¥å£æ‹”å‡ºçš„ }
+  { å› ä¸ºzDrawEngineçš„ä½“ç³»æœ‰ç‚¹å·¨å¤§ï¼Œæ‡’äºæ•´ç†ï¼Œä¸ä¾¿å¼€æº }
 
 implementation
 
@@ -68,11 +68,11 @@ begin
   dt := GetTimeTick;
   ft1 := TFeature.CreateWithRasterFile(OpenDialog1.FileName);
   ft1.LinkRaster := NewRasterFromFile(OpenDialog1.FileName);
-  DoStatus('ÌáÈ¡ %s ÌØÕ÷Ëù»¨·ÑµÄÊ±¼ä:%dms ÌØÕ÷Êı:%d ', [ExtractFileName(OpenDialog1.FileName), GetTimeTick - dt, ft1.Count]);
+  DoStatus('æå– %s ç‰¹å¾æ‰€èŠ±è´¹çš„æ—¶é—´:%dms ç‰¹å¾æ•°:%d ', [ExtractFileName(OpenDialog1.FileName), GetTimeTick - dt, ft1.Count]);
 
   dt := GetTimeTick;
   mr := ft1.CreateFeatureViewer((ft1.LinkRaster.width + ft1.LinkRaster.height) * 0.5 * 0.005, RasterColorF(1, 1, 0, 0.5));
-  DoStatus('Éú³É %s ÊÓÍ¼Ëù»¨·ÑµÄÊ±¼ä:%dms ', [ExtractFileName(OpenDialog1.FileName), GetTimeTick - dt]);
+  DoStatus('ç”Ÿæˆ %s è§†å›¾æ‰€èŠ±è´¹çš„æ—¶é—´:%dms ', [ExtractFileName(OpenDialog1.FileName), GetTimeTick - dt]);
 
   MemoryBitmapToBitmap(mr, Image1.Bitmap);
   DisposeObject(mr);
@@ -96,11 +96,11 @@ begin
   dt := GetTimeTick;
   ft2 := TFeature.CreateWithRasterFile(OpenDialog1.FileName);
   ft2.LinkRaster := NewRasterFromFile(OpenDialog1.FileName);
-  DoStatus('ÌáÈ¡ %s ÌØÕ÷Ëù»¨·ÑµÄÊ±¼ä:%dms ÌØÕ÷Êı:%d ', [ExtractFileName(OpenDialog1.FileName), GetTimeTick - dt, ft2.Count]);
+  DoStatus('æå– %s ç‰¹å¾æ‰€èŠ±è´¹çš„æ—¶é—´:%dms ç‰¹å¾æ•°:%d ', [ExtractFileName(OpenDialog1.FileName), GetTimeTick - dt, ft2.Count]);
 
   dt := GetTimeTick;
   mr := ft2.CreateFeatureViewer((ft2.LinkRaster.width + ft2.LinkRaster.height) * 0.5 * 0.005, RasterColorF(0, 1, 1, 0.5));
-  DoStatus('Éú³É %s ÊÓÍ¼Ëù»¨·ÑµÄÊ±¼ä:%dms ', [ExtractFileName(OpenDialog1.FileName), GetTimeTick - dt]);
+  DoStatus('ç”Ÿæˆ %s è§†å›¾æ‰€èŠ±è´¹çš„æ—¶é—´:%dms ', [ExtractFileName(OpenDialog1.FileName), GetTimeTick - dt]);
 
   MemoryBitmapToBitmap(mr, Image2.Bitmap);
   DisposeObject(mr);
@@ -121,18 +121,18 @@ begin
 
   dt := GetTimeTick;
   f := MatchFeature(ft1, ft2, mi);
-  DoStatus('·ÖÎöÌØÕ÷Ïà½ü¶È:%s ×Ü¹²Æ¥ÅäÁË %d ¸öÏàËÆÌØÕ÷', [FloatToStr(f), length(mi)]);
-  DoStatus('·ÖÎöÌØÕ÷Ëù»¨·ÑµÄÊ±¼ä:%dms ', [GetTimeTick - dt]);
+  DoStatus('åˆ†æç‰¹å¾ç›¸è¿‘åº¦:%s æ€»å…±åŒ¹é…äº† %d ä¸ªç›¸ä¼¼ç‰¹å¾', [FloatToStr(f), length(mi)]);
+  DoStatus('åˆ†æç‰¹å¾æ‰€èŠ±è´¹çš„æ—¶é—´:%dms ', [GetTimeTick - dt]);
 
   if length(mi) = 0 then
     begin
-      DoStatus('Ã»ÓĞÏàËÆÌØÕ÷');
+      DoStatus('æ²¡æœ‰ç›¸ä¼¼ç‰¹å¾');
       exit;
     end;
 
   dt := GetTimeTick;
   mr := BuildMatchInfoView(mi, Min((ft1.width + ft2.width) * 0.05,3), True);
-  DoStatus('Éú³ÉÌØÕ÷·ÖÎöÊÓÍ¼Ëù»¨·ÑµÄÊ±¼ä:%dms ', [GetTimeTick - dt]);
+  DoStatus('ç”Ÿæˆç‰¹å¾åˆ†æè§†å›¾æ‰€èŠ±è´¹çš„æ—¶é—´:%dms ', [GetTimeTick - dt]);
 
   if mr <> nil then
     begin
@@ -140,7 +140,7 @@ begin
       DisposeObject(mr);
     end
   else
-      DoStatus('Ã»ÓĞÏàËÆÌØÕ÷');
+      DoStatus('æ²¡æœ‰ç›¸ä¼¼ç‰¹å¾');
 
   TabControl1.ActiveTab := TabItem3;
 end;

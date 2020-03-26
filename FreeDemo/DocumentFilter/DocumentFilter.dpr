@@ -1,4 +1,4 @@
-program DocumentFilter;
+﻿program DocumentFilter;
 
 uses
   System.StartUpCopy,

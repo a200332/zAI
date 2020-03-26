@@ -1,4 +1,4 @@
-unit StyleModuleUnit;
+﻿﻿unit StyleModuleUnit;
 
 interface
 

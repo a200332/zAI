@@ -1,4 +1,4 @@
-program RasterizationFormatDemo;
+﻿program RasterizationFormatDemo;
 
 uses
   System.StartUpCopy,

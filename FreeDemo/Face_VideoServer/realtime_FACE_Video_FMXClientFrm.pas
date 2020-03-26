@@ -1,4 +1,4 @@
-unit realtime_FACE_Video_FMXClientFrm;
+ï»¿ï»¿unit realtime_FACE_Video_FMXClientFrm;
 
 interface
 
@@ -29,9 +29,9 @@ type
     procedure OD_Result(Sender: TRealTime_FACE_VideoClient; video_stream: TMemoryStream64; video_info: TFACE_Video_Info);
   public
     drawIntf: TDrawEngineInterface_FMX;
-    // ffmpegµÄÊÓÆµÕê½âÂëÒıÇæ£¬DemoÖ»Ö§³ÖÎÄ¼ş£¬ÍÆÁ÷ºÍ´®Á÷£¬×ÔĞĞÊµÏÖ
+    // ffmpegçš„è§†é¢‘è´è§£ç å¼•æ“ï¼ŒDemoåªæ”¯æŒæ–‡ä»¶ï¼Œæ¨æµå’Œä¸²æµï¼Œè‡ªè¡Œå®ç°
     mpeg_r: TFFMPEG_Reader;
-    // ·şÎñÆ÷·¢»ØÀ´µÄµ±Ç°Õê
+    // æœåŠ¡å™¨å‘å›æ¥çš„å½“å‰è´
     mpeg_frame: TDETexture;
     cadencer_eng: TCadencer;
     realtime_od_cli: TRealTime_FACE_VideoClient;
@@ -75,24 +75,24 @@ end;
 procedure Trealtime_Face_Video_FMXClientForm.FormCreate(Sender: TObject);
 begin
   AddDoStatusHook(Self, DoStatusMethod);
-  // Ê¹ÓÃzDrawEngine×öÍâ²¿»æÍ¼Ê±(±ÈÈçÓÎÏ·£¬ÃæÏòpaintbox)£¬¶¼ĞèÒªÒ»¸ö»æÍ¼½Ó¿Ú
-  // TDrawEngineInterface_FMXÊÇÃæÏòFMXµÄ»æÍ¼core½Ó¿Ú
-  // Èç¹û²»Ö¸¶¨»æÍ¼½Ó¿Ú£¬zDrawEngine»áÄ¬ÈÏÊ¹ÓÃÈí¼ş¹âÕ¤»æÍ¼(±È½ÏÂı)
+  // ä½¿ç”¨zDrawEngineåšå¤–éƒ¨ç»˜å›¾æ—¶(æ¯”å¦‚æ¸¸æˆï¼Œé¢å‘paintbox)ï¼Œéƒ½éœ€è¦ä¸€ä¸ªç»˜å›¾æ¥å£
+  // TDrawEngineInterface_FMXæ˜¯é¢å‘FMXçš„ç»˜å›¾coreæ¥å£
+  // å¦‚æœä¸æŒ‡å®šç»˜å›¾æ¥å£ï¼ŒzDrawEngineä¼šé»˜è®¤ä½¿ç”¨è½¯ä»¶å…‰æ …ç»˜å›¾(æ¯”è¾ƒæ…¢)
   drawIntf := TDrawEngineInterface_FMX.Create;
 
-  // Ê¹ÓÃz_ai_model.exe±à¼­Æ÷´ò¿ªGame of Thrones.AI_Set×ö¶ÈÁ¿»¯ÑµÁ·
-  // ²Ù×÷·½·¨²Î¿¼zAI-Face½¨¿âÖ¸ÄÏ
+  // ä½¿ç”¨z_ai_model.exeç¼–è¾‘å™¨æ‰“å¼€Game of Thrones.AI_Setåšåº¦é‡åŒ–è®­ç»ƒ
+  // æ“ä½œæ–¹æ³•å‚è€ƒzAI-Faceå»ºåº“æŒ‡å—
 
-  // ±¾demoµÄËùÓĞÊ¶±ğ´¦Àí¾ùÓÉgpu·şÎñÆ÷Íê³É£¬Ç°¶ËÖ§³Öandroid£¬ios£¬ÈÎºÎIOTÉè±¸
+  // æœ¬demoçš„æ‰€æœ‰è¯†åˆ«å¤„ç†å‡ç”±gpuæœåŠ¡å™¨å®Œæˆï¼Œå‰ç«¯æ”¯æŒandroidï¼Œiosï¼Œä»»ä½•IOTè®¾å¤‡
 
-  // mp4ÊÓÆµ
-  // ½ØÈ¡×ÔÈ¨ÀûµÄÓÎÏ·µçÓ°
+  // mp4è§†é¢‘
+  // æˆªå–è‡ªæƒåˆ©çš„æ¸¸æˆç”µå½±
   mpeg_r := TFFMPEG_Reader.Create(umlCombineFileName(TPath.GetLibraryPath, 'GameOfThrones.mp4'));
 
-  // µ±Ç°»æÖÆµÄÊÓÆµÖ¡
+  // å½“å‰ç»˜åˆ¶çš„è§†é¢‘å¸§
   mpeg_frame := TDrawEngine.NewTexture;
 
-  // cadencerÒıÇæ
+  // cadencerå¼•æ“
   cadencer_eng := TCadencer.Create;
   cadencer_eng.ProgressInterface := Self;
 
@@ -113,7 +113,7 @@ begin
   d.FillBox(d.ScreenRect, DEColor(0, 0, 0, 1));
   d.FitDrawPicture(mpeg_frame, mpeg_frame.BoundsRectV2, d.ScreenRect, 1.0);
 
-  // Ö´ĞĞ»æÍ¼Ö¸Áî
+  // æ‰§è¡Œç»˜å›¾æŒ‡ä»¤
   d.Flush;
 end;
 

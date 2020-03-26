@@ -1,4 +1,4 @@
-program GaussPyramidRegionDemo;
+﻿program GaussPyramidRegionDemo;
 
 uses
   System.StartUpCopy,

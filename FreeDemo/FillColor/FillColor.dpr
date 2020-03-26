@@ -1,4 +1,4 @@
-program FillColor;
+﻿program FillColor;
 
 uses
   System.StartUpCopy,

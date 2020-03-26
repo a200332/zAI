@@ -1,4 +1,4 @@
-unit DocumentFilterFrm;
+锘匡豢unit DocumentFilterFrm;
 
 interface
 
@@ -62,7 +62,7 @@ begin
   fArry := umlGetFileListWithFullPath(TPath.GetLibraryPath);
   for f in fArry do
     if umlMultipleMatch(['doc*.jpg', 'doc*.bmp', 'doc*.png'], umlGetFileName(f)) then
-        viewIntf.InputPicture(NewRasterFromFile(f), '输入图片', True, False, True);
+        viewIntf.InputPicture(NewRasterFromFile(f), '杈撳叆鍥剧墖', True, False, True);
 end;
 
 procedure TDocumentFilterForm.pbMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
@@ -101,7 +101,7 @@ begin
   viewIntf.Render;
 
   d.BeginCaptureShadow(vec2(2, 2), 0.9);
-  d.DrawText('视觉窗口支持鼠标拖动以及滚轮缩放.', 18, d.ScreenRect, DEColor(1, 1, 0), False);
+  d.DrawText('瑙嗚绐楀彛鏀寔榧犳爣鎷栧姩浠ュ強婊氳疆缂╂斁.', 18, d.ScreenRect, DEColor(1, 1, 0), False);
   d.EndCaptureShadow;
   d.Flush;
 end;

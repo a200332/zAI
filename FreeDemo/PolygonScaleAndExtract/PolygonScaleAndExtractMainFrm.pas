@@ -1,4 +1,4 @@
-unit PolygonScaleAndExtractMainFrm;
+ï»¿ï»¿unit PolygonScaleAndExtractMainFrm;
 
 interface
 
@@ -69,7 +69,7 @@ begin
 
   d.FillBox(d.ScreenRect, DEColor(0.2, 0.2, 0.2, 1));
 
-  d.DrawText('|s:16,color(0.5,0.5,1,1)|¶à±ßĞÎµÈ¾à·Å´ó»á×ßĞÎ|color(0,1,0,1)| µã»÷Êó±êÖØ¹¹|s:10|' + #13#10 + 'craete by.qq600585', 12, d.ScreenRect, DEColor(1, 1, 1, 1), False);
+  d.DrawText('|s:16,color(0.5,0.5,1,1)|å¤šè¾¹å½¢ç­‰è·æ”¾å¤§ä¼šèµ°å½¢|color(0,1,0,1)| ç‚¹å‡»é¼ æ ‡é‡æ„|s:10|' + #13#10 + 'craete by.qq600585', 12, d.ScreenRect, DEColor(1, 1, 1, 1), False);
 
   np := TVec2List.Create;
   np.Assign(samePolygon2);
@@ -87,7 +87,7 @@ end;
 procedure TPolygonScaleAndExtractMainForm.pb1Paint(Sender: TObject; Canvas: TCanvas);
 var
   d: TDrawEngine;
-  c1, c2: TVec2; // ÖØĞÄÖá
+  c1, c2: TVec2; // é‡å¿ƒè½´
   np: TVec2List;
 begin
   drawIntf.SetSurface(Canvas, Sender);
@@ -95,7 +95,7 @@ begin
 
   d.FillBox(d.ScreenRect, DEColor(0.2, 0.2, 0.2, 1));
 
-  d.DrawText('|s:16,color(0.5,0.5,1,1)|³Ë·¨·Å´ó²»»á×ßĞÎ|color(0,1,0,1)| µã»÷Êó±êÖØ¹¹|s:10|' + #13#10 + 'craete by.qq600585', 12, d.ScreenRect, DEColor(1, 1, 1, 1), False);
+  d.DrawText('|s:16,color(0.5,0.5,1,1)|ä¹˜æ³•æ”¾å¤§ä¸ä¼šèµ°å½¢|color(0,1,0,1)| ç‚¹å‡»é¼ æ ‡é‡æ„|s:10|' + #13#10 + 'craete by.qq600585', 12, d.ScreenRect, DEColor(1, 1, 1, 1), False);
 
   np := TVec2List.Create;
   np.Assign(samePolygon1);
@@ -104,7 +104,7 @@ begin
 
   np.Scale(1.1);
   c2 := np.Centroid;
-  // ÓÃÖØĞÄÖáÖØĞÂ¹¹Ôì¶à±ßĞÎµÄÎ»ÖÃ£¬·½±ã²é¿´
+  // ç”¨é‡å¿ƒè½´é‡æ–°æ„é€ å¤šè¾¹å½¢çš„ä½ç½®ï¼Œæ–¹ä¾¿æŸ¥çœ‹
   np.Transform(Vec2Sub(c1, c2));
   d.DrawPL(False, np, True, DEColor(1, 0.5, 0.5, 1), 1);
 

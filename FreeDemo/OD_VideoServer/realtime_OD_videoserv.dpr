@@ -1,4 +1,4 @@
-program realtime_OD_videoserv;
+﻿program realtime_OD_videoserv;
 
 {$APPTYPE CONSOLE}
 

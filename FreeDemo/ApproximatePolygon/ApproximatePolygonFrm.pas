@@ -1,4 +1,4 @@
-unit ApproximatePolygonFrm;
+ï»¿ï»¿unit ApproximatePolygonFrm;
 
 interface
 
@@ -80,7 +80,7 @@ end;
 
 procedure TApproximatePolygonForm.pb1MouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
 begin
-  DoStatus('ÖØÖÃ¶à±ßÐÎ');
+  DoStatus('é‡ç½®å¤šè¾¹å½¢');
   poly1.Clear;
   Down1 := True;
   poly1.Add(Vec2(X, Y));
@@ -103,7 +103,7 @@ begin
   poly1.Add(Vec2(X, Y));
   num := poly1.Count;
   poly1.Reduction(15.0);
-  DoStatus('ÓÅ»¯¹ýµÄ¶à±ßÐÎ¶¥µã %d -> %d', [num, poly1.Count]);
+  DoStatus('ä¼˜åŒ–è¿‡çš„å¤šè¾¹å½¢é¡¶ç‚¹ %d -> %d', [num, poly1.Count]);
 end;
 
 procedure TApproximatePolygonForm.pb1Paint(Sender: TObject; Canvas: TCanvas);
@@ -121,14 +121,14 @@ begin
   else
       d.DrawPL(False, poly1, True, DEColor(1, 1, 1), 2);
 
-  d.DrawText('ÔÚÕâÀïÓÃÊó±ê»æÖÆ¶à±ßÐÎ', 14, DEColor(1, 1, 1), Vec2(0, 0));
+  d.DrawText('åœ¨è¿™é‡Œç”¨é¼ æ ‡ç»˜åˆ¶å¤šè¾¹å½¢', 14, DEColor(1, 1, 1), Vec2(0, 0));
   d.Flush;
 end;
 
 procedure TApproximatePolygonForm.pb2MouseDown(Sender: TObject; Button:
   TMouseButton; Shift: TShiftState; X, Y: Single);
 begin
-  DoStatus('ÖØÖÃ¶à±ßÐÎ');
+  DoStatus('é‡ç½®å¤šè¾¹å½¢');
   poly2.Clear;
   Down2 := True;
   poly2.Add(Vec2(X, Y));
@@ -153,7 +153,7 @@ begin
   poly2.Add(Vec2(X, Y));
   num := poly2.Count;
   poly2.Reduction(15.0);
-  DoStatus('ÓÅ»¯¹ýµÄ¶à±ßÐÎ¶¥µã %d -> %d', [num, poly2.Count]);
+  DoStatus('ä¼˜åŒ–è¿‡çš„å¤šè¾¹å½¢é¡¶ç‚¹ %d -> %d', [num, poly2.Count]);
 end;
 
 procedure TApproximatePolygonForm.pb2Paint(Sender: TObject; Canvas: TCanvas);
@@ -171,7 +171,7 @@ begin
   else
       d.DrawPL(False, poly2, True, DEColor(1, 1, 1), 2);
 
-  d.DrawText('ÔÚÕâÀïÓÃÊó±ê»æÖÆ¶à±ßÐÎ', 14, DEColor(1, 1, 1), Vec2(0, 0));
+  d.DrawText('åœ¨è¿™é‡Œç”¨é¼ æ ‡ç»˜åˆ¶å¤šè¾¹å½¢', 14, DEColor(1, 1, 1), Vec2(0, 0));
   d.Flush;
 end;
 
@@ -179,7 +179,7 @@ procedure TApproximatePolygonForm.HausdorfDisanceButtonClick(Sender: TObject);
 begin
   if poly1.Count > 0 then
     if poly2.Count > 0 then
-        DoStatus('ÏàËÆÐÔ: %f', [THausdorf.Compute(poly1, poly2, 0, 0.0001)]);
+        DoStatus('ç›¸ä¼¼æ€§: %f', [THausdorf.Compute(poly1, poly2, 0, 0.0001)]);
 end;
 
 procedure TApproximatePolygonForm.CustomHausdorfDisanceButtonClick(Sender: TObject);

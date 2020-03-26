@@ -1,4 +1,4 @@
-unit VideoTrackerFrm;
+ï»¿ï»¿unit VideoTrackerFrm;
 
 interface
 
@@ -81,31 +81,31 @@ end;
 procedure TVideoTrackerForm.FormCreate(Sender: TObject);
 begin
   AddDoStatusHook(Self, DoStatusMethod);
-  // ¶ÁÈ¡zAIµÄÅäÖÃ
+  // è¯»å–zAIçš„é…ç½®
   ReadAIConfig;
 
-  // ÕâÒ»²½»áÁ¬½ÓKey·şÎñÆ÷£¬ÑéÖ¤ZAIµÄKey
-  // Á¬½Ó·şÎñÆ÷ÑéÖ¤KeyÊÇÔÚÆô¶¯ÒıÇæÊ±Ò»´ÎĞÔµÄÑéÖ¤£¬Ö»»áµ±³ÌĞòÆô¶¯Ê±²Å»áÑéÖ¤£¬¼ÙÈçÑéÖ¤²»ÄÜÍ¨¹ı£¬zAI½«»á¾Ü¾ø¹¤×÷
-  // ÔÚ³ÌĞòÔËĞĞÖĞ£¬·´¸´´´½¨TAI£¬²»»á·¢ÉúÔ¶³ÌÑéÖ¤
-  // ÑéÖ¤ĞèÒªÒ»¸öuserKey£¬Í¨¹ıuserkeyÍÆËã³öZAIÔÚÆô¶¯Ê±Éú³ÉµÄËæ»úKey£¬userkey¿ÉÒÔÍ¨¹ıwebÉêÇë£¬Ò²¿ÉÒÔÁªÏµ×÷Õß·¢·Å
-  // ÑéÖ¤key¶¼ÊÇ¿¹Á¿×Ó¼¶£¬ÎŞ·¨±»ÆÆ½â
+  // è¿™ä¸€æ­¥ä¼šè¿æ¥KeyæœåŠ¡å™¨ï¼ŒéªŒè¯ZAIçš„Key
+  // è¿æ¥æœåŠ¡å™¨éªŒè¯Keyæ˜¯åœ¨å¯åŠ¨å¼•æ“æ—¶ä¸€æ¬¡æ€§çš„éªŒè¯ï¼Œåªä¼šå½“ç¨‹åºå¯åŠ¨æ—¶æ‰ä¼šéªŒè¯ï¼Œå‡å¦‚éªŒè¯ä¸èƒ½é€šè¿‡ï¼ŒzAIå°†ä¼šæ‹’ç»å·¥ä½œ
+  // åœ¨ç¨‹åºè¿è¡Œä¸­ï¼Œåå¤åˆ›å»ºTAIï¼Œä¸ä¼šå‘ç”Ÿè¿œç¨‹éªŒè¯
+  // éªŒè¯éœ€è¦ä¸€ä¸ªuserKeyï¼Œé€šè¿‡userkeyæ¨ç®—å‡ºZAIåœ¨å¯åŠ¨æ—¶ç”Ÿæˆçš„éšæœºKeyï¼Œuserkeyå¯ä»¥é€šè¿‡webç”³è¯·ï¼Œä¹Ÿå¯ä»¥è”ç³»ä½œè€…å‘æ”¾
+  // éªŒè¯keyéƒ½æ˜¯æŠ—é‡å­çº§ï¼Œæ— æ³•è¢«ç ´è§£
   zAI.Prepare_AI_Engine();
 
-  // Ê¹ÓÃzDrawEngine×öÍâ²¿»æÍ¼Ê±(±ÈÈçÓÎÏ·£¬ÃæÏòpaintbox)£¬¶¼ĞèÒªÒ»¸ö»æÍ¼½Ó¿Ú
-  // TDrawEngineInterface_FMXÊÇÃæÏòFMXµÄ»æÍ¼core½Ó¿Ú
-  // Èç¹û²»Ö¸¶¨»æÍ¼½Ó¿Ú£¬zDrawEngine»áÄ¬ÈÏÊ¹ÓÃÈí¼ş¹âÕ¤»æÍ¼(±È½ÏÂı)
+  // ä½¿ç”¨zDrawEngineåšå¤–éƒ¨ç»˜å›¾æ—¶(æ¯”å¦‚æ¸¸æˆï¼Œé¢å‘paintbox)ï¼Œéƒ½éœ€è¦ä¸€ä¸ªç»˜å›¾æ¥å£
+  // TDrawEngineInterface_FMXæ˜¯é¢å‘FMXçš„ç»˜å›¾coreæ¥å£
+  // å¦‚æœä¸æŒ‡å®šç»˜å›¾æ¥å£ï¼ŒzDrawEngineä¼šé»˜è®¤ä½¿ç”¨è½¯ä»¶å…‰æ …ç»˜å›¾(æ¯”è¾ƒæ…¢)
   drawIntf := TDrawEngineInterface_FMX.Create;
 
-  // aiÒıÇæ
+  // aiå¼•æ“
   ai := TAI.OpenEngine();
-  // ³õÊ¼»¯×·×ÙÆ÷
+  // åˆå§‹åŒ–è¿½è¸ªå™¨
   tracker_hnd := nil;
 
-  // cadencerÒıÇæ
+  // cadencerå¼•æ“
   cadencer_eng := TCadencer.Create;
   cadencer_eng.ProgressInterface := Self;
 
-  // ½âÂëÊÓÆµÄÚÈİÁ´±í
+  // è§£ç è§†é¢‘å†…å®¹é“¾è¡¨
   imgList := TMemoryRasterList.Create;
 
   FillVideo := True;
@@ -119,15 +119,15 @@ begin
   ProgressBar1.Visible := True;
   ProgressBar1.Min := 0;
 
-  // Ê¹ÓÃTComputeThreadºóÌ¨½âÂë
+  // ä½¿ç”¨TComputeThreadåå°è§£ç 
   TComputeThread.RunP(nil, nil, procedure(ThSender: TComputeThread)
     var
-      // mp4ÊÓÆµÖ¡¸ñÊ½
+      // mp4è§†é¢‘å¸§æ ¼å¼
       M4: TFFMPEG_Reader;
       mr: TMemoryRaster;
       nr: TMemoryRaster;
     begin
-      DoStatus('ÇëµÈÒ»»á£¬ÕıÔÚ³õÊ¼»¯ÊÓÆµÄÚÈİ');
+      DoStatus('è¯·ç­‰ä¸€ä¼šï¼Œæ­£åœ¨åˆå§‹åŒ–è§†é¢‘å†…å®¹');
       M4 := TFFMPEG_Reader.Create(umlCombineFileName(TPath.GetLibraryPath, 'tracker_video.mp4'));
       TThread.Synchronize(ThSender, procedure
         begin
@@ -155,7 +155,7 @@ begin
         end;
       DisposeObject(mr);
       DisposeObject(M4);
-      DoStatus('ÊÓÆµÄÚÈİÒÑ¾­³õÊ¼»¯Íê³É');
+      DoStatus('è§†é¢‘å†…å®¹å·²ç»åˆå§‹åŒ–å®Œæˆ');
 
       TThread.Synchronize(ThSender, procedure
         begin
@@ -233,7 +233,7 @@ begin
       d.EndCaptureShadow;
     end;
 
-  // Ö´ĞĞ»æÍ¼Ö¸Áî
+  // æ‰§è¡Œç»˜å›¾æŒ‡ä»¤
   d.Flush;
 end;
 

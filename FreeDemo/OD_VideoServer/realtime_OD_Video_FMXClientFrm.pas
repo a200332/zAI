@@ -1,4 +1,4 @@
-unit realtime_OD_Video_FMXClientFrm;
+ï»¿ï»¿unit realtime_OD_Video_FMXClientFrm;
 
 interface
 
@@ -73,18 +73,18 @@ end;
 procedure Trealtime_OD_Video_FMXClientForm.FormCreate(Sender: TObject);
 begin
   AddDoStatusHook(Self, DoStatusMethod);
-  // Ê¹ÓÃzDrawEngine×öÍâ²¿»æÍ¼Ê±(±ÈÈçÓÎÏ·£¬ÃæÏòpaintbox)£¬¶¼ĞèÒªÒ»¸ö»æÍ¼½Ó¿Ú
-  // TDrawEngineInterface_FMXÊÇÃæÏòFMXµÄ»æÍ¼core½Ó¿Ú
-  // Èç¹û²»Ö¸¶¨»æÍ¼½Ó¿Ú£¬zDrawEngine»áÄ¬ÈÏÊ¹ÓÃÈí¼ş¹âÕ¤»æÍ¼(±È½ÏÂı)
+  // ä½¿ç”¨zDrawEngineåšå¤–éƒ¨ç»˜å›¾æ—¶(æ¯”å¦‚æ¸¸æˆï¼Œé¢å‘paintbox)ï¼Œéƒ½éœ€è¦ä¸€ä¸ªç»˜å›¾æ¥å£
+  // TDrawEngineInterface_FMXæ˜¯é¢å‘FMXçš„ç»˜å›¾coreæ¥å£
+  // å¦‚æœä¸æŒ‡å®šç»˜å›¾æ¥å£ï¼ŒzDrawEngineä¼šé»˜è®¤ä½¿ç”¨è½¯ä»¶å…‰æ …ç»˜å›¾(æ¯”è¾ƒæ…¢)
   drawIntf := TDrawEngineInterface_FMX.Create;
 
-  // mpeg yv12ÊÓÆµÖ¡¸ñÊ½
+  // mpeg yv12è§†é¢‘å¸§æ ¼å¼
   mpeg_y4m := TY4MReader.CreateOnFile(umlCombineFileName(TPath.GetLibraryPath, 'dog.y4m'));
 
-  // µ±Ç°»æÖÆµÄÊÓÆµÖ¡
+  // å½“å‰ç»˜åˆ¶çš„è§†é¢‘å¸§
   mpeg_frame := TDrawEngine.NewTexture;
 
-  // cadencerÒıÇæ
+  // cadencerå¼•æ“
   cadencer_eng := TCadencer.Create;
   cadencer_eng.ProgressInterface := Self;
 
@@ -105,7 +105,7 @@ begin
   d.FillBox(d.ScreenRect, DEColor(0, 0, 0, 1));
   d.FitDrawPicture(mpeg_frame, mpeg_frame.BoundsRectV2, d.ScreenRect, 1.0);
 
-  // Ö´ĞĞ»æÍ¼Ö¸Áî
+  // æ‰§è¡Œç»˜å›¾æŒ‡ä»¤
   d.Flush;
 end;
 

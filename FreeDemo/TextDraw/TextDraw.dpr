@@ -1,4 +1,4 @@
-program TextDraw;
+﻿program TextDraw;
 
 uses
   System.StartUpCopy,

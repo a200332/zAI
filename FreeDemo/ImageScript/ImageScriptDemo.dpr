@@ -1,4 +1,4 @@
-program ImageScriptDemo;
+﻿program ImageScriptDemo;
 
 uses
   System.StartUpCopy,

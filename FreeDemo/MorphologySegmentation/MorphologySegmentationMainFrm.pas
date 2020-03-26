@@ -1,4 +1,4 @@
-unit MorphologySegmentationMainFrm;
+ï»¿ï»¿unit MorphologySegmentationMainFrm;
 
 interface
 
@@ -40,10 +40,10 @@ type
     SegImgList: TMemoryRasterList;
     LastSegBox: TArrayRectV2;
 
-    // ÊäÈëµÄ·Ö¸îÆ÷µÄÑÕÉ«·ÖÀàID
+    // è¾“å…¥çš„åˆ†å‰²å™¨çš„é¢œè‰²åˆ†ç±»ID
     procedure GetPixelSegClassify(X, Y: Integer; Color: TRColor; var Classify: TMorphologyClassify);
 
-    // ¹¹½¨·Ö¸î
+    // æ„å»ºåˆ†å‰²
     procedure BuildSeg;
   end;
 
@@ -78,7 +78,7 @@ begin
   d.CameraR := d.DrawPicturePackingInScene(SegImgList, 10, Vec2(0, 0), 1.0);
   UnLockObject(SegImgList);
 
-  d.DrawText('ÏñËØ·Ö¸îºó', 16, d.ScreenRect, DEColor(0.5, 1.0, 0.5), False);
+  d.DrawText('åƒç´ åˆ†å‰²å', 16, d.ScreenRect, DEColor(0.5, 1.0, 0.5), False);
   d.Flush;
 end;
 
@@ -102,13 +102,13 @@ begin
 
       // if RColorDistance(pickColor, RColor(0, 0, 0)) < color_threshold then
       // begin
-      // DrawPool(segPB).PostScrollText(5, '²»ÄÜÊ°È¡ºÚÉ«', 24, DEColor(1, 0, 0));
+      // DrawPool(segPB).PostScrollText(5, 'ä¸èƒ½æ‹¾å–é»‘è‰²', 24, DEColor(1, 0, 0));
       // exit;
       // end;
 
       c.BGRA := pickColor;
 
-      DrawPool(segPB).PostScrollText(5, Format('ÕıÔÚ·Ö¸îÑÕÉ«|color(%d,%d,%d)|(%d,%d,%d)||' + #13#10, [c.r, c.G, c.B, c.r, c.G, c.B]),
+      DrawPool(segPB).PostScrollText(5, Format('æ­£åœ¨åˆ†å‰²é¢œè‰²|color(%d,%d,%d)|(%d,%d,%d)||' + #13#10, [c.r, c.G, c.B, c.r, c.G, c.B]),
         24, DEColor(1.0, 1.0, 1.0));
 
       BuildSeg;
@@ -149,8 +149,8 @@ var
   i: Integer;
   ID: WORD;
 begin
-  // ÊäÈëµÄ·Ö¸îÆ÷µÄÑÕÉ«·ÖÀàID
-  // Classify¸ø 0 ±íÊ¾Õâ¸öÑÕÉ«²»±Ø·Ö¸î£¬Èç¹û´óÓÚ0µÄ»°£¬·Ö¸îÆ÷»á°´Classify½øĞĞ·ÖÀà
+  // è¾“å…¥çš„åˆ†å‰²å™¨çš„é¢œè‰²åˆ†ç±»ID
+  // Classifyç»™ 0 è¡¨ç¤ºè¿™ä¸ªé¢œè‰²ä¸å¿…åˆ†å‰²ï¼Œå¦‚æœå¤§äº0çš„è¯ï¼Œåˆ†å‰²å™¨ä¼šæŒ‰Classifyè¿›è¡Œåˆ†ç±»
   Classify := 0;
 
   if RColorDistance(pickColor, RColor(0, 0, 0)) < 0.1 then
@@ -169,17 +169,17 @@ begin
       stream: TMemoryStream64;
     begin
       test := TMorphologySegmentation.Create;
-      // ·Ö¸îÆ÷µÄÑÕÉ«·ÖÀà½Ó¿Ú
+      // åˆ†å‰²å™¨çš„é¢œè‰²åˆ†ç±»æ¥å£
       test.OnGetPixelSegClassify := GetPixelSegClassify;
-      // ĞÎÌ¬·Ö¸îÆ÷ÔÚÊı¾İÊäÈëÊ±ÊÇ¿É±à³ÌµÄ·ÖÀàÆ÷£¬ÕâÀï»áÉæ¼°µ½ÉÙÁ¿¹¤³ÌÍ³¼ÆÑ§ÖªÊ¶£¬ÖîÈçÊı¾İÌİ¶È£¬·Ö²¼ÕâÀà»ù±¾³£Ê¶
-      // ĞÎÌ¬·Ö¸îÆ÷¿ÉÒÔÑ¡Ôñ£¬ĞÎÌ¬ÏóËØ·Ö¸î£¬ĞÎÌ¬ÊıÑ§·Ö¸î£¬¶şÖµ»¯·Ö¸î£¬Ò»¹²ÈıÖÖ·Ö¸îÄ£ĞÍ
-      // Ê¹ÓÃĞÎÌ¬·Ö¸îÆ÷£¬¶àÊı¶¼ÊÇÔÚ¾­¹ıÁËÖØÖØÊı¾İÔ¤´¦ÀíÒÔºó£¬×ö±à³ÌÊ¶±ğµÄ²½Öè
-      // ÕâÒ»²½²»¿É×Ô¶¯»¯£¬ĞèÒª±à³Ì»ù±¾¹¦Ö§³Ö£¬Êı¾İ½á¹¹ÒªÇó¸ßÓÚÆÕÍ¨±à³Ì
+      // å½¢æ€åˆ†å‰²å™¨åœ¨æ•°æ®è¾“å…¥æ—¶æ˜¯å¯ç¼–ç¨‹çš„åˆ†ç±»å™¨ï¼Œè¿™é‡Œä¼šæ¶‰åŠåˆ°å°‘é‡å·¥ç¨‹ç»Ÿè®¡å­¦çŸ¥è¯†ï¼Œè¯¸å¦‚æ•°æ®æ¢¯åº¦ï¼Œåˆ†å¸ƒè¿™ç±»åŸºæœ¬å¸¸è¯†
+      // å½¢æ€åˆ†å‰²å™¨å¯ä»¥é€‰æ‹©ï¼Œå½¢æ€è±¡ç´ åˆ†å‰²ï¼Œå½¢æ€æ•°å­¦åˆ†å‰²ï¼ŒäºŒå€¼åŒ–åˆ†å‰²ï¼Œä¸€å…±ä¸‰ç§åˆ†å‰²æ¨¡å‹
+      // ä½¿ç”¨å½¢æ€åˆ†å‰²å™¨ï¼Œå¤šæ•°éƒ½æ˜¯åœ¨ç»è¿‡äº†é‡é‡æ•°æ®é¢„å¤„ç†ä»¥åï¼Œåšç¼–ç¨‹è¯†åˆ«çš„æ­¥éª¤
+      // è¿™ä¸€æ­¥ä¸å¯è‡ªåŠ¨åŒ–ï¼Œéœ€è¦ç¼–ç¨‹åŸºæœ¬åŠŸæ”¯æŒï¼Œæ•°æ®ç»“æ„è¦æ±‚é«˜äºæ™®é€šç¼–ç¨‹
       test.BuildSegmentation(tex);
       // test.RemoveNoise(500);
 
-      // TMorphologySegmentation·Ö¸îÆ÷Ö§³ÖStream±£´æ
-      // ÏÂÁĞ³ÌĞòÑİÊ¾ÁËÊ¹ÓÃStream±£´æTMorphologySegmentation·Ö¸îÆ÷ÖĞµÄ¸´ÔÓÊı¾İ
+      // TMorphologySegmentationåˆ†å‰²å™¨æ”¯æŒStreamä¿å­˜
+      // ä¸‹åˆ—ç¨‹åºæ¼”ç¤ºäº†ä½¿ç”¨Streamä¿å­˜TMorphologySegmentationåˆ†å‰²å™¨ä¸­çš„å¤æ‚æ•°æ®
       stream := TMemoryStream64.Create;
       test.SaveToStream(stream);
       DisposeObject(test);
@@ -188,17 +188,17 @@ begin
       test.LoadFromStream(stream);
       DisposeObject(stream);
 
-      // TMorphologySegmentation·Ö¸îÆ÷ÖĞµÄÊı¾İ¶¼ÊÇÖ¸Õë£¬²»»áÕ¼ÓÃºÜ´óÄÚ´æ£¬ËüÃÇÏà»¥¹ØÁª
-      // TMorphologySegmentation·Ö¸îÆ÷ÓĞÄÜÁ¦¸´ÖÆ×ÔÉíµÄ¸´ÔÓÊı¾İ
+      // TMorphologySegmentationåˆ†å‰²å™¨ä¸­çš„æ•°æ®éƒ½æ˜¯æŒ‡é’ˆï¼Œä¸ä¼šå ç”¨å¾ˆå¤§å†…å­˜ï¼Œå®ƒä»¬ç›¸äº’å…³è”
+      // TMorphologySegmentationåˆ†å‰²å™¨æœ‰èƒ½åŠ›å¤åˆ¶è‡ªèº«çš„å¤æ‚æ•°æ®
       s := TMorphologySegmentation.Create;
       s.Assign(test);
       DisposeObject(test);
 
-      // ¼ÇÂ¼Ò»ÏÂÊ×´Î·Ö¸î×ÜÊı
+      // è®°å½•ä¸€ä¸‹é¦–æ¬¡åˆ†å‰²æ€»æ•°
       first_total := s.count;
 
-      // ¹¹½¨·Ö¸îÒÔºó»á³öÏÖÔëÒô£¬ÕâÀïÎÒÃÇ½«ÔëÒôÒÆ³ö
-      // ãĞÖµ50±íÊ¾·Ö¸îËéÆ¬¿éÏñËØ×ÜºÍÈç¹ûµÍÓÚ20¸ö
+      // æ„å»ºåˆ†å‰²ä»¥åä¼šå‡ºç°å™ªéŸ³ï¼Œè¿™é‡Œæˆ‘ä»¬å°†å™ªéŸ³ç§»å‡º
+      // é˜ˆå€¼50è¡¨ç¤ºåˆ†å‰²ç¢ç‰‡å—åƒç´ æ€»å’Œå¦‚æœä½äº20ä¸ª
       // s.RemoveNoise(20);
 
       SetLength(LastSegBox, s.count);
@@ -214,13 +214,13 @@ begin
           c: TRColor;
         begin
           sp := s[pass];
-          // ½«·Ö¸îÍ¼ĞÎ¹¹½¨³ÉT2DPolygonGraph£¬T2DPolygonGraphÓÉ°üÎ§¶à±ßĞÎºÍËúÏİ¶à±ßĞÎ¹²Í¬×é³É
+          // å°†åˆ†å‰²å›¾å½¢æ„å»ºæˆT2DPolygonGraphï¼ŒT2DPolygonGraphç”±åŒ…å›´å¤šè¾¹å½¢å’Œå¡Œé™·å¤šè¾¹å½¢å…±åŒç»„æˆ
           geo := sp.BuildConvolutionGeometry(1.0);
           // geo := sp.BuildGeometry(0.0);
-          // ½«·Ö¸î±ß½ç¹¹½¨³É¶àÌõ·Ç±ÕºÏÏß
+          // å°†åˆ†å‰²è¾¹ç•Œæ„å»ºæˆå¤šæ¡éé—­åˆçº¿
           LL := sp.BuildLines(1.0);
           LastSegBox[pass] := sp.BoundsRectV2;
-          // BuildDatamap·½·¨»á½«·Ö¸îÊı¾İÍ¶Ó°µ½Ò»¸öĞÂ¹âÕ¤ÖĞ
+          // BuildDatamapæ–¹æ³•ä¼šå°†åˆ†å‰²æ•°æ®æŠ•å½±åˆ°ä¸€ä¸ªæ–°å…‰æ …ä¸­
           nm := sp.BuildClipDatamap(RColor(0, 0, 0, 0), RasterAlphaColor(pickColor, $7F));
 
           nm.OpenAgg;
@@ -228,10 +228,10 @@ begin
           if geo <> nil then
             begin
               geo.Transform(-sp.Left, -sp.Top);
-              // ½«±ä»»ºóµÄ¶à±ßĞÎ°ü»­³öÀ´
+              // å°†å˜æ¢åçš„å¤šè¾¹å½¢åŒ…ç”»å‡ºæ¥
               if ViewGeometryCheckBox.IsChecked then
                   nm.DrawPolygon(geo, RColorF(1, 1, 1), RColorF(0.8, 1.0, 0.8));
-              // »­×ø±ê
+              // ç”»åæ ‡
               if ViewGeometryCheckBox.IsChecked and EdgeLinesCrossCheckBox.IsChecked then
                   nm.DrawPolygonCross(geo, 5, RColorF(1.0, 0, 0), RColorF(1.0, 0.5, 0.5));
               DisposeObject(geo);
@@ -240,13 +240,13 @@ begin
           for j := 0 to LL.count - 1 do
             begin
               L := LL[j];
-              // ±ä»»×ø±ê,Ê¹ËüÓëBuildClipDatamap³öÀ´µÄÍ¼ÏñÎÇºÏ
+              // å˜æ¢åæ ‡,ä½¿å®ƒä¸BuildClipDatamapå‡ºæ¥çš„å›¾åƒå»åˆ
               L.Transform(-sp.Left, -sp.Top);
               c := RColor(umlRandomRange($7F, $FF), umlRandomRange($7F, $FF), umlRandomRange($7F, $FF), $FF);
-              // °Ñ·Ö¸î±ß½çµÄ·Ç±ÕºÏÏß»­³öÀ´
+              // æŠŠåˆ†å‰²è¾¹ç•Œçš„éé—­åˆçº¿ç”»å‡ºæ¥
               if ViewEdgeLinesCheckBox.IsChecked then
                   nm.DrawPolygonLine(L, c, False);
-              // »­×ø±ê
+              // ç”»åæ ‡
               if ViewEdgeLinesCheckBox.IsChecked and EdgeLinesCrossCheckBox.IsChecked then
                   nm.DrawCrossF(L, 5, c);
               DisposeObject(L);
@@ -260,7 +260,7 @@ begin
         end);
 
       DrawPool(segPB).PostScrollText(5,
-        Format('·Ö¸î±¨¸æ:¼ì²âµ½ |s:16,color(1,0,0)|%d|| ¸öÏñËØÍ¼ĞÎ(°üº¬ÏñËØËéÆ¬Í¼ĞÎ),¶øÊµ¼ÊÓĞĞ§Ö»ÓĞ |s:16,color(1,0,0)|%d|| ¸öÍ¼ĞÎ', [first_total, SegImgList.count]),
+        Format('åˆ†å‰²æŠ¥å‘Š:æ£€æµ‹åˆ° |s:16,color(1,0,0)|%d|| ä¸ªåƒç´ å›¾å½¢(åŒ…å«åƒç´ ç¢ç‰‡å›¾å½¢),è€Œå®é™…æœ‰æ•ˆåªæœ‰ |s:16,color(1,0,0)|%d|| ä¸ªå›¾å½¢', [first_total, SegImgList.count]),
         20, DEColor(1, 1, 1));
       DisposeObject(s);
     end);

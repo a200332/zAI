@@ -1,4 +1,4 @@
-unit Face_DetFrm_CPU_Parallel;
+ï»¿ï»¿unit Face_DetFrm_CPU_Parallel;
 
 interface
 
@@ -128,21 +128,21 @@ end;
 procedure TFace_DetForm.FormCreate(Sender: TObject);
 begin
   AddDoStatusHookM(Self, DoStatus_Hook_);
-  // ¶ÁÈ¡zAIµÄÅäÖÃ
+  // è¯»å–zAIçš„é…ç½®
   ReadAIConfig;
-  // ÕâÒ»²½»áÁ¬½ÓKey·şÎñÆ÷£¬ÑéÖ¤ZAIµÄKey
-  // Á¬½Ó·şÎñÆ÷ÑéÖ¤KeyÊÇÔÚÆô¶¯ÒıÇæÊ±Ò»´ÎĞÔµÄÑéÖ¤£¬Ö»»áµ±³ÌĞòÆô¶¯Ê±²Å»áÑéÖ¤£¬¼ÙÈçÑéÖ¤²»ÄÜÍ¨¹ı£¬zAI½«»á¾Ü¾ø¹¤×÷
-  // ÔÚ³ÌĞòÔËĞĞÖĞ£¬·´¸´´´½¨TAI£¬²»»á·¢ÉúÔ¶³ÌÑéÖ¤
-  // ÑéÖ¤ĞèÒªÒ»¸öuserKey£¬Í¨¹ıuserkeyÍÆËã³öZAIÔÚÆô¶¯Ê±Éú³ÉµÄËæ»úKey£¬userkey¿ÉÒÔÍ¨¹ıwebÉêÇë£¬Ò²¿ÉÒÔÁªÏµ×÷Õß·¢·Å
-  // ÑéÖ¤key¶¼ÊÇ¿¹Á¿×Ó¼¶£¬ÎŞ·¨±»ÆÆ½â
+  // è¿™ä¸€æ­¥ä¼šè¿æ¥KeyæœåŠ¡å™¨ï¼ŒéªŒè¯ZAIçš„Key
+  // è¿æ¥æœåŠ¡å™¨éªŒè¯Keyæ˜¯åœ¨å¯åŠ¨å¼•æ“æ—¶ä¸€æ¬¡æ€§çš„éªŒè¯ï¼Œåªä¼šå½“ç¨‹åºå¯åŠ¨æ—¶æ‰ä¼šéªŒè¯ï¼Œå‡å¦‚éªŒè¯ä¸èƒ½é€šè¿‡ï¼ŒzAIå°†ä¼šæ‹’ç»å·¥ä½œ
+  // åœ¨ç¨‹åºè¿è¡Œä¸­ï¼Œåå¤åˆ›å»ºTAIï¼Œä¸ä¼šå‘ç”Ÿè¿œç¨‹éªŒè¯
+  // éªŒè¯éœ€è¦ä¸€ä¸ªuserKeyï¼Œé€šè¿‡userkeyæ¨ç®—å‡ºZAIåœ¨å¯åŠ¨æ—¶ç”Ÿæˆçš„éšæœºKeyï¼Œuserkeyå¯ä»¥é€šè¿‡webç”³è¯·ï¼Œä¹Ÿå¯ä»¥è”ç³»ä½œè€…å‘æ”¾
+  // éªŒè¯keyéƒ½æ˜¯æŠ—é‡å­çº§ï¼Œæ— æ³•è¢«ç ´è§£
   zAI.Prepare_AI_Engine();
   ai_Parallel := TAI_Parallel.Create;
 
-  DoStatus('³õÊ¼»¯²¢ĞĞ½á¹¹.');
+  DoStatus('åˆå§‹åŒ–å¹¶è¡Œç»“æ„.');
   TComputeThread.RunP(nil, nil, procedure(Sender: TComputeThread)
     begin
       ai_Parallel.Prepare_Parallel(Prepare_AI_Engine, 4);
-      DoStatus('²¢ĞĞ½á¹¹¹¹½¨Íê³É.');
+      DoStatus('å¹¶è¡Œç»“æ„æ„å»ºå®Œæˆ.');
     end);
 
   drawIntf := TDrawEngineInterface_FMX.Create;
@@ -200,14 +200,14 @@ procedure TFace_DetForm.PaintBox1Paint(Sender: TObject; Canvas: TCanvas);
 var
   d: TDrawEngine;
 begin
-  // ÈÃDrawIntfµÄ»æÍ¼ÊµÀıÊä³öÔÚpaintbox1
+  // è®©DrawIntfçš„ç»˜å›¾å®ä¾‹è¾“å‡ºåœ¨paintbox1
   drawIntf.SetSurface(Canvas, Sender);
   d := DrawPool(Sender, drawIntf);
 
-  // ÏÔÊ¾±ß¿òºÍÖ¡ÂÊ
+  // æ˜¾ç¤ºè¾¹æ¡†å’Œå¸§ç‡
   d.ViewOptions := [voEdge];
 
-  // ±³¾°±»Ìî³ä³ÉºÚÉ«£¬ÕâÀïµÄ»­Í¼Ö¸Áî²¢²»ÊÇÁ¢¼´Ö´ĞĞµÄ£¬¶øÊÇĞÎ³ÉÃüÁîÁ÷¶ÓÁĞ´æ·ÅÔÚDrawEngineµÄÒ»¸öÈİÆ÷ÖĞ
+  // èƒŒæ™¯è¢«å¡«å……æˆé»‘è‰²ï¼Œè¿™é‡Œçš„ç”»å›¾æŒ‡ä»¤å¹¶ä¸æ˜¯ç«‹å³æ‰§è¡Œçš„ï¼Œè€Œæ˜¯å½¢æˆå‘½ä»¤æµé˜Ÿåˆ—å­˜æ”¾åœ¨DrawEngineçš„ä¸€ä¸ªå®¹å™¨ä¸­
   d.FillBox(d.ScreenRect, DEColor(0, 0, 0, 1));
 
   LockObject(rList);
@@ -215,7 +215,7 @@ begin
   UnLockObject(rList);
 
   d.BeginCaptureShadow(Vec2(1, 1), 0.9);
-  d.DrawText(d.LastDrawInfo + #13#10 + '°´ÏÂÊó±ê±ä»»×ø±ê£¬¹öÂÖ¿ÉÒÔËõ·Å', 12, d.ScreenRect, DEColor(0.5, 1, 0.5, 1), False);
+  d.DrawText(d.LastDrawInfo + #13#10 + 'æŒ‰ä¸‹é¼ æ ‡å˜æ¢åæ ‡ï¼Œæ»šè½®å¯ä»¥ç¼©æ”¾', 12, d.ScreenRect, DEColor(0.5, 1, 0.5, 1), False);
   d.EndCaptureShadow;
   d.Flush;
 end;

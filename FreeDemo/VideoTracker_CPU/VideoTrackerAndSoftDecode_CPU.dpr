@@ -1,4 +1,4 @@
-program VideoTrackerAndSoftDecode_CPU;
+﻿program VideoTrackerAndSoftDecode_CPU;
 
 uses
   System.StartUpCopy,
