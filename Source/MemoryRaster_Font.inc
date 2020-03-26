@@ -510,18 +510,18 @@ begin
       CheckThreadSynchronize(10);
 end;
 
-function fr_raster_ComputeNearest_(const Sender: TRasterVertex; const Sampler: TMemoryRaster; const x, y: TGeoFloat): TRColor;
+function font_raster_ComputeNearest_(const Sender: TRasterVertex; const Sampler: TMemoryRaster; const x, y: TGeoFloat): TRColor;
 var
   fr: TFontRaster;
   tu0, tv0: Integer;
 begin
   fr := TFontRaster.PFontDrawState(Sender.UserData)^.Owner;
-  tu0 := ClampInt(Trunc(TexCoordWrapRepeat(x) * (Sampler.Width0)), 0, Sampler.Width0i);
-  tv0 := ClampInt(Trunc(TexCoordWrapRepeat(y) * (Sampler.Height0)), 0, Sampler.Height0i);
+  tu0 := ClampInt(Trunc(TexCoordWrapRepeat(Sender.LockSamplerCoord, x) * (Sampler.Width0)), 0, Sampler.Width0i);
+  tv0 := ClampInt(Trunc(TexCoordWrapRepeat(Sender.LockSamplerCoord, y) * (Sampler.Height0)), 0, Sampler.Height0i);
   Result := RColor(0, 0, 0, fr.FBitRaster^[tu0 + tv0 * Sampler.Width]);
 end;
 
-function fr_raster_ComputeLinear_(const Sender: TRasterVertex; const Sampler: TMemoryRaster; const x, y: TGeoFloat): TRColor;
+function font_raster_ComputeLinear_(const Sender: TRasterVertex; const Sampler: TMemoryRaster; const x, y: TGeoFloat): TRColor;
 var
   fr: TFontRaster;
   fx, fy: TGeoFloat;
@@ -534,8 +534,8 @@ var
 begin
   fr := TFontRaster.PFontDrawState(Sender.UserData)^.Owner;
 
-  fx := TexCoordWrapRepeat(x) * (Sampler.Width0);
-  fy := TexCoordWrapRepeat(y) * (Sampler.Height0);
+  fx := TexCoordWrapRepeat(Sender.LockSamplerCoord, x) * (Sampler.Width0);
+  fy := TexCoordWrapRepeat(Sender.LockSamplerCoord, y) * (Sampler.Height0);
 
   i_x := ClampInt(Trunc(fx), 0, Sampler.Width0i);
   i_y := ClampInt(Trunc(fy), 0, Sampler.Height0i);
@@ -571,12 +571,12 @@ begin
   Result := RColor(0, 0, 0, Round(g * $FF));
 end;
 
-procedure fr_raster_ComputeBlend_(const Sender: TRasterVertex; const f, M: TRColor; var b: TRColor);
+procedure font_raster_ComputeBlend_(const Sender: TRasterVertex; const f, M: TRColor; var b: TRColor);
 var
   c: TRColorEntry;
 begin
   c.BGRA := TFontRaster.PFontDrawState(Sender.UserData)^.DestColor;
-  c.a := TRColorEntry(f).a;
+  c.A := TRColorEntry(f).A;
   Vertex_ComputeBlend(Sender, c.BGRA, M, b);
 end;
 
@@ -674,6 +674,20 @@ begin
     end;
 end;
 
+procedure TFontRaster.ClearFragRaster;
+var
+  i: Integer;
+begin
+  for i := 0 to C_MAXWORD do
+    begin
+      if FFragRaster[i] <> nil then
+        begin
+          DisposeObject(FFragRaster[i]);
+          FFragRaster[i] := nil;
+        end;
+    end;
+end;
+
 procedure TFontRaster.Build(fontSiz: Integer);
 var
   rHash: THashList;
@@ -722,7 +736,7 @@ begin
   if RP.Count > 0 then
     begin
       DoStatus('build space...');
-      RP.Margins := 2;
+      RP.Margins := 4;
       RP.Build(C_MAXWORD * 1024, C_MAXWORD * 1024);
 
       FActivtedWord := 0;
@@ -860,7 +874,7 @@ var
   FD: PFontCharDefine;
   r: TRect;
 begin
-  raster := TMemoryRaster.Create;
+  raster := NewRaster();
   raster.SetSize(FWidth, FHeight, RColor(0, 0, 0));
   for y := 0 to FHeight - 1 do
     for x := 0 to FWidth - 1 do
@@ -875,6 +889,19 @@ begin
       end;
 
   Result := raster;
+end;
+
+function TFontRaster.BuildMorphomatics(): TMorphomatics;
+var
+  i: Integer;
+begin
+  Result := TMorphomatics.Create;
+  Result.SetSize(FWidth, FHeight);
+  for i := 0 to FWidth * FHeight - 1 do
+    if FBitRaster^[i] > 0 then
+        Result.Bits^[i] := $FF / FBitRaster^[i]
+    else
+        Result.Bits^[i] := 0;
 end;
 
 procedure TFontRaster.ExportRaster(stream: TCoreClassStream; partitionLine: Boolean);
@@ -995,9 +1022,9 @@ begin
   // reset blend parameter
   VM := Dst.Vertex;
   bak_userData := VM.UserData;
-  VM.ComputeNearest := {$IFDEF FPC}@{$ENDIF FPC}fr_raster_ComputeNearest_;
-  VM.ComputeLinear := {$IFDEF FPC}@{$ENDIF FPC}fr_raster_ComputeLinear_;
-  VM.ComputeBlend := {$IFDEF FPC}@{$ENDIF FPC}fr_raster_ComputeBlend_;
+  VM.ComputeNearest := {$IFDEF FPC}@{$ENDIF FPC}font_raster_ComputeNearest_;
+  VM.ComputeLinear := {$IFDEF FPC}@{$ENDIF FPC}font_raster_ComputeLinear_;
+  VM.ComputeBlend := {$IFDEF FPC}@{$ENDIF FPC}font_raster_ComputeBlend_;
   VM.UserData := @DD;
 
   // compute rotate

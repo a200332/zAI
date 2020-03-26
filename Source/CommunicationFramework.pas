@@ -290,7 +290,7 @@ type
     FList: TCoreClassList;
     function GetItems(const index: Integer): PBigStreamBatchPostData;
   public
-    constructor Create(AOwner: TPeerIO);
+    constructor Create(Owner_: TPeerIO);
     destructor Destroy; override;
 
     procedure Clear;
@@ -309,7 +309,7 @@ type
     FWorkPlatform: TExecutePlatform;
     FBigStreamBatchList: TBigStreamBatchList;
   public
-    constructor Create(AOwner: TPeerIO); virtual;
+    constructor Create(Owner_: TPeerIO); virtual;
     destructor Destroy; override;
 
     procedure Progress; virtual;
@@ -325,7 +325,7 @@ type
   protected
     FOwner: TPeerIO;
   public
-    constructor Create(AOwner: TPeerIO); virtual;
+    constructor Create(Owner_: TPeerIO); virtual;
     destructor Destroy; override;
     procedure Progress; virtual;
 
@@ -377,8 +377,8 @@ type
 {$REGION 'IO'}
   TInternalSendByteBuffer = procedure(const Sender: TPeerIO; const buff: PByte; siz: NativeInt) of object;
   TInternalSaveReceiveBuffer = procedure(const Sender: TPeerIO; const buff: Pointer; siz: Int64) of object;
-  TInternalProcessReceiveBuffer = procedure(const Sender: TPeerIO; const ACurrentActiveThread: TCoreClassThread; const RecvSync, SendSync: Boolean) of object;
-  TInternalProcessAllSendCmd = procedure(const Sender: TPeerIO; const ACurrentActiveThread: TCoreClassThread; const RecvSync, SendSync: Boolean) of object;
+  TInternalProcessReceiveBuffer = procedure(const Sender: TPeerIO; const CurrentActiveThread_: TCoreClassThread; const RecvSync, SendSync: Boolean) of object;
+  TInternalProcessAllSendCmd = procedure(const Sender: TPeerIO; const CurrentActiveThread_: TCoreClassThread; const RecvSync, SendSync: Boolean) of object;
   TInternalIOCreate = procedure(const Sender: TPeerIO) of object;
   TInternalIODestory = procedure(const Sender: TPeerIO) of object;
 
@@ -570,27 +570,27 @@ type
     procedure Sync_ExecuteDirectStream;
     procedure Sync_SendConsoleResult;
     procedure Sync_SendStreamResult;
-    procedure ExecuteDataFrame(ACurrentActiveThread: TCoreClassThread; const RecvSync, SendSync: Boolean; CommDataType: Byte; DataFrame: TDataFrameEngine);
+    procedure ExecuteDataFrame(CurrentActiveThread_: TCoreClassThread; const RecvSync, SendSync: Boolean; CommDataType: Byte; DataFrame: TDataFrameEngine);
 
     procedure Sync_ExecuteBigStream;
-    function ReceivedBigStreamFragment(ACurrentActiveThread: TCoreClassThread; const Sync: Boolean): Boolean;
+    function ReceivedBigStreamFragment(CurrentActiveThread_: TCoreClassThread; const Sync: Boolean): Boolean;
 
     procedure Sync_ExecuteCompleteBuffer;
-    function FillCompleteBufferBuffer(ACurrentActiveThread: TCoreClassThread; const Sync: Boolean): Boolean;
+    function FillCompleteBufferBuffer(CurrentActiveThread_: TCoreClassThread; const Sync: Boolean): Boolean;
 
     procedure Sync_ExecuteResult;
-    function FillWaitOnResultBuffer(ACurrentActiveThread: TCoreClassThread; const RecvSync, SendSync: Boolean): Boolean;
+    function FillWaitOnResultBuffer(CurrentActiveThread_: TCoreClassThread; const RecvSync, SendSync: Boolean): Boolean;
 
     procedure InternalSaveReceiveBuffer(const buff: Pointer; siz: Int64);
-    procedure InternalProcessReceiveBuffer(const ACurrentActiveThread: TCoreClassThread; const RecvSync, SendSync: Boolean);
-    procedure InternalProcessAllSendCmd(const ACurrentActiveThread: TCoreClassThread; const RecvSync, SendSync: Boolean);
+    procedure InternalProcessReceiveBuffer(const CurrentActiveThread_: TCoreClassThread; const RecvSync, SendSync: Boolean);
+    procedure InternalProcessAllSendCmd(const CurrentActiveThread_: TCoreClassThread; const RecvSync, SendSync: Boolean);
 
     procedure Sync_CheckAndTriggerFailedWaitResult;
     procedure CheckAndTriggerFailedWaitResult;
 
     procedure InternalCloseP2PVMTunnel;
   public
-    constructor Create(AOwnerFramework: TCommunicationFramework; AIOInterface: TCoreClassObject);
+    constructor Create(OwnerFramework_: TCommunicationFramework; IOInterface_: TCoreClassObject);
     procedure CreateAfter; virtual;
     destructor Destroy; override;
 
@@ -655,8 +655,8 @@ type
     procedure DelayFree(const t: double); overload;
     //
     procedure SaveReceiveBuffer(const p: Pointer; siz: Int64);
-    procedure FillRecvBuffer(const ACurrentActiveThread: TCoreClassThread; const RecvSync, SendSync: Boolean);
-    procedure ProcessAllSendCmd(const ACurrentActiveThread: TCoreClassThread; const RecvSync, SendSync: Boolean);
+    procedure FillRecvBuffer(const CurrentActiveThread_: TCoreClassThread; const RecvSync, SendSync: Boolean);
+    procedure ProcessAllSendCmd(const CurrentActiveThread_: TCoreClassThread; const RecvSync, SendSync: Boolean);
     procedure PostQueueData(p: PQueueData);
 
     // custom protocol
@@ -886,8 +886,8 @@ type
     // event
     procedure Framework_InternalSendByteBuffer(const Sender: TPeerIO; const buff: PByte; siz: NativeInt);
     procedure Framework_InternalSaveReceiveBuffer(const Sender: TPeerIO; const buff: Pointer; siz: Int64);
-    procedure Framework_InternalProcessReceiveBuffer(const Sender: TPeerIO; const ACurrentActiveThread: TCoreClassThread; const RecvSync, SendSync: Boolean);
-    procedure Framework_InternalProcessAllSendCmd(const Sender: TPeerIO; const ACurrentActiveThread: TCoreClassThread; const RecvSync, SendSync: Boolean);
+    procedure Framework_InternalProcessReceiveBuffer(const Sender: TPeerIO; const CurrentActiveThread_: TCoreClassThread; const RecvSync, SendSync: Boolean);
+    procedure Framework_InternalProcessAllSendCmd(const Sender: TPeerIO; const CurrentActiveThread_: TCoreClassThread; const RecvSync, SendSync: Boolean);
     procedure Framework_InternalIOCreate(const Sender: TPeerIO); virtual;
     procedure Framework_InternalIODestroy(const Sender: TPeerIO); virtual;
 
@@ -1315,10 +1315,10 @@ type
     { delay close on custom delay of double time }
     procedure DelayClose(const t: double); overload;
 
-    function Wait(ATimeOut: TTimeTick): SystemString; overload;
-    function WaitC(ATimeOut: TTimeTick; OnResult: TStateCall): Boolean; overload;
-    function WaitM(ATimeOut: TTimeTick; OnResult: TStateMethod): Boolean; overload;
-    function WaitP(ATimeOut: TTimeTick; OnResult: TStateProc): Boolean; overload;
+    function Wait(TimeOut_: TTimeTick): SystemString; overload;
+    function WaitC(TimeOut_: TTimeTick; OnResult: TStateCall): Boolean; overload;
+    function WaitM(TimeOut_: TTimeTick; OnResult: TStateMethod): Boolean; overload;
+    function WaitP(TimeOut_: TTimeTick; OnResult: TStateProc): Boolean; overload;
 
     // command queue state
     function WaitSendBusy: Boolean;
@@ -1541,7 +1541,7 @@ type
     procedure Hook_SendByteBuffer(const Sender: TPeerIO; const buff: PByte; siz: NativeInt);
     procedure Hook_SaveReceiveBuffer(const Sender: TPeerIO; const buff: Pointer; siz: Int64);
     procedure SyncProcessReceiveBuff;
-    procedure Hook_ProcessReceiveBuffer(const Sender: TPeerIO; const ACurrentActiveThread: TCoreClassThread; const RecvSync, SendSync: Boolean);
+    procedure Hook_ProcessReceiveBuffer(const Sender: TPeerIO; const CurrentActiveThread_: TCoreClassThread; const RecvSync, SendSync: Boolean);
     procedure Hook_ClientDestroy(const Sender: TPeerIO);
 
     procedure SendVMBuffer(const buff: Pointer; const siz: NativeInt);
@@ -1628,7 +1628,7 @@ type
   TStableServer_PhysicsIO_UserDefine = class(TPeerIOUserDefine)
   public
     BindStableIO: TStableServer_PeerIO;
-    constructor Create(AOwner: TPeerIO); override;
+    constructor Create(Owner_: TPeerIO); override;
     destructor Destroy; override;
   end;
 
@@ -1844,7 +1844,7 @@ procedure FreeP2PVMPacket(p: Pp2pVMFragmentPacket);
 function IsSystemCMD(const Cmd: U_String): Boolean;
 
 function StrToIPv4(const s: U_String; var Success: Boolean): TIPV4;
-function IPv4ToStr(const AIcsIPv4Addr: TIPV4): U_String;
+function IPv4ToStr(const IPv4Addr_: TIPV4): U_String;
 function StrToIPv6(const s: U_String; var Success: Boolean; var ScopeID: Cardinal): TIPV6; overload;
 function StrToIPv6(const s: U_String; var Success: Boolean): TIPV6; overload;
 function IPv6ToStr(const IPv6Addr: TIPV6): U_String;
@@ -1901,7 +1901,6 @@ procedure RunStreamWithDelayThreadP(Sender: TPeerIO;
   const UserData: Pointer; const UserObject: TCoreClassObject;
   const InData, OutData: TDataFrameEngine; const OnRunWithThread: TRunWithThreadStreamProc); overload;
 {$ENDREGION 'function'}
-
 
 implementation
 
@@ -2105,9 +2104,9 @@ begin
     end;
 end;
 
-function IPv4ToStr(const AIcsIPv4Addr: TIPV4): U_String;
+function IPv4ToStr(const IPv4Addr_: TIPV4): U_String;
 begin
-  Result.Text := IntToStr(AIcsIPv4Addr[0]) + '.' + IntToStr(AIcsIPv4Addr[1]) + '.' + IntToStr(AIcsIPv4Addr[2]) + '.' + IntToStr(AIcsIPv4Addr[3]);
+  Result.Text := IntToStr(IPv4Addr_[0]) + '.' + IntToStr(IPv4Addr_[1]) + '.' + IntToStr(IPv4Addr_[2]) + '.' + IntToStr(IPv4Addr_[3]);
 end;
 
 function StrToIPv6(const s: U_String; var Success: Boolean; var ScopeID: Cardinal): TIPV6;
@@ -2881,10 +2880,10 @@ begin
   Result := PBigStreamBatchPostData(FList[index]);
 end;
 
-constructor TBigStreamBatchList.Create(AOwner: TPeerIO);
+constructor TBigStreamBatchList.Create(Owner_: TPeerIO);
 begin
   inherited Create;
-  FOwner := AOwner;
+  FOwner := Owner_;
   FList := TCoreClassList.Create;
 end;
 
@@ -2956,10 +2955,10 @@ begin
     end;
 end;
 
-constructor TPeerIOUserDefine.Create(AOwner: TPeerIO);
+constructor TPeerIOUserDefine.Create(Owner_: TPeerIO);
 begin
   inherited Create;
-  FOwner := AOwner;
+  FOwner := Owner_;
   FWorkPlatform := TExecutePlatform.epUnknow;
   FBigStreamBatchList := TBigStreamBatchList.Create(Owner);
 end;
@@ -2974,10 +2973,10 @@ procedure TPeerIOUserDefine.Progress;
 begin
 end;
 
-constructor TPeerIOUserSpecial.Create(AOwner: TPeerIO);
+constructor TPeerIOUserSpecial.Create(Owner_: TPeerIO);
 begin
   inherited Create;
-  FOwner := AOwner;
+  FOwner := Owner_;
 end;
 
 destructor TPeerIOUserSpecial.Destroy;
@@ -4074,7 +4073,7 @@ begin
   AtomInc(FOwnerFramework.Statistics[TStatisticsType.stResponse]);
 end;
 
-procedure TPeerIO.ExecuteDataFrame(ACurrentActiveThread: TCoreClassThread; const RecvSync, SendSync: Boolean; CommDataType: Byte; DataFrame: TDataFrameEngine);
+procedure TPeerIO.ExecuteDataFrame(CurrentActiveThread_: TCoreClassThread; const RecvSync, SendSync: Boolean; CommDataType: Byte; DataFrame: TDataFrameEngine);
 begin
   FInCmd := DataFrame.Reader.ReadString;
 
@@ -4086,7 +4085,7 @@ begin
       FCanPauseResultSend := True;
 
       FReceiveTriggerRuning := True;
-      IO_SyncMethod(ACurrentActiveThread, RecvSync, {$IFDEF FPC}@{$ENDIF FPC}Sync_ExecuteConsole);
+      IO_SyncMethod(CurrentActiveThread_, RecvSync, {$IFDEF FPC}@{$ENDIF FPC}Sync_ExecuteConsole);
       FReceiveTriggerRuning := False;
 
       FCanPauseResultSend := False;
@@ -4099,7 +4098,7 @@ begin
       if not Connected then
           exit;
 
-      IO_SyncMethod(ACurrentActiveThread, SendSync, {$IFDEF FPC}@{$ENDIF FPC}Sync_SendConsoleResult);
+      IO_SyncMethod(CurrentActiveThread_, SendSync, {$IFDEF FPC}@{$ENDIF FPC}Sync_SendConsoleResult);
     end
   else if CommDataType = FStreamToken then
     begin
@@ -4110,7 +4109,7 @@ begin
       FCanPauseResultSend := True;
 
       FReceiveTriggerRuning := True;
-      IO_SyncMethod(ACurrentActiveThread, RecvSync, {$IFDEF FPC}@{$ENDIF FPC}Sync_ExecuteStream);
+      IO_SyncMethod(CurrentActiveThread_, RecvSync, {$IFDEF FPC}@{$ENDIF FPC}Sync_ExecuteStream);
       FReceiveTriggerRuning := False;
 
       FCanPauseResultSend := False;
@@ -4124,14 +4123,14 @@ begin
       if not Connected then
           exit;
 
-      IO_SyncMethod(ACurrentActiveThread, SendSync, {$IFDEF FPC}@{$ENDIF FPC}Sync_SendStreamResult);
+      IO_SyncMethod(CurrentActiveThread_, SendSync, {$IFDEF FPC}@{$ENDIF FPC}Sync_SendStreamResult);
     end
   else if CommDataType = FDirectConsoleToken then
     begin
       FInText := DataFrame.Reader.ReadString;
 
       FReceiveTriggerRuning := True;
-      IO_SyncMethod(ACurrentActiveThread, RecvSync, {$IFDEF FPC}@{$ENDIF FPC}Sync_ExecuteDirectConsole);
+      IO_SyncMethod(CurrentActiveThread_, RecvSync, {$IFDEF FPC}@{$ENDIF FPC}Sync_ExecuteDirectConsole);
       FReceiveTriggerRuning := False;
     end
   else if CommDataType = FDirectStreamToken then
@@ -4141,7 +4140,7 @@ begin
       DataFrame.Reader.ReadDataFrame(FInDataFrame);
 
       FReceiveTriggerRuning := True;
-      IO_SyncMethod(ACurrentActiveThread, RecvSync, {$IFDEF FPC}@{$ENDIF FPC}Sync_ExecuteDirectStream);
+      IO_SyncMethod(CurrentActiveThread_, RecvSync, {$IFDEF FPC}@{$ENDIF FPC}Sync_ExecuteDirectStream);
       FReceiveTriggerRuning := False;
     end;
 end;
@@ -4173,7 +4172,7 @@ begin
     end;
 end;
 
-function TPeerIO.ReceivedBigStreamFragment(ACurrentActiveThread: TCoreClassThread; const Sync: Boolean): Boolean;
+function TPeerIO.ReceivedBigStreamFragment(CurrentActiveThread_: TCoreClassThread; const Sync: Boolean): Boolean;
 var
   head: TBigStreamFragmentHead;
   np: Int64;
@@ -4212,7 +4211,7 @@ begin
       FSyncBigStreamReceive := buff;
 
       // sync
-      IO_SyncMethod(ACurrentActiveThread, Sync, {$IFDEF FPC}@{$ENDIF FPC}Sync_ExecuteBigStream);
+      IO_SyncMethod(CurrentActiveThread_, Sync, {$IFDEF FPC}@{$ENDIF FPC}Sync_ExecuteBigStream);
     end
   else
     begin
@@ -4220,7 +4219,7 @@ begin
       FSyncBigStreamReceive := buff;
 
       // sync
-      IO_SyncMethod(ACurrentActiveThread, Sync, {$IFDEF FPC}@{$ENDIF FPC}Sync_ExecuteBigStream);
+      IO_SyncMethod(CurrentActiveThread_, Sync, {$IFDEF FPC}@{$ENDIF FPC}Sync_ExecuteBigStream);
 
       Result := True;
 
@@ -4278,7 +4277,7 @@ begin
     end;
 end;
 
-function TPeerIO.FillCompleteBufferBuffer(ACurrentActiveThread: TCoreClassThread; const Sync: Boolean): Boolean;
+function TPeerIO.FillCompleteBufferBuffer(CurrentActiveThread_: TCoreClassThread; const Sync: Boolean): Boolean;
 var
   leftSize: Cardinal;
   tmpStream: TMemoryStream64;
@@ -4319,7 +4318,7 @@ begin
           FCompleteBufferReceiveStream := dest;
         end;
 
-      IO_SyncMethod(ACurrentActiveThread, Sync, {$IFDEF FPC}@{$ENDIF FPC}Sync_ExecuteCompleteBuffer);
+      IO_SyncMethod(CurrentActiveThread_, Sync, {$IFDEF FPC}@{$ENDIF FPC}Sync_ExecuteCompleteBuffer);
       FCompleteBufferReceiveStream.Clear;
 
       Result := True;
@@ -4356,7 +4355,7 @@ begin
   FCurrentQueueData := nil;
 end;
 
-function TPeerIO.FillWaitOnResultBuffer(ACurrentActiveThread: TCoreClassThread; const RecvSync, SendSync: Boolean): Boolean;
+function TPeerIO.FillWaitOnResultBuffer(CurrentActiveThread_: TCoreClassThread; const RecvSync, SendSync: Boolean): Boolean;
 var
   dHead, dTail: Cardinal;
   dSize: Integer;
@@ -4467,7 +4466,7 @@ begin
         exit;
       end;
 
-      IO_SyncMethod(ACurrentActiveThread, RecvSync, {$IFDEF FPC}@{$ENDIF FPC}Sync_ExecuteResult);
+      IO_SyncMethod(CurrentActiveThread_, RecvSync, {$IFDEF FPC}@{$ENDIF FPC}Sync_ExecuteResult);
 
       AtomInc(FOwnerFramework.Statistics[TStatisticsType.stResponse]);
     end
@@ -4488,7 +4487,7 @@ begin
         exit;
       end;
 
-      IO_SyncMethod(ACurrentActiveThread, RecvSync, {$IFDEF FPC}@{$ENDIF FPC}Sync_ExecuteResult);
+      IO_SyncMethod(CurrentActiveThread_, RecvSync, {$IFDEF FPC}@{$ENDIF FPC}Sync_ExecuteResult);
 
       AtomInc(FOwnerFramework.Statistics[TStatisticsType.stResponse]);
     end;
@@ -4529,7 +4528,7 @@ begin
   end;
 end;
 
-procedure TPeerIO.InternalProcessReceiveBuffer(const ACurrentActiveThread: TCoreClassThread; const RecvSync, SendSync: Boolean);
+procedure TPeerIO.InternalProcessReceiveBuffer(const CurrentActiveThread_: TCoreClassThread; const RecvSync, SendSync: Boolean);
 var
   rState: Boolean;
   dHead, dTail: Cardinal;
@@ -4585,7 +4584,7 @@ begin
 
         if FWaitOnResult then
           begin
-            rState := FillWaitOnResultBuffer(ACurrentActiveThread, RecvSync, SendSync);
+            rState := FillWaitOnResultBuffer(CurrentActiveThread_, RecvSync, SendSync);
 
             if rState then
                 Continue
@@ -4595,7 +4594,7 @@ begin
 
         if FBigStreamReceiveProcessing then
           begin
-            rState := ReceivedBigStreamFragment(ACurrentActiveThread, RecvSync);
+            rState := ReceivedBigStreamFragment(CurrentActiveThread_, RecvSync);
 
             if rState then
                 Continue
@@ -4605,7 +4604,7 @@ begin
 
         if FCompleteBufferReceiveProcessing then
           begin
-            rState := FillCompleteBufferBuffer(ACurrentActiveThread, RecvSync);
+            rState := FillCompleteBufferBuffer(CurrentActiveThread_, RecvSync);
 
             if rState then
                 Continue
@@ -4874,7 +4873,7 @@ begin
             FReceivedBuffer := tmpStream;
 
             try
-                ExecuteDataFrame(ACurrentActiveThread, RecvSync, SendSync, dID, df);
+                ExecuteDataFrame(CurrentActiveThread_, RecvSync, SendSync, dID, df);
             except
               PrintError('run procedure on dataFrame error!');
               DisposeObject(df);
@@ -4899,13 +4898,13 @@ begin
     if BreakAndDisconnect then
         DelayClose()
     else if FReceivedBuffer_Busy.Size > 0 then
-        FillRecvBuffer(ACurrentActiveThread, RecvSync, SendSync)
+        FillRecvBuffer(CurrentActiveThread_, RecvSync, SendSync)
     else
-        ProcessAllSendCmd(ACurrentActiveThread, RecvSync, SendSync);
+        ProcessAllSendCmd(CurrentActiveThread_, RecvSync, SendSync);
   end;
 end;
 
-procedure TPeerIO.InternalProcessAllSendCmd(const ACurrentActiveThread: TCoreClassThread; const RecvSync, SendSync: Boolean);
+procedure TPeerIO.InternalProcessAllSendCmd(const CurrentActiveThread_: TCoreClassThread; const RecvSync, SendSync: Boolean);
 var
   p: PQueueData;
 begin
@@ -4925,7 +4924,7 @@ begin
 
   if FResultDataBuffer.Size > 0 then
     begin
-      IO_SyncMethod(ACurrentActiveThread, SendSync, {$IFDEF FPC}@{$ENDIF FPC}Sync_InternalSendResultData);
+      IO_SyncMethod(CurrentActiveThread_, SendSync, {$IFDEF FPC}@{$ENDIF FPC}Sync_InternalSendResultData);
       FAllSendProcessing := False;
       UnLockIO;
       exit;
@@ -4947,7 +4946,7 @@ begin
 
               FSyncPick := p;
               FWaitOnResult := True;
-              IO_SyncMethod(ACurrentActiveThread, SendSync, {$IFDEF FPC}@{$ENDIF FPC}Sync_InternalSendConsoleCmd);
+              IO_SyncMethod(CurrentActiveThread_, SendSync, {$IFDEF FPC}@{$ENDIF FPC}Sync_InternalSendConsoleCmd);
 
               FSyncPick := nil;
 
@@ -4960,7 +4959,7 @@ begin
 
               FSyncPick := p;
               FWaitOnResult := True;
-              IO_SyncMethod(ACurrentActiveThread, SendSync, {$IFDEF FPC}@{$ENDIF FPC}Sync_InternalSendStreamCmd);
+              IO_SyncMethod(CurrentActiveThread_, SendSync, {$IFDEF FPC}@{$ENDIF FPC}Sync_InternalSendStreamCmd);
 
               FSyncPick := nil;
 
@@ -4972,7 +4971,7 @@ begin
               AtomInc(FOwnerFramework.Statistics[TStatisticsType.stDirestConsole]);
 
               FSyncPick := p;
-              IO_SyncMethod(ACurrentActiveThread, SendSync, {$IFDEF FPC}@{$ENDIF FPC}Sync_InternalSendDirectConsoleCmd);
+              IO_SyncMethod(CurrentActiveThread_, SendSync, {$IFDEF FPC}@{$ENDIF FPC}Sync_InternalSendDirectConsoleCmd);
 
               FSyncPick := nil;
 
@@ -4984,7 +4983,7 @@ begin
               AtomInc(FOwnerFramework.Statistics[TStatisticsType.stDirestStream]);
 
               FSyncPick := p;
-              IO_SyncMethod(ACurrentActiveThread, SendSync, {$IFDEF FPC}@{$ENDIF FPC}Sync_InternalSendDirectStreamCmd);
+              IO_SyncMethod(CurrentActiveThread_, SendSync, {$IFDEF FPC}@{$ENDIF FPC}Sync_InternalSendDirectStreamCmd);
 
               FSyncPick := nil;
 
@@ -4996,7 +4995,7 @@ begin
               AtomInc(FOwnerFramework.Statistics[TStatisticsType.stSendBigStream]);
 
               FSyncPick := p;
-              IO_SyncMethod(ACurrentActiveThread, SendSync, {$IFDEF FPC}@{$ENDIF FPC}Sync_InternalSendBigStreamCmd);
+              IO_SyncMethod(CurrentActiveThread_, SendSync, {$IFDEF FPC}@{$ENDIF FPC}Sync_InternalSendBigStreamCmd);
 
               FSyncPick := nil;
 
@@ -5011,7 +5010,7 @@ begin
               AtomInc(FOwnerFramework.Statistics[TStatisticsType.stSendCompleteBuffer]);
 
               FSyncPick := p;
-              IO_SyncMethod(ACurrentActiveThread, SendSync, {$IFDEF FPC}@{$ENDIF FPC}Sync_InternalSendCompleteBufferCmd);
+              IO_SyncMethod(CurrentActiveThread_, SendSync, {$IFDEF FPC}@{$ENDIF FPC}Sync_InternalSendCompleteBufferCmd);
 
               FSyncPick := nil;
 
@@ -5024,7 +5023,7 @@ begin
     FAllSendProcessing := False;
     UnLockIO;
     if FReceivedBuffer_Busy.Size > 0 then
-        FillRecvBuffer(ACurrentActiveThread, RecvSync, SendSync);
+        FillRecvBuffer(CurrentActiveThread_, RecvSync, SendSync);
   end;
 end;
 
@@ -5113,7 +5112,7 @@ begin
   Result := True;
 end;
 
-constructor TPeerIO.Create(AOwnerFramework: TCommunicationFramework; AIOInterface: TCoreClassObject);
+constructor TPeerIO.Create(OwnerFramework_: TCommunicationFramework; IOInterface_: TCoreClassObject);
 var
   kref: TInt64;
 begin
@@ -5121,16 +5120,16 @@ begin
 
   FLockedObject := TCritical.Create;
   FCustomProtocolLockedObject := TCritical.Create;
-  FOwnerFramework := AOwnerFramework;
-  FIOInterface := AIOInterface;
+  FOwnerFramework := OwnerFramework_;
+  FIOInterface := IOInterface_;
 
   FOwnerFramework.Lock_All_IO;
 
-  FID := AOwnerFramework.FIDCounter;
-  AtomInc(AOwnerFramework.FIDCounter);
+  FID := OwnerFramework_.FIDCounter;
+  AtomInc(OwnerFramework_.FIDCounter);
 
-  while (AOwnerFramework.FIDCounter = 0) or (AOwnerFramework.FPeerIO_HashPool.Exists(AOwnerFramework.FIDCounter)) do
-      AtomInc(AOwnerFramework.FIDCounter);
+  while (OwnerFramework_.FIDCounter = 0) or (OwnerFramework_.FPeerIO_HashPool.Exists(OwnerFramework_.FIDCounter)) do
+      AtomInc(OwnerFramework_.FIDCounter);
 
   FHeadToken := C_DataHeadToken;
   FTailToken := C_DataTailToken;
@@ -5673,14 +5672,14 @@ begin
   LastCommunicationTick_KeepAlive := LastCommunicationTick_Received;
 end;
 
-procedure TPeerIO.FillRecvBuffer(const ACurrentActiveThread: TCoreClassThread; const RecvSync, SendSync: Boolean);
+procedure TPeerIO.FillRecvBuffer(const CurrentActiveThread_: TCoreClassThread; const RecvSync, SendSync: Boolean);
 begin
-  OnInternalProcessReceiveBuffer(Self, ACurrentActiveThread, RecvSync, SendSync);
+  OnInternalProcessReceiveBuffer(Self, CurrentActiveThread_, RecvSync, SendSync);
 end;
 
-procedure TPeerIO.ProcessAllSendCmd(const ACurrentActiveThread: TCoreClassThread; const RecvSync, SendSync: Boolean);
+procedure TPeerIO.ProcessAllSendCmd(const CurrentActiveThread_: TCoreClassThread; const RecvSync, SendSync: Boolean);
 begin
-  OnInternalProcessAllSendCmd(Self, ACurrentActiveThread, RecvSync, SendSync);
+  OnInternalProcessAllSendCmd(Self, CurrentActiveThread_, RecvSync, SendSync);
 end;
 
 procedure TPeerIO.PostQueueData(p: PQueueData);
@@ -6260,7 +6259,7 @@ begin
       Sender.InternalSaveReceiveBuffer(buff, siz);
 end;
 
-procedure TCommunicationFramework.Framework_InternalProcessReceiveBuffer(const Sender: TPeerIO; const ACurrentActiveThread: TCoreClassThread; const RecvSync, SendSync: Boolean);
+procedure TCommunicationFramework.Framework_InternalProcessReceiveBuffer(const Sender: TPeerIO; const CurrentActiveThread_: TCoreClassThread; const RecvSync, SendSync: Boolean);
 var
   FillDone: Boolean;
 begin
@@ -6271,26 +6270,26 @@ begin
 
       FillDone := True;
 
-      if RecvSync and (ACurrentActiveThread <> nil) then
-          FillCustomBuffer(Sender, ACurrentActiveThread, Sender.FReceivedBuffer.Memory, Sender.FReceivedBuffer.Size, FillDone)
+      if RecvSync and (CurrentActiveThread_ <> nil) then
+          FillCustomBuffer(Sender, CurrentActiveThread_, Sender.FReceivedBuffer.Memory, Sender.FReceivedBuffer.Size, FillDone)
       else
           FillCustomBuffer(Sender, nil, Sender.FReceivedBuffer.Memory, Sender.FReceivedBuffer.Size, FillDone);
 
       if FillDone then
           Sender.FReceivedBuffer.Clear
       else
-          Sender.InternalProcessReceiveBuffer(ACurrentActiveThread, RecvSync, SendSync);
+          Sender.InternalProcessReceiveBuffer(CurrentActiveThread_, RecvSync, SendSync);
 
       if FEnabledAtomicLockAndMultiThread then
           Sender.FCustomProtocolLockedObject.Release;
     end
   else
-      Sender.InternalProcessReceiveBuffer(ACurrentActiveThread, RecvSync, SendSync);
+      Sender.InternalProcessReceiveBuffer(CurrentActiveThread_, RecvSync, SendSync);
 end;
 
-procedure TCommunicationFramework.Framework_InternalProcessAllSendCmd(const Sender: TPeerIO; const ACurrentActiveThread: TCoreClassThread; const RecvSync, SendSync: Boolean);
+procedure TCommunicationFramework.Framework_InternalProcessAllSendCmd(const Sender: TPeerIO; const CurrentActiveThread_: TCoreClassThread; const RecvSync, SendSync: Boolean);
 begin
-  Sender.InternalProcessAllSendCmd(ACurrentActiveThread, RecvSync, SendSync);
+  Sender.InternalProcessAllSendCmd(CurrentActiveThread_, RecvSync, SendSync);
 end;
 
 procedure TCommunicationFramework.Framework_InternalIOCreate(const Sender: TPeerIO);
@@ -8615,7 +8614,7 @@ begin
 end;
 
 // sync KeepAlive
-function TCommunicationFrameworkClient.Wait(ATimeOut: TTimeTick): SystemString;
+function TCommunicationFrameworkClient.Wait(TimeOut_: TTimeTick): SystemString;
 begin
   Result := '';
   if (ClientIO = nil) then
@@ -8623,10 +8622,10 @@ begin
   if (not Connected) then
       exit;
 
-  Result := WaitSendConsoleCmd(C_Wait, '', GetWaitTimeout(ATimeOut));
+  Result := WaitSendConsoleCmd(C_Wait, '', GetWaitTimeout(TimeOut_));
 end;
 
-function TCommunicationFrameworkClient.WaitC(ATimeOut: TTimeTick; OnResult: TStateCall): Boolean;
+function TCommunicationFrameworkClient.WaitC(TimeOut_: TTimeTick; OnResult: TStateCall): Boolean;
 begin
   Result := False;
   if (ClientIO = nil) then
@@ -8641,7 +8640,7 @@ begin
     end;
 
   FWaiting := True;
-  FWaitingTimeOut := GetTimeTick + GetWaitTimeout(ATimeOut);
+  FWaitingTimeOut := GetTimeTick + GetWaitTimeout(TimeOut_);
   FOnWaitResultCall := OnResult;
   FOnWaitResultMethod := nil;
   FOnWaitResultProc := nil;
@@ -8649,7 +8648,7 @@ begin
   Result := True;
 end;
 
-function TCommunicationFrameworkClient.WaitM(ATimeOut: TTimeTick; OnResult: TStateMethod): Boolean;
+function TCommunicationFrameworkClient.WaitM(TimeOut_: TTimeTick; OnResult: TStateMethod): Boolean;
 begin
   Result := False;
   if (ClientIO = nil) then
@@ -8664,7 +8663,7 @@ begin
     end;
 
   FWaiting := True;
-  FWaitingTimeOut := GetTimeTick + GetWaitTimeout(ATimeOut);
+  FWaitingTimeOut := GetTimeTick + GetWaitTimeout(TimeOut_);
   FOnWaitResultCall := nil;
   FOnWaitResultMethod := OnResult;
   FOnWaitResultProc := nil;
@@ -8673,7 +8672,7 @@ begin
   Result := True;
 end;
 
-function TCommunicationFrameworkClient.WaitP(ATimeOut: TTimeTick; OnResult: TStateProc): Boolean;
+function TCommunicationFrameworkClient.WaitP(TimeOut_: TTimeTick; OnResult: TStateProc): Boolean;
 begin
   Result := False;
   if (ClientIO = nil) then
@@ -8688,7 +8687,7 @@ begin
     end;
 
   FWaiting := True;
-  FWaitingTimeOut := GetTimeTick + GetWaitTimeout(ATimeOut);
+  FWaitingTimeOut := GetTimeTick + GetWaitTimeout(TimeOut_);
   FOnWaitResultCall := nil;
   FOnWaitResultMethod := nil;
   FOnWaitResultProc := OnResult;
@@ -10454,9 +10453,9 @@ begin
     end;
 end;
 
-procedure TCommunicationFrameworkWithP2PVM.Hook_ProcessReceiveBuffer(const Sender: TPeerIO; const ACurrentActiveThread: TCoreClassThread; const RecvSync, SendSync: Boolean);
+procedure TCommunicationFrameworkWithP2PVM.Hook_ProcessReceiveBuffer(const Sender: TPeerIO; const CurrentActiveThread_: TCoreClassThread; const RecvSync, SendSync: Boolean);
 begin
-  Sender.IO_SyncMethod(ACurrentActiveThread, RecvSync, {$IFDEF FPC}@{$ENDIF FPC}SyncProcessReceiveBuff);
+  Sender.IO_SyncMethod(CurrentActiveThread_, RecvSync, {$IFDEF FPC}@{$ENDIF FPC}SyncProcessReceiveBuff);
   if FPhysicsIO.OwnerFramework.FEnabledAtomicLockAndMultiThread then
       FLockedObject.Release;
 end;
@@ -11591,9 +11590,9 @@ begin
     end;
 end;
 
-constructor TStableServer_PhysicsIO_UserDefine.Create(AOwner: TPeerIO);
+constructor TStableServer_PhysicsIO_UserDefine.Create(Owner_: TPeerIO);
 begin
-  inherited Create(AOwner);
+  inherited Create(Owner_);
   BindStableIO := nil;
 end;
 

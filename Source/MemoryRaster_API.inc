@@ -1512,6 +1512,11 @@ begin
         Antialias32(DestMR, 0, 0, DestMR.width, DestMR.height);
 end;
 
+procedure Antialias32(const DestMR: TMemoryRaster);
+begin
+  Antialias32(DestMR, 0, 0, DestMR.width, DestMR.height);
+end;
+
 procedure HistogramEqualize(const mr: TMemoryRaster);
 var
   LHistogram: array [0 .. $FF] of Cardinal;

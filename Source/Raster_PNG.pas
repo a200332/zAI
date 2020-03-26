@@ -1884,14 +1884,14 @@ begin
           raise EPngError.Create(RCStrIncompletePalette);
 
       Setlength(FPaletteEntries, ChunkSize_ div SizeOf(TRGB24));
-
       Read(FPaletteEntries[0], Length(FPaletteEntries) * SizeOf(TRGB24));
     end;
 end;
 
 procedure TChunkPngPalette.WriteToStream(Stream: TCoreClassStream);
 begin
-  Stream.Write(FPaletteEntries[0], ChunkSize);
+  if ChunkSize > 0 then
+      Stream.Write(FPaletteEntries[0], ChunkSize);
 end;
 
 procedure TChunkPngPalette.PaletteEntriesChanged;

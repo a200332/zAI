@@ -132,10 +132,17 @@ type
     function AtPictureOffset(data_: TPictureViewerData; pt: TVec2): TPoint;
 
     // tap
-    property DownState: Boolean read FDownState;
     procedure TapDown(pt: TVec2);
     procedure TapMove(pt: TVec2);
     procedure TapUp(pt: TVec2);
+    // tap state
+    property DownScreenPT: TVec2 read FDownScreenPT;
+    property DownScenePT: TVec2 read FDownScenePT;
+    property MoveScreenPT: TVec2 read FMoveScreenPT;
+    property MoveScenePT: TVec2 read FMoveScenePT;
+    property UpScreenPT: TVec2 read FUpScreenPT;
+    property UpScenePT: TVec2 read FUpScenePT;
+    property DownState: Boolean read FDownState;
 
     // scale
     procedure ScaleCamera(f: TGeoFloat);
@@ -148,6 +155,7 @@ type
     // renderer
     procedure Render();
 
+    // viewer options
     property ShowHistogramInfo: Boolean read FShowHistogramInfo write FShowHistogramInfo;
     property ShowPixelInfo: Boolean read FShowPixelInfo write FShowPixelInfo;
     property ShowPictureInfo: Boolean read FShowPictureInfo write FShowPictureInfo;

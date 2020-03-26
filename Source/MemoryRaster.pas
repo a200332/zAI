@@ -253,6 +253,9 @@ type
     function GetPixel(const X, Y: Integer): TRColor;
     procedure SetPixel(const X, Y: Integer; const Value: TRColor);
 
+    function GetFastPixel(const X, Y: Integer): TRColor;
+    procedure SetFastPixel(const X, Y: Integer; const Value: TRColor);
+
     function GetPixelBGRA(const X, Y: Integer): TRColor;
     procedure SetPixelBGRA(const X, Y: Integer; const Value: TRColor);
 
@@ -291,7 +294,7 @@ type
     function GetPixelVec(const v2: TVec2): TRColor;
     procedure SetPixelVec(const v2: TVec2; const Value: TRColor);
 
-    function GetPixelLinearF(const X, Y: TGeoFloat): TRColor;
+    function GetPixelLinearMetric(const X, Y: TGeoFloat): TRColor;
     function GetPixelLinear(const X, Y: Integer): TRColor;
 
     function GetPixelYIQ(const X, Y: Integer): TYIQ;
@@ -365,6 +368,8 @@ type
     procedure SetSizeF(NewWidth, NewHeight: TGeoFloat); overload;
     procedure SetSizeR(R: TRectV2; const ClearColor: TRColor); overload;
     procedure SetSizeR(R: TRectV2); overload;
+    procedure SetSizeR(R: TRect; const ClearColor: TRColor); overload;
+    procedure SetSizeR(R: TRect); overload;
     function SizeOfPoint: TPoint;
     function SizeOf2DPoint: TVec2;
     function Size2D: TVec2;
@@ -386,8 +391,10 @@ type
     procedure Rotate90;
     procedure Rotate180;
     procedure Rotate270;
-    procedure Rotate(dest: TMemoryRaster; Angle: TGeoFloat; Edge: Integer); overload;
-    procedure Rotate(Angle: TGeoFloat; Edge: Integer; BackgroundColor: TRColor); overload;
+    function Rotate(dest: TMemoryRaster; Angle: TGeoFloat; Edge: Integer): TV2R4; overload;
+    function Rotate(Angle: TGeoFloat; Edge: Integer; BackgroundColor: TRColor): TV2R4; overload;
+    function Rotate(dest: TMemoryRaster; Axis: TVec2; Angle: TGeoFloat; Edge: Integer): TV2R4; overload;
+    function Rotate(Axis: TVec2; Angle: TGeoFloat; Edge: Integer; BackgroundColor: TRColor): TV2R4; overload;
     procedure CalibrateRotate_LineDistance(BackgroundColor: TRColor);
     procedure CalibrateRotate_LineMatched(BackgroundColor: TRColor);
     procedure CalibrateRotate_AVG(BackgroundColor: TRColor);
@@ -442,7 +449,7 @@ type
     function ExistsColor(C: TRColor): Boolean;
     function FindFirstColor(C: TRColor): TPoint;
     function FindLastColor(C: TRColor): TPoint;
-    function FindNearColor(C: TRColor; Pt: TVec2): TPoint;
+    function FindNearColor(C: TRColor; PT: TVec2): TPoint;
     function ColorBoundsRectV2(C: TRColor): TRectV2;
     function ColorBoundsRect(C: TRColor): TRect;
     function ConvexHull(C: TRColor): TVec2List;
@@ -453,10 +460,10 @@ type
     procedure Black();
 
     { shape support }
-    procedure Line(x1, y1, x2, y2: Integer; Color: TRColor; L: Boolean); virtual;     // L = draw closed pixel
-    procedure LineF(x1, y1, x2, y2: TGeoFloat; Color: TRColor; L: Boolean); overload; // L = draw closed pixel
-    procedure LineF(p1, p2: TVec2; Color: TRColor; L: Boolean); overload;             // L = draw closed pixel
-    procedure LineF(p1, p2: TVec2; Color: TRColor; L, Cross: Boolean); overload;      // L = draw closed pixel
+    procedure Line(x1, y1, x2, y2: Integer; Color: TRColor; L: Boolean); virtual;                              // L = draw closed pixel
+    procedure LineF(x1, y1, x2, y2: TGeoFloat; Color: TRColor; L: Boolean); overload;                          // L = draw closed pixel
+    procedure LineF(p1, p2: TVec2; Color: TRColor; L: Boolean); overload;                                      // L = draw closed pixel
+    procedure LineF(p1, p2: TVec2; Color: TRColor; L: Boolean; LineDist: TGeoFloat; Cross: Boolean); overload; // L = draw closed pixel
     procedure FillRect(x1, y1, x2, y2: Integer; Color: TRColor); overload;
     procedure FillRect(Dstx, Dsty, LineDist: Integer; Color: TRColor); overload;
     procedure FillRect(Dst: TVec2; LineDist: Integer; Color: TRColor); overload;
@@ -468,6 +475,7 @@ type
     procedure DrawRect(R: TV2Rect4; Color: TRColor); overload;
     procedure DrawRect(R: TRectV2; Angle: TGeoFloat; Color: TRColor); overload;
     procedure DrawTriangle(tri: TTriangle; Transform: Boolean; Color: TRColor; Cross: Boolean);
+    procedure DrawFlatCross(Dst: TVec2; LineDist: TGeoFloat; Color: TRColor);
     procedure DrawCross(Dstx, Dsty, LineDist: Integer; Color: TRColor); overload;
     procedure DrawCrossF(Dstx, Dsty, LineDist: TGeoFloat; Color: TRColor); overload;
     procedure DrawCrossF(Dst: TVec2; LineDist: TGeoFloat; Color: TRColor); overload;
@@ -599,6 +607,7 @@ type
 
     { Rasterization pixel }
     property Pixel[const X, Y: Integer]: TRColor read GetPixel write SetPixel; default;
+    property FastPixel[const X, Y: Integer]: TRColor read GetFastPixel write SetFastPixel;
     property PixelBGRA[const X, Y: Integer]: TRColor read GetPixelBGRA write SetPixelBGRA;
     property PixelPtr[const X, Y: Integer]: PRColor read GetPixelPtr;
     property PixelRed[const X, Y: Integer]: Byte read GetPixelRed write SetPixelRed;
@@ -610,7 +619,7 @@ type
     property PixelGrayD[const X, Y: Integer]: Double read GetGrayD write SetGrayD;
     property PixelF[const X, Y: TGeoFloat]: TRColor read GetPixelF write SetPixelF;
     property PixelVec[const v2: TVec2]: TRColor read GetPixelVec write SetPixelVec;
-    property PixelLinearF[const X, Y: TGeoFloat]: TRColor read GetPixelLinearF;
+    property PixelLinearMetric[const X, Y: TGeoFloat]: TRColor read GetPixelLinearMetric;
     property PixelLinear[const X, Y: Integer]: TRColor read GetPixelLinear;
     property PixelYIQ[const X, Y: Integer]: TYIQ read GetPixelYIQ write SetPixelYIQ;
     property PixelHSI[const X, Y: Integer]: THSI read GetPixelHSI write SetPixelHSI;
@@ -799,6 +808,7 @@ type
     class var Parallel: Boolean;
     class var ParallelHeightTrigger, ParallelWidthTrigger: Int64;
   public
+    LockSamplerCoord: Boolean;
     // local: parallel vertex
     LocalParallel: Boolean;
     // render window
@@ -921,6 +931,7 @@ type
     procedure Add(C: TFontRasterChar; raster: TMemoryRaster);
     procedure Remove(C: TFontRasterChar);
     procedure Clear;
+    procedure ClearFragRaster;
     procedure Build(fontSiz: Integer);
 
     function ValidChar(C: TFontRasterChar): Boolean;
@@ -937,6 +948,7 @@ type
     procedure SaveToFile(filename: TPascalString);
 
     function BuildRaster(partitionLine: Boolean): TMemoryRaster;
+    function BuildMorphomatics(): TMorphomatics;
     procedure ExportRaster(stream: TCoreClassStream; partitionLine: Boolean); overload;
     procedure ExportRaster(filename: U_String; partitionLine: Boolean); overload;
 
@@ -948,7 +960,7 @@ type
     function TextHeight(const S: TFontRasterString): Word;
 
     function Draw(Text: TFontRasterString; Dst: TMemoryRaster; dstVec: TVec2; dstColor: TRColor;
-      const bilinear_sampling: Boolean; const alpha: TGeoFloat; const axis: TVec2; const Angle, Scale: TGeoFloat): TVec2; overload;
+      const bilinear_sampling: Boolean; const alpha: TGeoFloat; const Axis: TVec2; const Angle, Scale: TGeoFloat): TVec2; overload;
     procedure Draw(Text: TFontRasterString; Dst: TMemoryRaster; dstVec: TVec2; dstColor: TRColor); overload;
   end;
 {$ENDREGION 'TFontRaster'}
@@ -1669,6 +1681,7 @@ procedure GrayscaleBlur(Source: TMemoryRaster; radius: Double; const Bounds: TRe
 
 procedure Antialias32(const DestMR: TMemoryRaster; AXOrigin, AYOrigin, AXFinal, AYFinal: Integer); overload;
 procedure Antialias32(const DestMR: TMemoryRaster; const Amount_: Integer); overload;
+procedure Antialias32(const DestMR: TMemoryRaster); overload;
 procedure HistogramEqualize(const mr: TMemoryRaster); overload;
 procedure HistogramEqualize(const mr1, mr2: TMemoryRaster); overload;
 procedure RemoveRedEyes(const mr: TMemoryRaster);
@@ -1957,6 +1970,7 @@ begin
   mr.SaveToFile(fn);
 end;
 {$ENDREGION 'Intf'}
+
 
 initialization
 

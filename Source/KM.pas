@@ -58,7 +58,7 @@ function KMeansCluster(const Source: TKMFloat2DArray; const NVars, k, Restarts: 
 
 implementation
 
-uses Math, Learn;
+uses Math, LearnTypes, Learn;
 
 procedure ArrayMove(VDst: PKMFloat; const i11, i12: NativeInt; vSrc: PKMFloat; const i21, i22: NativeInt); inline; overload;
 var

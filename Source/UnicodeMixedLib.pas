@@ -153,7 +153,7 @@ function umlNewString(const s: TPascalString): P_String;
 procedure umlFreeString(const p: P_String);
 
 function umlComparePosStr(const s: TPascalString; Offset: Integer; const t: TPascalString): Boolean;
-function umlPos(const SubStr, Str: TPascalString; const Offset: Integer = 1): Integer;
+function umlPos(const SubStr, s: TPascalString; const Offset: Integer = 1): Integer;
 
 function umlVarToStr(const v: Variant; const Base64Conver: Boolean): TPascalString; overload;
 function umlVarToStr(const v: Variant): TPascalString; overload;
@@ -310,8 +310,8 @@ function umlGetLength(const sVal: TPascalString): Integer; overload;
 function umlGetLength(const sVal: U_Bytes): Integer; overload;
 function umlGetLength(const sVal: TArrayPascalString): Integer; overload;
 
-function umlUpperCase(const Str: TPascalString): TPascalString;
-function umlLowerCase(const Str: TPascalString): TPascalString;
+function umlUpperCase(const s: TPascalString): TPascalString;
+function umlLowerCase(const s: TPascalString): TPascalString;
 function umlCopyStr(const sVal: TPascalString; MainPosition, LastPosition: Integer): TPascalString;
 function umlSameText(const s1, s2: TPascalString): Boolean;
 
@@ -377,8 +377,8 @@ function umlDateTimeToStr(t: TDateTime): TPascalString;
 function umlTimeTickToStr(const t: TTimeTick): TPascalString;
 function umlTimeToStr(t: TDateTime): TPascalString;
 function umlDateToStr(t: TDateTime): TPascalString;
-function umlFloatToStr(const f: Extended): TPascalString;
-function umlShortFloatToStr(const f: Extended): TPascalString;
+function umlFloatToStr(const f: Double): TPascalString;
+function umlShortFloatToStr(const f: Double): TPascalString;
 
 function umlStrToInt(const _V: TPascalString): Integer; overload;
 function umlStrToInt(const _V: TPascalString; _Def: Integer): Integer; overload;
@@ -394,6 +394,8 @@ function umlSearchMatch(const SourceStr, TargetStr: TPascalString): Boolean; ove
 function umlSearchMatch(const ValueCheck: TArrayPascalString; Value: TPascalString): Boolean; overload;
 
 // <prefix>.<postfix> formula, match sour -> dest
+// example: <prefix>.*
+// example: *.<postfix>
 function umlMatchFileInfo(const exp_, sour_, dest_: TPascalString): Boolean;
 
 function umlDecodeTimeToStr(NowDateTime: TDateTime): TPascalString;
@@ -873,9 +875,9 @@ begin
   Result := s.ComparePos(Offset, @t);
 end;
 
-function umlPos(const SubStr, Str: TPascalString; const Offset: Integer = 1): Integer;
+function umlPos(const SubStr, s: TPascalString; const Offset: Integer = 1): Integer;
 begin
-  Result := Str.GetPos(SubStr, Offset);
+  Result := s.GetPos(SubStr, Offset);
 end;
 
 function umlVarToStr(const v: Variant; const Base64Conver: Boolean): TPascalString; overload;
@@ -2686,14 +2688,14 @@ begin
   Result := length(sVal);
 end;
 
-function umlUpperCase(const Str: TPascalString): TPascalString;
+function umlUpperCase(const s: TPascalString): TPascalString;
 begin
-  Result := UpperCase(Str.text);
+  Result := s.UpperText;
 end;
 
-function umlLowerCase(const Str: TPascalString): TPascalString;
+function umlLowerCase(const s: TPascalString): TPascalString;
 begin
-  Result := LowerCase(Str.text);
+  Result := s.LowerText;
 end;
 
 function umlCopyStr(const sVal: TPascalString; MainPosition, LastPosition: Integer): TPascalString;
@@ -2966,26 +2968,26 @@ end;
 
 function umlGetIndexStrCount(const sVal, trim_s: TPascalString): Integer;
 var
-  Str: TPascalString;
+  s: TPascalString;
   APos: Integer;
 begin
-  Str := sVal;
+  s := sVal;
   Result := 0;
-  if Str.Len = 0 then
+  if s.Len = 0 then
       exit;
   APos := 1;
   while true do
     begin
-      while umlMatchChar(Str[APos], @trim_s) do
+      while umlMatchChar(s[APos], @trim_s) do
         begin
-          if APos >= Str.Len then
+          if APos >= s.Len then
               exit;
           inc(APos);
         end;
       inc(Result);
-      while not umlMatchChar(Str[APos], @trim_s) do
+      while not umlMatchChar(s[APos], @trim_s) do
         begin
-          if APos >= Str.Len then
+          if APos >= s.Len then
               exit;
           inc(APos);
         end;
@@ -3211,25 +3213,25 @@ end;
 
 function umlGetIndexStrCount_Discontinuity(const sVal, trim_s: TPascalString): Integer;
 var
-  Str: TPascalString;
+  s: TPascalString;
   APos: Integer;
 begin
-  Str := sVal;
+  s := sVal;
   Result := 0;
-  if Str.Len = 0 then
+  if s.Len = 0 then
       exit;
   APos := 1;
   Result := 1;
   while true do
     begin
-      while not umlMatchChar(Str[APos], @trim_s) do
+      while not umlMatchChar(s[APos], @trim_s) do
         begin
-          if APos = Str.Len then
+          if APos = s.Len then
               exit;
           inc(APos);
         end;
       inc(Result);
-      if APos = Str.Len then
+      if APos = s.Len then
           exit;
       inc(APos);
     end;
@@ -3646,12 +3648,12 @@ begin
   Result := DateToStr(t);
 end;
 
-function umlFloatToStr(const f: Extended): TPascalString;
+function umlFloatToStr(const f: Double): TPascalString;
 begin
   Result := FloatToStr(f);
 end;
 
-function umlShortFloatToStr(const f: Extended): TPascalString;
+function umlShortFloatToStr(const f: Double): TPascalString;
 begin
   Result := Format('%f', [f]);
 end;

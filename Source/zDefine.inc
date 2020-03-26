@@ -126,7 +126,7 @@
   // {$DEFINE Z_AI_Dataset_Build_In}
 
   // With SMALL_RASTER_FONT_Build_In and LARGE_RASTER_FONT_Build_In, boot-time memory usage increase by 100M-200M and start-up time to be delay 100ms
-  // {$DEFINE SMALL_RASTER_FONT_Build_In}
+  {$DEFINE SMALL_RASTER_FONT_Build_In}
   // {$DEFINE LARGE_RASTER_FONT_Build_In}
 
   // ZDB_BACKUP is automatically made and replica caching is enabled.

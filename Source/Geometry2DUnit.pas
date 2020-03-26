@@ -942,9 +942,9 @@ type
     function IsZero: Boolean; {$IFDEF INLINE_ASM} inline; {$ENDIF}
     function Rotation(Angle: TGeoFloat): TV2Rect4; overload; {$IFDEF INLINE_ASM} inline; {$ENDIF}
     function Rotation(axis: TVec2; Angle: TGeoFloat): TV2Rect4; overload; {$IFDEF INLINE_ASM} inline; {$ENDIF}
-    function ScaleToRect(Box: TRectV2; Edge: TGeoFloat): TV2Rect4; overload; {$IFDEF INLINE_ASM} inline; {$ENDIF}
-    function ScaleToRect(Box: TRectV2; Angle, Edge: TGeoFloat): TV2Rect4; overload; {$IFDEF INLINE_ASM} inline; {$ENDIF}
-    function ScaleToRect(Box: TRectV2; axis: TVec2; Angle, Edge: TGeoFloat): TV2Rect4; overload; {$IFDEF INLINE_ASM} inline; {$ENDIF}
+    function TransformToRect(Box: TRectV2; Edge: TGeoFloat): TV2Rect4; overload; {$IFDEF INLINE_ASM} inline; {$ENDIF}
+    function TransformToRect(Box: TRectV2; Angle, Edge: TGeoFloat): TV2Rect4; overload; {$IFDEF INLINE_ASM} inline; {$ENDIF}
+    function TransformToRect(Box: TRectV2; axis: TVec2; Angle, Edge: TGeoFloat): TV2Rect4; overload; {$IFDEF INLINE_ASM} inline; {$ENDIF}
     function Add(v: TVec2): TV2Rect4; {$IFDEF INLINE_ASM} inline; {$ENDIF}
     function Sub(v: TVec2): TV2Rect4; {$IFDEF INLINE_ASM} inline; {$ENDIF}
     function Mul(v: TVec2): TV2Rect4; overload; {$IFDEF INLINE_ASM} inline; {$ENDIF}
@@ -971,6 +971,7 @@ type
     class function Init(r: TRectV2; Ang: TGeoFloat): TV2Rect4; overload; static; {$IFDEF INLINE_ASM} inline; {$ENDIF}
     class function Init(r: TRectf; Ang: TGeoFloat): TV2Rect4; overload; static; {$IFDEF INLINE_ASM} inline; {$ENDIF}
     class function Init(r: TRect; Ang: TGeoFloat): TV2Rect4; overload; static; {$IFDEF INLINE_ASM} inline; {$ENDIF}
+    class function Init(r: TRect): TV2Rect4; overload; static; {$IFDEF INLINE_ASM} inline; {$ENDIF}
     class function Init(CenPos: TVec2; width, height, Ang: TGeoFloat): TV2Rect4; overload; static; {$IFDEF INLINE_ASM} inline; {$ENDIF}
     class function Init(width, height, Ang: TGeoFloat): TV2Rect4; overload; static; {$IFDEF INLINE_ASM} inline; {$ENDIF}
     class function Init(width, height: TGeoFloat): TV2Rect4; overload; static; {$IFDEF INLINE_ASM} inline; {$ENDIF}
@@ -980,6 +981,7 @@ type
     class function Create(r: TRectV2; Ang: TGeoFloat): TV2Rect4; overload; static; {$IFDEF INLINE_ASM} inline; {$ENDIF}
     class function Create(r: TRectf; Ang: TGeoFloat): TV2Rect4; overload; static; {$IFDEF INLINE_ASM} inline; {$ENDIF}
     class function Create(r: TRect; Ang: TGeoFloat): TV2Rect4; overload; static; {$IFDEF INLINE_ASM} inline; {$ENDIF}
+    class function Create(r: TRect): TV2Rect4; overload; static; {$IFDEF INLINE_ASM} inline; {$ENDIF}
     class function Create(CenPos: TVec2; width, height, Ang: TGeoFloat): TV2Rect4; overload; static; {$IFDEF INLINE_ASM} inline; {$ENDIF}
     class function Create(width, height, Ang: TGeoFloat): TV2Rect4; overload; static; {$IFDEF INLINE_ASM} inline; {$ENDIF}
     class function Create(width, height: TGeoFloat): TV2Rect4; overload; static; {$IFDEF INLINE_ASM} inline; {$ENDIF}
@@ -8437,7 +8439,7 @@ begin
   Result.LeftBottom := PointRotation(axis, LeftBottom, PointAngle(axis, LeftBottom) + Angle);
 end;
 
-function TV2Rect4.ScaleToRect(Box: TRectV2; Edge: TGeoFloat): TV2Rect4;
+function TV2Rect4.TransformToRect(Box: TRectV2; Edge: TGeoFloat): TV2Rect4;
 var
   boxSelf, nArea: TRectV2;
 begin
@@ -8449,7 +8451,7 @@ begin
   Result.LeftBottom := RectProjection(boxSelf, nArea, LeftBottom);
 end;
 
-function TV2Rect4.ScaleToRect(Box: TRectV2; Angle, Edge: TGeoFloat): TV2Rect4;
+function TV2Rect4.TransformToRect(Box: TRectV2; Angle, Edge: TGeoFloat): TV2Rect4;
 var
   boxSelf, nArea: TRectV2;
 begin
@@ -8461,7 +8463,7 @@ begin
   Result.LeftBottom := RectProjectionRotationDest(boxSelf, nArea, Angle, LeftBottom);
 end;
 
-function TV2Rect4.ScaleToRect(Box: TRectV2; axis: TVec2; Angle, Edge: TGeoFloat): TV2Rect4;
+function TV2Rect4.TransformToRect(Box: TRectV2; axis: TVec2; Angle, Edge: TGeoFloat): TV2Rect4;
 var
   boxSelf, nArea: TRectV2;
 begin
@@ -8714,6 +8716,11 @@ begin
   Result := Init(MakeRectV2(r), Ang);
 end;
 
+class function TV2Rect4.Init(r: TRect): TV2Rect4;
+begin
+  Result := Init(MakeRectV2(r), 0);
+end;
+
 class function TV2Rect4.Init(CenPos: TVec2; width, height, Ang: TGeoFloat): TV2Rect4;
 var
   r: TRectV2;
@@ -8791,6 +8798,11 @@ end;
 class function TV2Rect4.Create(r: TRect; Ang: TGeoFloat): TV2Rect4;
 begin
   Result := Create(MakeRectV2(r), Ang);
+end;
+
+class function TV2Rect4.Create(r: TRect): TV2Rect4;
+begin
+  Result := Create(MakeRectV2(r), 0);
 end;
 
 class function TV2Rect4.Create(CenPos: TVec2; width, height, Ang: TGeoFloat): TV2Rect4;
@@ -10079,3 +10091,5 @@ begin
 end;
 
 end.
+
+

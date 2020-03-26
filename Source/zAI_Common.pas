@@ -493,6 +493,7 @@ var
   AI_MPEGEncodeTool: U_String;
   AI_PNGConverTool: U_String;
   AI_TIFConverTool: U_String;
+  AI_ImgMatTool: U_String;
   // Integrate training server
   AI_TrainingServer: U_String;
   // toolchain Search directory.
@@ -559,6 +560,7 @@ begin
   AI_MPEGEncodeTool := umlCombineFileName(AI_Work_Path, 'MPEGEncodeTool.exe');
   AI_PNGConverTool := umlCombineFileName(AI_Work_Path, 'ImgFmtConver2PNG.exe');
   AI_TIFConverTool := umlCombineFileName(AI_Work_Path, 'ImgFmtConver2TIF.exe');
+  AI_ImgMatTool := umlCombineFileName(AI_Work_Path, 'ZAI_IMGMatrix_Tool.exe');
 
   // Integrate training server
   AI_TrainingServer := '127.0.0.1';
@@ -641,6 +643,7 @@ begin
   AI_MPEGEncodeTool := r_ai('MPEGEncodeTool', AI_MPEGEncodeTool);
   AI_PNGConverTool := r_ai('PNGConverTool', AI_PNGConverTool);
   AI_TIFConverTool := r_ai('TIFConverTool', AI_TIFConverTool);
+  AI_ImgMatTool := r_ai('ImgMatTool', AI_ImgMatTool);
 
   AI_Parallel_Count := ini.GetDefaultValue('AI', 'Parallel', AI_Parallel_Count);
   AI_TrainingServer := ini.GetDefaultValue('AI', 'TrainingServer', AI_TrainingServer);
@@ -676,6 +679,7 @@ begin
   w_ai('MPEGEncodeTool', AI_MPEGEncodeTool);
   w_ai('PNGConverTool', AI_PNGConverTool);
   w_ai('TIFConverTool', AI_TIFConverTool);
+  w_ai('ImgMatTool', AI_ImgMatTool);
 
   ini.SetDefaultValue('AI', 'Parallel', AI_Parallel_Count);
   ini.SetDefaultValue('AI', 'TrainingServer', AI_TrainingServer);

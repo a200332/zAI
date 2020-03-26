@@ -264,6 +264,16 @@ begin
   PixelPtr[X, Y]^ := Value;
 end;
 
+function TMemoryRaster.GetFastPixel(const X, Y: Integer): TRColor;
+begin
+  Result := FBits^[X + Y * Width];
+end;
+
+procedure TMemoryRaster.SetFastPixel(const X, Y: Integer; const Value: TRColor);
+begin
+  FBits^[X + Y * Width] := Value;
+end;
+
 function TMemoryRaster.GetPixelBGRA(const X, Y: Integer): TRColor;
 begin
   Result := RGBA2BGRA(GetPixel(X, Y));
@@ -406,17 +416,7 @@ begin
   SetPixelF(v2[0], v2[1], Value)
 end;
 
-function TMemoryRaster.GetPixelLinearF(const X, Y: TGeoFloat): TRColor;
-  function CoordWrap(const f: TGeoFloat): TGeoFloat; inline;
-  begin
-    if f < 0 then
-        Result := 1 - Trunc(f) + f
-    else if f > 1 then
-        Result := f - Trunc(f)
-    else
-        Result := f;
-  end;
-
+function TMemoryRaster.GetPixelLinearMetric(const X, Y: TGeoFloat): TRColor;
 var
   fx, fy: TGeoFloat;
   i_x, i_y: Integer;
@@ -426,8 +426,8 @@ var
   k1, k2, k3, K4: TGeoFloat;
   R, G, B, A: TGeoFloat;
 begin
-  fx := CoordWrap(X) * Width0;
-  fy := CoordWrap(Y) * Height0;
+  fx := umlClamp(X, 0.0, 1.0) * Width0;
+  fy := umlClamp(Y, 0.0, 1.0) * Height0;
 
   i_x := ClampInt(Trunc(fx), 0, Width0i);
   i_y := ClampInt(Trunc(fy), 0, Height0i);
@@ -463,7 +463,7 @@ end;
 
 function TMemoryRaster.GetPixelLinear(const X, Y: Integer): TRColor;
 begin
-  Result := GetPixelLinearF(X / Width0, Y / Height0);
+  Result := GetPixelLinearMetric(X / Width0, Y / Height0);
 end;
 
 function TMemoryRaster.GetPixelYIQ(const X, Y: Integer): TYIQ;
@@ -969,6 +969,16 @@ begin
   SetSizeF(RectWidth(R), RectHeight(R));
 end;
 
+procedure TMemoryRaster.SetSizeR(R: TRect; const ClearColor: TRColor);
+begin
+  SetSizeR(RectV2(R), ClearColor);
+end;
+
+procedure TMemoryRaster.SetSizeR(R: TRect);
+begin
+  SetSizeR(RectV2(R));
+end;
+
 function TMemoryRaster.SizeOfPoint: TPoint;
 begin
   Result := Point(Width, Height);
@@ -1207,15 +1217,13 @@ begin
   FSerializedEngine := nil;
 end;
 
-procedure TMemoryRaster.Rotate(dest: TMemoryRaster; Angle: TGeoFloat; Edge: Integer);
+function TMemoryRaster.Rotate(dest: TMemoryRaster; Angle: TGeoFloat; Edge: Integer): TV2R4;
 begin
-  ProjectionTo(dest,
-    BoundsV2Rect40,
-    TV2Rect4.Init(BoundsRectV20, Angle).ScaleToRect(dest.BoundsRectV20, Edge),
-    True, 1.0);
+  Result := TV2Rect4.Init(BoundsRectV20(), Angle).TransformToRect(dest.BoundsRectV20(), Edge);
+  ProjectionTo(dest, BoundsV2Rect40(), Result, True, 1.0);
 end;
 
-procedure TMemoryRaster.Rotate(Angle: TGeoFloat; Edge: Integer; BackgroundColor: TRColor);
+function TMemoryRaster.Rotate(Angle: TGeoFloat; Edge: Integer; BackgroundColor: TRColor): TV2R4;
 var
   n: TMemoryRaster;
   V: TV2Rect4;
@@ -1224,12 +1232,49 @@ begin
   CloseVertex;
   FreeAgg;
 
-  V := TV2Rect4.Init(BoundsRectV20, Angle);
+  V := TV2Rect4.Init(BoundsRectV20(), Angle);
   R := V.BoundRect;
 
   n := TMemoryRaster.Create;
   n.SetSizeF(RectWidth(R) + Edge * 2, RectHeight(R) + Edge * 2, BackgroundColor);
-  Rotate(n, Angle, Edge);
+  Result := Rotate(n, Angle, Edge);
+  Reset;
+  FWidth := n.Width;
+  FHeight := n.Height;
+  FBits := n.Bits;
+
+  n.FBits := nil;
+  n.FWidth := 0;
+  n.FHeight := 0;
+  DisposeObject(n);
+
+  if FAggNeed then
+      OpenAgg;
+  FMemorySerializedPosition := -1;
+  FSerializedEngine := nil;
+end;
+
+function TMemoryRaster.Rotate(dest: TMemoryRaster; Axis: TVec2; Angle: TGeoFloat; Edge: Integer): TV2R4;
+begin
+  Result := TV2Rect4.Init(BoundsRectV20, Axis, Angle).TransformToRect(dest.BoundsRectV20, Edge);
+  ProjectionTo(dest, BoundsV2Rect40, Result, True, 1.0);
+end;
+
+function TMemoryRaster.Rotate(Axis: TVec2; Angle: TGeoFloat; Edge: Integer; BackgroundColor: TRColor): TV2R4;
+var
+  n: TMemoryRaster;
+  V: TV2Rect4;
+  R: TRectV2;
+begin
+  CloseVertex;
+  FreeAgg;
+
+  V := TV2Rect4.Init(BoundsRectV20, Axis, Angle);
+  R := V.BoundRect;
+
+  n := TMemoryRaster.Create;
+  n.SetSizeF(RectWidth(R) + Edge * 2, RectHeight(R) + Edge * 2, BackgroundColor);
+  Result := Rotate(n, Angle, Edge);
   Reset;
   FWidth := n.Width;
   FHeight := n.Height;
@@ -1390,7 +1435,7 @@ begin
       SourceI := pass / dest.Width0;
       SourceJ := j / dest.Height0;
 
-      dest.Pixel[pass, j] := Source.PixelLinearF[SourceI, SourceJ];
+      dest.Pixel[pass, j] := Source.PixelLinearMetric[SourceI, SourceJ];
     end;
 end;
 
@@ -2378,13 +2423,13 @@ begin
   LineF(p1[0], p1[1], p2[0], p2[1], Color, L);
 end;
 
-procedure TMemoryRaster.LineF(p1, p2: TVec2; Color: TRColor; L, Cross: Boolean);
+procedure TMemoryRaster.LineF(p1, p2: TVec2; Color: TRColor; L: Boolean; LineDist: TGeoFloat; Cross: Boolean);
 begin
   LineF(p1[0], p1[1], p2[0], p2[1], Color, L);
   if not Cross then
       exit;
-  DrawCrossF(p1, Round((FWidth + FHeight) div 2 * 0.02), RColorInv(Color));
-  DrawCrossF(p2, Round((FWidth + FHeight) div 2 * 0.02), RColorInv(Color));
+  DrawCrossF(p1, LineDist, Color);
+  DrawCrossF(p2, LineDist, Color);
 end;
 
 procedure TMemoryRaster.FillRect(x1, y1, x2, y2: Integer; Color: TRColor);
@@ -2583,16 +2628,35 @@ procedure TMemoryRaster.DrawTriangle(tri: TTriangle; Transform: Boolean; Color: 
 begin
   if Transform then
     begin
-      LineF(Vec2Mul(tri[0], Size0), Vec2Mul(tri[1], Size0), Color, True, Cross);
-      LineF(Vec2Mul(tri[1], Size0), Vec2Mul(tri[2], Size0), Color, True, Cross);
-      LineF(Vec2Mul(tri[2], Size0), Vec2Mul(tri[0], Size0), Color, True, Cross);
+      LineF(Vec2Mul(tri[0], Size0), Vec2Mul(tri[1], Size0), Color, True, 5, Cross);
+      LineF(Vec2Mul(tri[1], Size0), Vec2Mul(tri[2], Size0), Color, True, 5, Cross);
+      LineF(Vec2Mul(tri[2], Size0), Vec2Mul(tri[0], Size0), Color, True, 5, Cross);
     end
   else
     begin
-      LineF(tri[0], tri[1], Color, True, Cross);
-      LineF(tri[1], tri[2], Color, True, Cross);
-      LineF(tri[2], tri[0], Color, True, Cross);
+      LineF(tri[0], tri[1], Color, True, 5, Cross);
+      LineF(tri[1], tri[2], Color, True, 5, Cross);
+      LineF(tri[2], tri[0], Color, True, 5, Cross);
     end;
+end;
+
+procedure TMemoryRaster.DrawFlatCross(Dst: TVec2; LineDist: TGeoFloat; Color: TRColor);
+var
+  L, x1, y1, x2, y2: TGeoFloat;
+begin
+  L := LineDist * 0.5;
+
+  x1 := Dst[0] - L;
+  x2 := Dst[0] + L;
+  y1 := Dst[1];
+  y2 := Dst[1];
+  LineF(x1, y1, x2, y2, Color, True);
+
+  x1 := Dst[0];
+  x2 := Dst[0];
+  y1 := Dst[1] - L;
+  y2 := Dst[1] + L;
+  LineF(x1, y1, x2, y2, Color, True);
 end;
 
 procedure TMemoryRaster.DrawCross(Dstx, Dsty, LineDist: Integer; Color: TRColor);

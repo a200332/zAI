@@ -782,6 +782,7 @@ type
     procedure SetDrawBounds(r: TRectf); overload;
 
     { compute text }
+    procedure ClearTextCache;
     function GetTextSize(const t: SystemString; Size: TDEFloat): TDEVec; overload;
     function GetTextSize(const buff: TDSegmentionLine): TDEVec; overload;
     function GetTextSize(const buff: TDArraySegmentionText): TDEVec; overload;
@@ -4452,6 +4453,11 @@ end;
 procedure TDrawEngine.SetDrawBounds(r: TRectf);
 begin
   SetDrawBounds(DERect(r));
+end;
+
+procedure TDrawEngine.ClearTextCache;
+begin
+  FTextSizeCache.Clear;
 end;
 
 function TDrawEngine.GetTextSize(const t: SystemString; Size: TDEFloat): TDEVec;

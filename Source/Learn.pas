@@ -1,5 +1,5 @@
 { ****************************************************************************** }
-{ * machine Learn          writen by QQ 600585@qq.com                          * }
+{ * machine Learn, writen by QQ 600585@qq.com                                  * }
 { * https://zpascal.net                                                        * }
 { * https://github.com/PassByYou888/zAI                                        * }
 { * https://github.com/PassByYou888/ZServer4D                                  * }
@@ -224,6 +224,11 @@ type
 {$ENDIF FPC}
   end;
 
+  TLearnRandom = class(TMT19937Random)
+  public
+    property RandReal: Double read RandD;
+  end;
+
 {$ENDREGION 'Class'}
 {$REGION 'LearnAPI'}
 
@@ -300,6 +305,8 @@ procedure LLoadMatrix(Source: TCoreClassStream; var dest: TLBMatrix); overload;
 { * linear discriminant analysis support * }
 function LDA(const M: TLMatrix; const cv: TLVec; const Nclass: TLInt; var sInfo: TPascalString; var output: TLMatrix): Boolean; overload;
 function LDA(const M: TLMatrix; const cv: TLVec; const Nclass: TLInt; var sInfo: TPascalString; var output: TLVec): Boolean; overload;
+procedure FisherLDAN(const xy: TLMatrix; NPoints: TLInt; NVars: TLInt; NClasses: TLInt; var Info: TLInt; var w: TLMatrix);
+procedure FisherLDA(const xy: TLMatrix; NPoints: TLInt; NVars: TLInt; NClasses: TLInt; var Info: TLInt; var w: TLVec);
 
 { * principal component analysis support * }
 
@@ -311,6 +318,7 @@ function LDA(const M: TLMatrix; const cv: TLVec; const Nclass: TLInt; var sInfo:
 *)
 function PCA(const buff: TLMatrix; const NPoints, NVars: TLInt; var v: TLVec; var M: TLMatrix): TLInt; overload;
 function PCA(const buff: TLMatrix; const NPoints, NVars: TLInt; var M: TLMatrix): TLInt; overload;
+procedure PCABuildBasis(const x: TLMatrix; NPoints: TLInt; NVars: TLInt; var Info: TLInt; var s2: TLVec; var v: TLMatrix);
 
 { * k-means++ clusterization support * }
 function KMeans(const Source: TLMatrix; const NVars, K: TLInt; var KArray: TLMatrix; var kIndex: TLIVec): Boolean;
@@ -548,12 +556,6 @@ function CMatrixTRRCondInf(const a: TLComplexMatrix; n: TLInt; IsUpper: Boolean;
 function RCondThreshold(): TLFloat;
 
 { Matrix inverse }
-type
-  TMatInvReport = record
-    r1: TLFloat;
-    RInf: TLFloat;
-  end;
-
 procedure RMatrixLUInverse(var a: TLMatrix; const Pivots: TLIVec; n: TLInt; var Info: TLInt; var Rep: TMatInvReport);
 procedure RMatrixInverse(var a: TLMatrix; n: TLInt; var Info: TLInt; var Rep: TMatInvReport);
 procedure CMatrixLUInverse(var a: TLComplexMatrix; const Pivots: TLIVec; n: TLInt; var Info: TLInt; var Rep: TMatInvReport);
@@ -609,9 +611,11 @@ function BidiagonalSVDDecomposition(var d: TLVec; E: TLVec; n: TLInt; IsUpper: B
 
   Output parameters:
   W           -   contains singular values in descending order.
+
   U           -   if UNeeded=0, U isn't changed, the left singular vectors are not calculated.
   if Uneeded=1, U contains left singular vectors (first min(M,N) columns of matrix U). Array whose indexes range within [0..M-1, 0..Min(M,N)-1].
   if UNeeded=2, U contains matrix U wholly. Array whose indexes range within [0..M-1, 0..M-1].
+
   VT          -   if VTNeeded=0, VT isnæŠ?changed, the right singular vectors are not calculated.
   if VTNeeded=1, VT contains right singular vectors (first min(M,N) rows of matrix V^T). Array whose indexes range within [0..min(M,N)-1, 0..N-1].
   if VTNeeded=2, VT contains matrix V^T wholly. Array whose indexes range within [0..N-1, 0..N-1].
@@ -865,24 +869,291 @@ procedure GaussKronrodQuadratureLegendreCalc(const n: TLInt; var Info: TLInt; va
 }
 procedure GaussKronrodQuadratureLegendreTbl(const n: TLInt; var x, WKronrod, WGauss: TLVec; var Eps: TLFloat);
 {$ENDREGION 'LowLevelGauss'}
+{$REGION 'Limited memory BFGS optimizer'}
+procedure MinLBFGSCreate(n: TLInt; M: TLInt; const x: TLVec; var State: TMinLBFGSState);
+procedure MinLBFGSSetCond(var State: TMinLBFGSState; EpsG: TLFloat; EpsF: TLFloat; EpsX: TLFloat; MAXITS: TLInt);
+procedure MinLBFGSSetXRep(var State: TMinLBFGSState; NeedXRep: Boolean);
+procedure MinLBFGSSetStpMax(var State: TMinLBFGSState; StpMax: TLFloat);
+procedure MinLBFGSCreateX(n: TLInt; M: TLInt; const x: TLVec; Flags: TLInt; var State: TMinLBFGSState);
+function MinLBFGSIteration(var State: TMinLBFGSState): Boolean;
+procedure MinLBFGSResults(const State: TMinLBFGSState; var x: TLVec; var Rep: TMinLBFGSReport);
+procedure MinLBFGSFree(var x: TLVec; var State: TMinLBFGSState);
+{$ENDREGION 'Limited memory BFGS optimizer'}
+{$REGION 'Improved Levenberg-Marquardt optimizer'}
+procedure MinLMCreateFGH(const n: TLInt; const x: TLVec; var State: TMinLMState);
+procedure MinLMCreateFGJ(const n: TLInt; const M: TLInt; const x: TLVec; var State: TMinLMState);
+procedure MinLMCreateFJ(const n: TLInt; const M: TLInt; const x: TLVec; var State: TMinLMState);
+procedure MinLMSetCond(var State: TMinLMState; EpsG: TLFloat; EpsF: TLFloat; EpsX: TLFloat; MAXITS: TLInt);
+procedure MinLMSetXRep(var State: TMinLMState; NeedXRep: Boolean);
+procedure MinLMSetStpMax(var State: TMinLMState; StpMax: TLFloat);
+function MinLMIteration(var State: TMinLMState): Boolean;
+procedure MinLMResults(const State: TMinLMState; var x: TLVec; var Rep: TMinLMReport);
+{$ENDREGION 'Improved Levenberg-Marquardt optimizer'}
+{$REGION 'neural network'}
+procedure MLPCreate0(NIn, NOut: TLInt; var Network: TMultiLayerPerceptron);
+procedure MLPCreate1(NIn, NHid, NOut: TLInt; var Network: TMultiLayerPerceptron);
+procedure MLPCreate2(NIn, NHid1, NHid2, NOut: TLInt; var Network: TMultiLayerPerceptron);
 
+procedure MLPCreateB0(NIn, NOut: TLInt; b, d: TLFloat; var Network: TMultiLayerPerceptron);
+procedure MLPCreateB1(NIn, NHid, NOut: TLInt; b, d: TLFloat; var Network: TMultiLayerPerceptron);
+procedure MLPCreateB2(NIn, NHid1, NHid2, NOut: TLInt; b, d: TLFloat; var Network: TMultiLayerPerceptron);
+
+procedure MLPCreateR0(NIn, NOut: TLInt; a, b: TLFloat; var Network: TMultiLayerPerceptron);
+procedure MLPCreateR1(NIn, NHid, NOut: TLInt; a, b: TLFloat; var Network: TMultiLayerPerceptron);
+procedure MLPCreateR2(NIn, NHid1, NHid2, NOut: TLInt; a, b: TLFloat; var Network: TMultiLayerPerceptron);
+
+procedure MLPCreateC0(NIn, NOut: TLInt; var Network: TMultiLayerPerceptron);
+procedure MLPCreateC1(NIn, NHid, NOut: TLInt; var Network: TMultiLayerPerceptron);
+procedure MLPCreateC2(NIn, NHid1, NHid2, NOut: TLInt; var Network: TMultiLayerPerceptron);
+
+procedure MLPFree(var Network: TMultiLayerPerceptron);
+procedure MLPCopy(const Network1: TMultiLayerPerceptron; var Network2: TMultiLayerPerceptron);
+
+procedure MLPSerialize(const Network: TMultiLayerPerceptron; var ResArry: TLVec; var RLen: TLInt);
+procedure MLPUNSerialize(const ResArry: TLVec; var Network: TMultiLayerPerceptron);
+
+procedure MLPRandomize(var Network: TMultiLayerPerceptron); overload;
+procedure MLPRandomize(var Network: TMultiLayerPerceptron; const Diameter: TLFloat); overload;
+procedure MLPRandomize(var Network: TMultiLayerPerceptron; const WBest: TLVec; const Diameter: TLFloat); overload;
+procedure MLPRandomizeFull(var Network: TMultiLayerPerceptron);
+
+procedure MLPInitPreprocessor(var Network: TMultiLayerPerceptron; const xy: TLMatrix; SSize: TLInt);
+procedure MLPProperties(const Network: TMultiLayerPerceptron; var NIn: TLInt; var NOut: TLInt; var WCount: TLInt);
+function MLPIsSoftmax(const Network: TMultiLayerPerceptron): Boolean;
+
+procedure MLPProcess(var Network: TMultiLayerPerceptron; const x: TLVec; var y: TLVec);
+
+function MLPError(var Network: TMultiLayerPerceptron; const xy: TLMatrix; SSize: TLInt): TLFloat;
+function MLPErrorN(var Network: TMultiLayerPerceptron; const xy: TLMatrix; SSize: TLInt): TLFloat;
+function MLPClsError(var Network: TMultiLayerPerceptron; const xy: TLMatrix; SSize: TLInt): TLInt;
+function MLPRelClsError(var Network: TMultiLayerPerceptron; const xy: TLMatrix; NPoints: TLInt): TLFloat;
+function MLPAvgCE(var Network: TMultiLayerPerceptron; const xy: TLMatrix; NPoints: TLInt): TLFloat;
+function MLPRMSError(var Network: TMultiLayerPerceptron; const xy: TLMatrix; NPoints: TLInt): TLFloat;
+function MLPAvgError(var Network: TMultiLayerPerceptron; const xy: TLMatrix; NPoints: TLInt): TLFloat;
+function MLPAvgRelError(var Network: TMultiLayerPerceptron; const xy: TLMatrix; NPoints: TLInt): TLFloat;
+
+procedure MLPGrad(var Network: TMultiLayerPerceptron; const x: TLVec; const DesiredY: TLVec; var E: TLFloat; var Grad: TLVec);
+procedure MLPGradN(var Network: TMultiLayerPerceptron; const x: TLVec; const DesiredY: TLVec; var E: TLFloat; var Grad: TLVec);
+procedure MLPGradBatch(var Network: TMultiLayerPerceptron; const xy: TLMatrix; SSize: TLInt; var E: TLFloat; var Grad: TLVec);
+procedure MLPGradNBatch(var Network: TMultiLayerPerceptron; const xy: TLMatrix; SSize: TLInt; var E: TLFloat; var Grad: TLVec);
+
+procedure MLPHessianNBatch(var Network: TMultiLayerPerceptron; const xy: TLMatrix; SSize: TLInt; var E: TLFloat; var Grad: TLVec; var h: TLMatrix);
+procedure MLPHessianBatch(var Network: TMultiLayerPerceptron; const xy: TLMatrix; SSize: TLInt; var E: TLFloat; var Grad: TLVec; var h: TLMatrix);
+
+procedure MLPInternalProcessVector(const StructInfo: TLIVec;
+  const Weights: TLVec; const ColumnMeans: TLVec;
+  const ColumnSigmas: TLVec; var Neurons: TLVec;
+  var DFDNET: TLVec; const x: TLVec; var y: TLVec);
+{$ENDREGION 'neural network'}
+{$REGION 'neural network Training'}
+procedure MLPTrainLM(var Network: TMultiLayerPerceptron; const xy: TLMatrix;
+  NPoints: TLInt; Decay: TLFloat; Restarts: TLInt;
+  var Info: TLInt; var Rep: TMLPReport);
+
+procedure MLPTrainLM_MT(var Network: TMultiLayerPerceptron; const xy: TLMatrix;
+  NPoints: TLInt; Decay: TLFloat; Restarts: TLInt;
+  var Info: TLInt; var Rep: TMLPReport);
+
+procedure MLPTrainLBFGS(var Network: TMultiLayerPerceptron;
+  const xy: TLMatrix; NPoints: TLInt; Decay: TLFloat;
+  Restarts: TLInt; WStep: TLFloat; MAXITS: TLInt;
+  var Info: TLInt; var Rep: TMLPReport; IsTerminated: PBoolean;
+  out EBest: TLFloat);
+
+procedure MLPTrainLBFGS_MT(var Network: TMultiLayerPerceptron;
+  const xy: TLMatrix; NPoints: TLInt; Decay: TLFloat;
+  Restarts: TLInt; WStep: TLFloat; MAXITS: TLInt;
+  var Info: TLInt; var Rep: TMLPReport);
+
+procedure MLPTrainLBFGS_MT_Mod(var Network: TMultiLayerPerceptron;
+  const xy: TLMatrix; NPoints: TLInt; Restarts: TLInt;
+  WStep, Diameter: TLFloat; MAXITS: TLInt;
+  var Info: TLInt; var Rep: TMLPReport);
+
+procedure MLPTrainMonteCarlo(var Network: TMultiLayerPerceptron; const xy: TLMatrix; NPoints: TLInt;
+  const MainRestarts, SubRestarts: TLInt; const MinError: TLFloat;
+  Diameter: TLFloat; var Info: TLInt; var Rep: TMLPReport);
+
+procedure MLPKFoldCVLBFGS(const Network: TMultiLayerPerceptron;
+  const xy: TLMatrix; NPoints: TLInt; Decay: TLFloat;
+  Restarts: TLInt; WStep: TLFloat; MAXITS: TLInt;
+  FoldsCount: TLInt; var Info: TLInt; var Rep: TMLPReport;
+  var CVRep: TMLPCVReport);
+
+procedure MLPKFoldCVLM(const Network: TMultiLayerPerceptron;
+  const xy: TLMatrix; NPoints: TLInt; Decay: TLFloat;
+  Restarts: TLInt; FoldsCount: TLInt; var Info: TLInt;
+  var Rep: TMLPReport; var CVRep: TMLPCVReport);
+{$ENDREGION 'neural network Training'}
+{$REGION 'Neural networks ensemble'}
+procedure MLPECreate0(NIn, NOut, EnsembleSize: TLInt; var Ensemble: TMLPEnsemble);
+procedure MLPECreate1(NIn, NHid, NOut, EnsembleSize: TLInt; var Ensemble: TMLPEnsemble);
+procedure MLPECreate2(NIn, NHid1, NHid2, NOut, EnsembleSize: TLInt; var Ensemble: TMLPEnsemble);
+
+procedure MLPECreateB0(NIn, NOut: TLInt; b, d: TLFloat; EnsembleSize: TLInt; var Ensemble: TMLPEnsemble);
+procedure MLPECreateB1(NIn, NHid, NOut: TLInt; b, d: TLFloat; EnsembleSize: TLInt; var Ensemble: TMLPEnsemble);
+procedure MLPECreateB2(NIn, NHid1, NHid2, NOut: TLInt; b, d: TLFloat; EnsembleSize: TLInt; var Ensemble: TMLPEnsemble);
+
+procedure MLPECreateR0(NIn, NOut: TLInt; a, b: TLFloat; EnsembleSize: TLInt; var Ensemble: TMLPEnsemble);
+procedure MLPECreateR1(NIn, NHid, NOut: TLInt; a, b: TLFloat; EnsembleSize: TLInt; var Ensemble: TMLPEnsemble);
+procedure MLPECreateR2(NIn, NHid1, NHid2, NOut: TLInt; a, b: TLFloat; EnsembleSize: TLInt; var Ensemble: TMLPEnsemble);
+
+procedure MLPECreateC0(NIn, NOut, EnsembleSize: TLInt; var Ensemble: TMLPEnsemble);
+procedure MLPECreateC1(NIn, NHid, NOut, EnsembleSize: TLInt; var Ensemble: TMLPEnsemble);
+procedure MLPECreateC2(NIn, NHid1, NHid2, NOut, EnsembleSize: TLInt; var Ensemble: TMLPEnsemble);
+
+procedure MLPECreateFromNetwork(const Network: TMultiLayerPerceptron; EnsembleSize: TLInt; var Ensemble: TMLPEnsemble);
+
+procedure MLPECopy(const Ensemble1: TMLPEnsemble; var Ensemble2: TMLPEnsemble);
+procedure MLPESerialize(var Ensemble: TMLPEnsemble; var ResArry: TLVec; var RLen: TLInt);
+procedure MLPEUNSerialize(const ResArry: TLVec; var Ensemble: TMLPEnsemble);
+
+procedure MLPERandomize(var Ensemble: TMLPEnsemble);
+
+procedure MLPEProperties(const Ensemble: TMLPEnsemble; var NIn: TLInt; var NOut: TLInt);
+
+function MLPEIsSoftmax(const Ensemble: TMLPEnsemble): Boolean;
+
+procedure MLPEProcess(var Ensemble: TMLPEnsemble; const x: TLVec; var y: TLVec);
+
+function MLPERelClsError(var Ensemble: TMLPEnsemble; const xy: TLMatrix; NPoints: TLInt): TLFloat;
+function MLPEAvgCE(var Ensemble: TMLPEnsemble; const xy: TLMatrix; NPoints: TLInt): TLFloat;
+function MLPERMSError(var Ensemble: TMLPEnsemble; const xy: TLMatrix; NPoints: TLInt): TLFloat;
+function MLPEAvgError(var Ensemble: TMLPEnsemble; const xy: TLMatrix; NPoints: TLInt): TLFloat;
+function MLPEAvgRelError(var Ensemble: TMLPEnsemble; const xy: TLMatrix; NPoints: TLInt): TLFloat;
+
+procedure MLPEBaggingLM(const MultiThread: Boolean; var Ensemble: TMLPEnsemble; const xy: TLMatrix;
+  NPoints: TLInt; Decay: TLFloat; Restarts: TLInt;
+  var Info: TLInt; var Rep: TMLPReport; var OOBErrors: TMLPCVReport);
+
+procedure MLPEBaggingLBFGS(const MultiThread: Boolean; var Ensemble: TMLPEnsemble; const xy: TLMatrix;
+  NPoints: TLInt; Decay: TLFloat; Restarts: TLInt;
+  WStep: TLFloat; MAXITS: TLInt; var Info: TLInt;
+  var Rep: TMLPReport; var OOBErrors: TMLPCVReport);
+{$ENDREGION 'Neural networks ensemble'}
+{$REGION 'Random Decision Forest'}
+procedure DFBuildRandomDecisionForest(const xy: TLMatrix; NPoints, NVars, NClasses, NTrees: TLInt; r: TLFloat; var Info: TLInt; var df: TDecisionForest; var Rep: TDFReport);
+procedure DFProcess(const df: TDecisionForest; const x: TLVec; var y: TLVec);
+function DFRelClsError(const df: TDecisionForest; const xy: TLMatrix; NPoints: TLInt): TLFloat;
+function DFAvgCE(const df: TDecisionForest; const xy: TLMatrix; NPoints: TLInt): TLFloat;
+function DFRMSError(const df: TDecisionForest; const xy: TLMatrix; NPoints: TLInt): TLFloat;
+function DFAvgError(const df: TDecisionForest; const xy: TLMatrix; NPoints: TLInt): TLFloat;
+function DFAvgRelError(const df: TDecisionForest; const xy: TLMatrix; NPoints: TLInt): TLFloat;
+procedure DFCopy(const DF1: TDecisionForest; var DF2: TDecisionForest);
+procedure DFSerialize(const df: TDecisionForest; var ResArry: TLVec; var RLen: TLInt);
+procedure DFUnserialize(const ResArry: TLVec; var df: TDecisionForest);
+{$ENDREGION 'Random Decision Forest'}
+{$REGION 'LogitModel'}
+
+procedure MNLTrainH(const xy: TLMatrix; NPoints: TLInt; NVars: TLInt; NClasses: TLInt; var Info: TLInt; var LM: TLogitModel; var Rep: TMNLReport);
+procedure MNLProcess(var LM: TLogitModel; const x: TLVec; var y: TLVec);
+procedure MNLUnpack(const LM: TLogitModel; var a: TLMatrix; var NVars: TLInt; var NClasses: TLInt);
+procedure MNLPack(const a: TLMatrix; NVars: TLInt; NClasses: TLInt; var LM: TLogitModel);
+procedure MNLCopy(const LM1: TLogitModel; var LM2: TLogitModel);
+procedure MNLSerialize(const LM: TLogitModel; var ResArry: TLVec; var RLen: TLInt);
+procedure MNLUnserialize(const ResArry: TLVec; var LM: TLogitModel);
+function MNLAvgCE(var LM: TLogitModel; const xy: TLMatrix; NPoints: TLInt): TLFloat;
+function MNLRelClsError(var LM: TLogitModel; const xy: TLMatrix; NPoints: TLInt): TLFloat;
+function MNLRMSError(var LM: TLogitModel; const xy: TLMatrix; NPoints: TLInt): TLFloat;
+function MNLAvgError(var LM: TLogitModel; const xy: TLMatrix; NPoints: TLInt): TLFloat;
+function MNLAvgRelError(var LM: TLogitModel; const xy: TLMatrix; SSize: TLInt): TLFloat;
+function MNLClsError(var LM: TLogitModel; const xy: TLMatrix; NPoints: TLInt): TLInt;
+{$ENDREGION 'LogitModel'}
+{$REGION 'fitting'}
+
+// Least squares fitting
+procedure LSFitLinearW(y: TLVec; w: TLVec; FMatrix: TLMatrix; n: TLInt; M: TLInt; var Info: TLInt; var c: TLVec; var Rep: TLSFitReport);
+procedure LSFitLinearWC(y: TLVec; w: TLVec; FMatrix: TLMatrix; CMatrix: TLMatrix; n: TLInt; M: TLInt; K: TLInt; var Info: TLInt; var c: TLVec; var Rep: TLSFitReport);
+procedure LSFitLinear(y: TLVec; FMatrix: TLMatrix; n: TLInt; M: TLInt; var Info: TLInt; var c: TLVec; var Rep: TLSFitReport);
+procedure LSFitLinearC(y: TLVec; FMatrix: TLMatrix; CMatrix: TLMatrix; n: TLInt; M: TLInt; K: TLInt; var Info: TLInt; var c: TLVec; var Rep: TLSFitReport);
+procedure LSFitNonlinearWFG(x: TLMatrix; y: TLVec; w: TLVec; c: TLVec; n: TLInt; M: TLInt; K: TLInt; CheapFG: Boolean; var State: TLSFitState);
+procedure LSFitNonlinearFG(x: TLMatrix; y: TLVec; c: TLVec; n: TLInt; M: TLInt; K: TLInt; CheapFG: Boolean; var State: TLSFitState);
+procedure LSFitNonlinearWFGH(x: TLMatrix; y: TLVec; w: TLVec; c: TLVec; n: TLInt; M: TLInt; K: TLInt; var State: TLSFitState);
+procedure LSFitNonlinearFGH(x: TLMatrix; y: TLVec; c: TLVec; n: TLInt; M: TLInt; K: TLInt; var State: TLSFitState);
+procedure LSFitNonlinearSetCond(var State: TLSFitState; EpsF: TLFloat; EpsX: TLFloat; MAXITS: TLInt);
+procedure LSFitNonlinearSetStpMax(var State: TLSFitState; StpMax: TLFloat);
+function LSFitNonlinearIteration(var State: TLSFitState): Boolean;
+procedure LSFitNonlinearResults(State: TLSFitState; var Info: TLInt; var c: TLVec; var Rep: TLSFitReport);
+procedure LSFitScaleXY(var x, y: TLVec; n: TLInt; var XC, YC: TLVec; DC: TLIVec; K: TLInt; var XA, XB, SA, SB: TLFloat; var XOriginal, YOriginal: TLVec);
+
+// Barycentric fitting
+function BarycentricCalc(b: TBarycentricInterpolant; t: TLFloat): TLFloat;
+procedure BarycentricDiff1(b: TBarycentricInterpolant; t: TLFloat; var f: TLFloat; var df: TLFloat);
+procedure BarycentricDiff2(b: TBarycentricInterpolant; t: TLFloat; var f: TLFloat; var df: TLFloat; var D2F: TLFloat);
+procedure BarycentricLinTransX(var b: TBarycentricInterpolant; ca: TLFloat; CB: TLFloat);
+procedure BarycentricLinTransY(var b: TBarycentricInterpolant; ca: TLFloat; CB: TLFloat);
+procedure BarycentricUnpack(b: TBarycentricInterpolant; var n: TLInt; var x: TLVec; var y: TLVec; var w: TLVec);
+procedure BarycentricSerialize(b: TBarycentricInterpolant; var ResArry: TLVec; var ResLen: TLInt);
+procedure BarycentricUnserialize(ResArry: TLVec; var b: TBarycentricInterpolant);
+procedure BarycentricCopy(b: TBarycentricInterpolant; var b2: TBarycentricInterpolant);
+procedure BarycentricBuildXYW(x, y, w: TLVec; n: TLInt; var b: TBarycentricInterpolant);
+procedure BarycentricBuildFloaterHormann(x, y: TLVec; n: TLInt; d: TLInt; var b: TBarycentricInterpolant);
+procedure BarycentricFitFloaterHormannWC(x, y, w: TLVec; n: TLInt; XC, YC: TLVec; DC: TLIVec; K, M: TLInt; var Info: TLInt; var b: TBarycentricInterpolant; var Rep: TBarycentricFitReport);
+procedure BarycentricFitFloaterHormann(x, y: TLVec; n: TLInt; M: TLInt; var Info: TLInt; var b: TBarycentricInterpolant; var Rep: TBarycentricFitReport);
+
+// Polynomial fitting
+procedure PolynomialBuild(x, y: TLVec; n: TLInt; var p: TBarycentricInterpolant);
+procedure PolynomialBuildEqDist(a: TLFloat; b: TLFloat; y: TLVec; n: TLInt; var p: TBarycentricInterpolant);
+procedure PolynomialBuildCheb1(a: TLFloat; b: TLFloat; y: TLVec; n: TLInt; var p: TBarycentricInterpolant);
+procedure PolynomialBuildCheb2(a: TLFloat; b: TLFloat; y: TLVec; n: TLInt; var p: TBarycentricInterpolant);
+function PolynomialCalcEqDist(a: TLFloat; b: TLFloat; f: TLVec; n: TLInt; t: TLFloat): TLFloat;
+function PolynomialCalcCheb1(a: TLFloat; b: TLFloat; f: TLVec; n: TLInt; t: TLFloat): TLFloat;
+function PolynomialCalcCheb2(a: TLFloat; b: TLFloat; f: TLVec; n: TLInt; t: TLFloat): TLFloat;
+procedure PolynomialFit(x, y: TLVec; n, M: TLInt; var Info: TLInt; var p: TBarycentricInterpolant; var Rep: TPolynomialFitReport);
+procedure PolynomialFitWC(x, y, w: TLVec; n: TLInt; XC, YC: TLVec; DC: TLIVec; K: TLInt; M: TLInt; var Info: TLInt; var p: TBarycentricInterpolant; var Rep: TPolynomialFitReport);
+
+// Spline1D fitting
+procedure Spline1DBuildLinear(x, y: TLVec; n: TLInt; var c: TSpline1DInterpolant);
+procedure Spline1DBuildCubic(x, y: TLVec; n: TLInt; BoundLType: TLInt; BoundL: TLFloat; BoundRType: TLInt; BoundR: TLFloat; var c: TSpline1DInterpolant);
+procedure Spline1DBuildCatmullRom(x, y: TLVec; n: TLInt; BoundType: TLInt; Tension: TLFloat; var c: TSpline1DInterpolant);
+procedure Spline1DBuildHermite(x, y: TLVec; d: TLVec; n: TLInt; var c: TSpline1DInterpolant);
+procedure Spline1DBuildAkima(x, y: TLVec; n: TLInt; var c: TSpline1DInterpolant);
+procedure Spline1DFitCubicWC(x, y, w: TLVec; n: TLInt; XC: TLVec; YC: TLVec; DC: TLIVec; K: TLInt; M: TLInt; var Info: TLInt; var s: TSpline1DInterpolant; var Rep: TSpline1DFitReport);
+procedure Spline1DFitHermiteWC(x, y, w: TLVec; n: TLInt; XC: TLVec; YC: TLVec; DC: TLIVec; K: TLInt; M: TLInt; var Info: TLInt; var s: TSpline1DInterpolant; var Rep: TSpline1DFitReport);
+procedure Spline1DFitCubic(x, y: TLVec; n: TLInt; M: TLInt; var Info: TLInt; var s: TSpline1DInterpolant; var Rep: TSpline1DFitReport);
+procedure Spline1DFitHermite(x, y: TLVec; n: TLInt; M: TLInt; var Info: TLInt; var s: TSpline1DInterpolant; var Rep: TSpline1DFitReport);
+function Spline1DCalc(c: TSpline1DInterpolant; x: TLFloat): TLFloat;
+procedure Spline1DDiff(c: TSpline1DInterpolant; x: TLFloat; var s: TLFloat; var DS: TLFloat; var D2S: TLFloat);
+procedure Spline1DCopy(c: TSpline1DInterpolant; var CC: TSpline1DInterpolant);
+procedure Spline1DUnpack(c: TSpline1DInterpolant; var n: TLInt; var Tbl: TLMatrix);
+procedure Spline1DLinTransX(var c: TSpline1DInterpolant; a: TLFloat; b: TLFloat);
+procedure Spline1DLinTransY(var c: TSpline1DInterpolant; a: TLFloat; b: TLFloat);
+function Spline1DIntegrate(c: TSpline1DInterpolant; x: TLFloat): TLFloat;
+
+{$ENDREGION 'fitting'}
+{$REGION 'Portable high quality random number'}
+procedure HQRNDRandomize(var State: THQRNDState);
+procedure HQRNDSeed(const s1, s2: TLInt; var State: THQRNDState);
+function HQRNDUniformR(var State: THQRNDState): TLFloat;
+function HQRNDUniformI(const n: TLInt; var State: THQRNDState): TLInt;
+function HQRNDNormal(var State: THQRNDState): TLFloat;
+procedure HQRNDUnit2(var State: THQRNDState; var x: TLFloat; var y: TLFloat);
+procedure HQRNDNormal2(var State: THQRNDState; var x1: TLFloat; var x2: TLFloat);
+function HQRNDExponential(const LAMBDA: TLFloat; var State: THQRNDState): TLFloat;
+{$ENDREGION 'Portable high quality random number'}
+{$REGION 'Generation of random matrix'}
+procedure RMatrixRndOrthogonal(n: TLInt; var a: TLMatrix);
+procedure RMatrixRndCond(n: TLInt; c: TLFloat; var a: TLMatrix);
+procedure CMatrixRndOrthogonal(n: TLInt; var a: TLComplexMatrix);
+procedure CMatrixRndCond(n: TLInt; c: TLFloat; var a: TLComplexMatrix);
+procedure SMatrixRndCond(n: TLInt; c: TLFloat; var a: TLMatrix);
+procedure SPDMatrixRndCond(n: TLInt; c: TLFloat; var a: TLMatrix);
+procedure HMatrixRndCond(n: TLInt; c: TLFloat; var a: TLComplexMatrix);
+procedure HPDMatrixRndCond(n: TLInt; c: TLFloat; var a: TLComplexMatrix);
+procedure RMatrixRndOrthogonalFromTheRight(var a: TLMatrix; M: TLInt; n: TLInt);
+procedure RMatrixRndOrthogonalFromTheLeft(var a: TLMatrix; M: TLInt; n: TLInt);
+procedure CMatrixRndOrthogonalFromTheRight(var a: TLComplexMatrix; M: TLInt; n: TLInt);
+procedure CMatrixRndOrthogonalFromTheLeft(var a: TLComplexMatrix; M: TLInt; n: TLInt);
+procedure SMatrixRndMultiply(var a: TLMatrix; n: TLInt);
+procedure HMatrixRndMultiply(var a: TLComplexMatrix; n: TLInt);
+{$ENDREGION 'Generation of random matrix'}
+{$REGION 'test'}
 procedure LearnTest;
-
-const
-  // IEEE floating
-  MachineEpsilon = 5.0E-16;
-  MaxRealNumber = 1.0E300;
-  MinRealNumber = 1.0E-300;
+{$ENDREGION 'test'}
 
 implementation
 
 uses KM, DoStatusIO, TextParsing, zExpression, OpCode;
-
-type
-  TLearnRandom = class(TMT19937Random)
-  public
-    property RandReal: Double read RandD;
-  end;
 
 {$REGION 'Include'}
 {$INCLUDE learn_base.inc}
@@ -899,6 +1170,7 @@ type
 {$INCLUDE learn_bdsvd.inc}
 {$INCLUDE learn_svd.inc}
 {$INCLUDE learn_densesolver.inc}
+{$INCLUDE learn_minlm.inc}
 {$INCLUDE learn_trainbase.inc}
 {$INCLUDE learn_train.inc}
 {$INCLUDE learn_trainEnsemble.inc}
@@ -920,6 +1192,9 @@ type
 {$INCLUDE learn_statistics_MannWhitneyUTest.inc}
 {$INCLUDE learn_statistics_Wilcoxon.inc}
 {$INCLUDE learn_gaussintegral.inc}
+{$INCLUDE learn_fitting.inc}
+{$INCLUDE learn_quality_random.inc}
+{$INCLUDE learn_matgen.inc}
 {$INCLUDE learn_extAPI.inc}
 {$INCLUDE learn_th.inc}
 {$INCLUDE learn_class.inc}
