@@ -48,7 +48,7 @@ type
     dIntf: TDrawEngineInterface_FMX;
     viewIntf: TPictureViewerInterface;
     AI: TAI;
-    OD_Hnd: TMMOD_Handle;
+    OD_Hnd: TMMOD6L_Handle;
     Metric_Hnd: TMDNN_Handle;
     Metric_Learn: TLearn;
     imgList: TAI_ImageList;
@@ -98,7 +98,7 @@ begin
           Read('output.svm_dnn_od', stream);
           TCompute.Sync(procedure
             begin
-              OD_Hnd := AI.MMOD_DNN_Open_Stream(stream);
+              OD_Hnd := AI.MMOD6L_DNN_Open_Stream(stream);
             end);
           DisposeObject(stream);
           DoStatus('load dog detector done..');
@@ -185,7 +185,7 @@ begin
   while viewIntf.Count > 2 do
       viewIntf.Delete(2);
   // 执行检测器
-  desc := AI.MMOD_DNN_Process(OD_Hnd, viewIntf[0].raster);
+  desc := AI.MMOD6L_DNN_Process(OD_Hnd, viewIntf[0].raster);
 
   // 如果找到小狗
   if length(desc) > 0 then

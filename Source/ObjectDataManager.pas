@@ -116,17 +116,18 @@ type
     function NewHandle(Stream_: TCoreClassStream; const dbFile: SystemString; const dbItemID: Byte; dbOnlyRead, IsNewDB_: Boolean): Boolean; overload;
     function NewHandle(FixedStringL: Byte; Stream_: TCoreClassStream; const dbFile: SystemString; const dbItemID: Byte; dbOnlyRead, IsNewDB_: Boolean): Boolean; overload;
   public
-    // DoOpen Database from file
+    // Open Database
     constructor Open(const dbFile: SystemString; const dbItemID: Byte; dbOnlyRead: Boolean); overload;
-    // create new Database file
+    // create new Database
     constructor CreateNew(const dbFile: SystemString; const dbItemID: Byte); overload;
     constructor CreateNew(FixedStringL: Byte; const dbFile: SystemString; const dbItemID: Byte); overload;
-    // create or DoOpen Database for Stream IO
+    // create or Open form Stream IO
     constructor CreateAsStream(Stream_: TCoreClassStream;
       const dbFile: SystemString; const dbItemID: Byte; dbOnlyRead, isNewDB, DestroyTimeFreeStream: Boolean); overload;
     constructor CreateAsStream(FixedStringL: Byte; Stream_: TCoreClassStream;
       const dbFile: SystemString; const dbItemID: Byte; dbOnlyRead, isNewDB, DestroyTimeFreeStream: Boolean); overload;
 
+    // destroy
     destructor Destroy; override;
 
     function CopyTo(DestDB: TObjectDataManager): Boolean;
@@ -166,6 +167,8 @@ type
     procedure ExpItemToDisk(DBPath, DBItem, ExpFilename_: SystemString);
 
     // state
+    function Is_BACKUP_Mode: Boolean;
+    function Is_Flush_Mode: Boolean;
     function isAbort: Boolean;
     function Close: Boolean;
     function ErrorNo: Int64;
@@ -1144,6 +1147,26 @@ begin
       end;
       ItemClose(itmHnd);
     end;
+end;
+
+function TObjectDataManager.Is_BACKUP_Mode: Boolean;
+begin
+{$IFDEF ZDB_BACKUP}
+  Result := FDBHandle.IOHnd.Handle is TReliableFileStream;
+{$ELSE ZDB_BACKUP}
+  Result := False;
+{$ENDIF ZDB_BACKUP}
+end;
+
+function TObjectDataManager.Is_Flush_Mode: Boolean;
+begin
+{$IFDEF ZDB_PHYSICAL_FLUSH}
+  Result := (not FDBHandle.IOHnd.IsOnlyRead)
+    and (FDBHandle.IOHnd.IsOpen)
+    and (FDBHandle.IOHnd.Handle is TReliableFileStream);
+{$ELSE ZDB_PHYSICAL_FLUSH}
+  Result := False;
+{$ENDIF ZDB_PHYSICAL_FLUSH}
 end;
 
 function TObjectDataManager.isAbort: Boolean;

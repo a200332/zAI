@@ -250,6 +250,15 @@ begin
   Result := RasterColor(Buff[0], Buff[1], Buff[2], A);
 end;
 
+function RandomRasterColor(rand: TRandom; minR, maxR, minG, maxG, minB, maxB, minA, maxA: TGeoFloat): TRColor;
+begin
+  Result := RColorF(
+    umlRandomRangeS(rand, minR, maxR),
+    umlRandomRangeS(rand, minG, maxG),
+    umlRandomRangeS(rand, minB, maxB),
+    umlRandomRangeS(rand, minA, maxA));
+end;
+
 function RasterColor(const v: TVec4): TRColor;
 begin
   TRColorEntry(Result).R := ClampByte(Round(v[0] * $FF));
@@ -398,6 +407,24 @@ var
 begin
   MT19937Rand32($FF, @Buff[0], 3);
   Result := RColor(Buff[0], Buff[1], Buff[2], A);
+end;
+
+function RandomRColorF(const minR, maxR, minG, maxG, minB, maxB, minA, maxA: TGeoFloat): TRColor;
+begin
+  Result := RColorF(
+    umlRandomRangeS(minR, maxR),
+    umlRandomRangeS(minG, maxG),
+    umlRandomRangeS(minB, maxB),
+    umlRandomRangeS(minA, maxA));
+end;
+
+function RandomRColorF(rand: TRandom; minR, maxR, minG, maxG, minB, maxB, minA, maxA: TGeoFloat): TRColor;
+begin
+  Result := RColorF(
+    umlRandomRangeS(rand, minR, maxR),
+    umlRandomRangeS(rand, minG, maxG),
+    umlRandomRangeS(rand, minB, maxB),
+    umlRandomRangeS(rand, minA, maxA));
 end;
 
 function RColor(const s: U_String): TRColor;
@@ -809,7 +836,7 @@ var
 begin
   E.BGRA := Color;
   case MorphPix of
-    mpGrayscale: E.BGRA := RColorF(Value, Value, Value);
+    mpGrayscale: E.BGRA := RColorF(Value, Value, Value, E.A / $FF);
     mpYIQ_Y:
       begin
         YIQ_.RGB := E.BGRA;

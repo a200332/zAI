@@ -19,7 +19,7 @@
 { ****************************************************************************** }
 unit zSound;
 
-{$INCLUDE zDefine.inc}
+{$INCLUDE ..\zDefine.inc}
 
 interface
 

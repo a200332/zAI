@@ -203,6 +203,9 @@ type
     function SearchMemoryDistance(const ProcessIn: TLVec): TLInt; overload;
     procedure SearchMemoryDistance(const ProcessIn: TLVec; out List: TLIVec); overload;
 
+    // build input Vector to KDTree
+    function BuildKDTree: TKDTree;
+
     { * fast binary store * }
     procedure SaveToDF(df: TDataFrameEngine);
     procedure LoadFromDF(df: TDataFrameEngine);
@@ -944,8 +947,7 @@ procedure MLPInternalProcessVector(const StructInfo: TLIVec;
   const Weights: TLVec; const ColumnMeans: TLVec;
   const ColumnSigmas: TLVec; var Neurons: TLVec;
   var DFDNET: TLVec; const x: TLVec; var y: TLVec);
-{$ENDREGION 'neural network'}
-{$REGION 'neural network Training'}
+
 procedure MLPTrainLM(var Network: TMultiLayerPerceptron; const xy: TLMatrix;
   NPoints: TLInt; Decay: TLFloat; Restarts: TLInt;
   var Info: TLInt; var Rep: TMLPReport);
@@ -984,7 +986,7 @@ procedure MLPKFoldCVLM(const Network: TMultiLayerPerceptron;
   const xy: TLMatrix; NPoints: TLInt; Decay: TLFloat;
   Restarts: TLInt; FoldsCount: TLInt; var Info: TLInt;
   var Rep: TMLPReport; var CVRep: TMLPCVReport);
-{$ENDREGION 'neural network Training'}
+{$ENDREGION 'neural network'}
 {$REGION 'Neural networks ensemble'}
 procedure MLPECreate0(NIn, NOut, EnsembleSize: TLInt; var Ensemble: TMLPEnsemble);
 procedure MLPECreate1(NIn, NHid, NOut, EnsembleSize: TLInt; var Ensemble: TMLPEnsemble);
@@ -1201,9 +1203,5 @@ uses KM, DoStatusIO, TextParsing, zExpression, OpCode;
 {$INCLUDE learn_test.inc}
 {$ENDREGION 'Include'}
 
-
-initialization
-
-finalization
 
 end.

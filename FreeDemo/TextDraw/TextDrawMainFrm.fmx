@@ -2,8 +2,8 @@ object TextDrawMainForm: TTextDrawMainForm
   Left = 0
   Top = 0
   Caption = 'color Text draw demo. create by.qq600585'
-  ClientHeight = 537
-  ClientWidth = 952
+  ClientHeight = 307
+  ClientWidth = 616
   FormFactor.Width = 320
   FormFactor.Height = 480
   FormFactor.Devices = [Desktop]

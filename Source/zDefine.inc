@@ -55,6 +55,10 @@
   // multi thread Parallel switch.
   {$DEFINE Parallel}
 
+  // Parallel for fold make better use CPU of multi core
+  // if rem this "FoldParallel" parallel for block program, thread can use linear address
+  {$DEFINE FoldParallel}
+
   // MT19937 of seed in the startup TComputeThread is 0
   {$DEFINE MT19937SeedOnTComputeThreadIs0}
 
@@ -112,6 +116,10 @@
   // multi thread Parallel switch.
   {$DEFINE Parallel}
 
+  // Parallel for fold make better use CPU of multi core
+  // if rem this "FoldParallel" is parallel for block program, thread can use linear address
+  {$DEFINE FoldParallel}
+
   // Parallel programs use the delphi default TParallel
   // {$DEFINE SystemParallel}
 
@@ -126,7 +134,7 @@
   // {$DEFINE Z_AI_Dataset_Build_In}
 
   // With SMALL_RASTER_FONT_Build_In and LARGE_RASTER_FONT_Build_In, boot-time memory usage increase by 100M-200M and start-up time to be delay 100ms
-  {$DEFINE SMALL_RASTER_FONT_Build_In}
+  // {$DEFINE SMALL_RASTER_FONT_Build_In}
   // {$DEFINE LARGE_RASTER_FONT_Build_In}
 
   // ZDB_BACKUP is automatically made and replica caching is enabled.

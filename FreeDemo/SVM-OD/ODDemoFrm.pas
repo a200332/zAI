@@ -96,7 +96,7 @@ end;
 procedure TODDemoForm.OD_Marshal(bitmap: TBitmap);
 var
   ai: TAI;
-  odm: TOD_Marshal_Handle;
+  odm: TOD6L_Marshal_Handle;
   raster: TMemoryRaster;
 begin
   // TAI.OpenEngine，表示打开来自AI.conf配置文件所指定的AI引擎
@@ -104,7 +104,7 @@ begin
 
   // .svm_od_marshal是对象检测集的扩展名
   // .svm_od_marshal可以使用PackageTool打开编辑，它里面保存的其实是两个svm_od文件，OD_Marshal会以并行方式检测
-  odm := ai.OD_Marshal_Open_Stream('bear.svm_od_marshal');
+  odm := ai.OD6L_Marshal_Open_Stream('bear.svm_od_marshal');
 
   // 创建光栅实例
   raster := NewRaster();
@@ -119,7 +119,7 @@ begin
   ai.DrawODM(odm, raster, DEColor(0, 0, 1, 0.9));
 
   // 关闭对象检测集的句柄
-  ai.OD_Marshal_Close(odm);
+  ai.OD6L_Marshal_Close(odm);
 
   // 将光栅实例转换成fmx格式的图片并且显示
   MemoryBitmapToBitmap(raster, bitmap);
@@ -131,14 +131,14 @@ end;
 procedure TODDemoForm.OD_Bear(bitmap: TBitmap);
 var
   ai: TAI;
-  od: TOD_Handle;
+  od: TOD6L_Handle;
   raster: TMemoryRaster;
 begin
   // TAI.OpenEngine，表示打开来自AI.conf配置文件所指定的AI引擎
   ai := TAI.OpenEngine;
 
   // .svm_od是训练好的对象检测数据集扩展名
-  od := ai.OD_Open_Stream('bear.svm_od');
+  od := ai.OD6L_Open_Stream('bear.svm_od');
 
   // 创建光栅实例
   raster := NewRaster();
@@ -150,10 +150,10 @@ begin
   // raster.Scale(2.0);
 
   // 将检测结果画在raster中
-  ai.DrawOD(od, raster, DEColor(0, 0, 1, 0.9));
+  ai.DrawOD6L(od, raster, DEColor(0, 0, 1, 0.9));
 
   // 关闭对象检测集的句柄
-  ai.OD_Close(od);
+  ai.OD6L_Close(od);
 
   // 将光栅实例转换成fmx格式的图片并且显示
   MemoryBitmapToBitmap(raster, bitmap);
@@ -165,14 +165,14 @@ end;
 procedure TODDemoForm.OD_Dog(bitmap: TBitmap);
 var
   ai: TAI;
-  od: TOD_Handle;
+  od: TOD6L_Handle;
   raster: TMemoryRaster;
 begin
   // TAI.OpenEngine，表示打开来自AI.conf配置文件所指定的AI引擎
   ai := TAI.OpenEngine;
 
   // .svm_od是训练好的对象检测数据集扩展名
-  od := ai.OD_Open_Stream('dog.svm_od');
+  od := ai.OD6L_Open_Stream('dog.svm_od');
 
   // 创建光栅实例
   raster := NewRaster();
@@ -184,10 +184,10 @@ begin
   // raster.Scale(2.0);
 
   // 将检测结果画在raster中
-  ai.DrawOD(od, raster, DEColor(0, 0, 1, 0.9));
+  ai.DrawOD6L(od, raster, DEColor(0, 0, 1, 0.9));
 
   // 关闭对象检测集的句柄
-  ai.OD_Close(od);
+  ai.OD6L_Close(od);
 
   // 将光栅实例转换成fmx格式的图片并且显示
   MemoryBitmapToBitmap(raster, bitmap);

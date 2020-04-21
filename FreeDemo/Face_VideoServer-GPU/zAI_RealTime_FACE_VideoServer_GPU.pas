@@ -27,7 +27,7 @@ type
     face_sp_para: TAI_Parallel;
     // work on gpu
     Face_Metric: TAI;
-    Face_MMOD_Hnd: TMMOD_Handle;
+    Face_MMOD_Hnd: TMMOD6L_Handle;
     Face_MDNN_Hnd: TMDNN_Handle;
     Face_LearnEng: TLearn;
 
@@ -149,7 +149,7 @@ begin
   // face detector work on GPU
   TThread.Synchronize(ThSender, procedure
     begin
-      mmod_desc := Face_Metric.MMOD_DNN_Process(Face_MMOD_Hnd, mr);
+      mmod_desc := Face_Metric.MMOD6L_DNN_Process(Face_MMOD_Hnd, mr);
     end);
 
   // face shape extract and alignment
@@ -291,8 +291,8 @@ begin
   Face_MDNN_Hnd := Face_Metric.Metric_ResNet_Open_Stream(fn);
 
   // mmod
-  fn := umlCombineFileName(TPath.GetLibraryPath, 'human_face_detector' + C_MMOD_Ext);
-  Face_MMOD_Hnd := Face_Metric.MMOD_DNN_Open_Stream(fn);
+  fn := umlCombineFileName(TPath.GetLibraryPath, 'human_face_detector' + C_MMOD6L_Ext);
+  Face_MMOD_Hnd := Face_Metric.MMOD6L_DNN_Open_Stream(fn);
 
   // learn engine
   Face_LearnEng := TLearn.CreateClassifier(ltKDT, zAI.C_Metric_Dim);

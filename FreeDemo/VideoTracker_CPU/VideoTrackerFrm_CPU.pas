@@ -33,7 +33,7 @@ type
     frame: TDETexture;
     cadencer_eng: TCadencer;
     ai: TAI;
-    od_hnd: TOD_Handle;
+    od_hnd: TOD6L_Handle;
     tracker_hnd: TTracker_Handle;
   end;
 
@@ -76,7 +76,7 @@ begin
   ai := TAI.OpenEngine();
 
   // 加载svm-od的检测器(cpu对象检测器)
-  od_hnd := ai.OD_Open_Stream(umlCombineFileName(TPath.GetLibraryPath, 'dog_video.svm_od'));
+  od_hnd := ai.OD6L_Open_Stream(umlCombineFileName(TPath.GetLibraryPath, 'dog_video.svm_od'));
 
   // 初始化追踪器
   tracker_hnd := nil;
@@ -97,7 +97,7 @@ procedure TForm1.PaintBox1Paint(Sender: TObject; Canvas: TCanvas);
   begin
     // 使用dnn-od来检测小狗
     // 这里的参数含义是：最大只检测2个目标对象
-    od_desc := ai.OD_Process(od_hnd, mr, 2);
+    od_desc := ai.OD6L_Process(od_hnd, mr, 2);
 
     d := TDrawEngine.Create;
     d.ViewOptions := [];

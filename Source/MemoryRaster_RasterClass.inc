@@ -502,6 +502,8 @@ begin
 
   LocalParallel := True;
 
+  FDrawEngineMap := nil;
+
   FSerializedEngine := nil;
   FMemorySerializedPosition := -1;
   FActivted := True;
@@ -534,6 +536,8 @@ end;
 
 destructor TMemoryRaster.Destroy;
 begin
+  if FDrawEngineMap <> nil then
+      DisposeObject(FDrawEngineMap);
   if FSerializedEngine <> nil then
       FSerializedEngine.Remove(Self);
   CloseFont;
@@ -671,10 +675,8 @@ end;
 
 procedure TMemoryRaster.OpenFont;
 begin
-  Wait_SystemFont_Init;
-
   if FFont = nil then
-      FFont := TFontRaster.Create(SystemFont.V);
+      FFont := TFontRaster.Create(Wait_SystemFont_Init);
 end;
 
 procedure TMemoryRaster.CloseFont;
@@ -731,6 +733,11 @@ end;
 
 procedure TMemoryRaster.NoUsage;
 begin
+end;
+
+procedure TMemoryRaster.Update;
+begin
+  NoUsage;
 end;
 
 procedure TMemoryRaster.DiscardMemory;
@@ -2567,6 +2574,8 @@ procedure TMemoryRaster.DrawRect(R: TV2Rect4; Color: TRColor);
 var
   buff: array [0 .. 4] of TPointDouble;
 begin
+  if R.BoundArea < 1 then
+      exit;
   if FAgg <> nil then
     begin
       buff[0].X := R.LeftTop[0];
@@ -3547,21 +3556,59 @@ begin
   Result := Vec2Mul(Font.TextSize(Text), siz / Font.FontSize)
 end;
 
-procedure TMemoryRaster.DrawText(Text: SystemString; X, Y: Integer; RotateVec: TVec2; Angle, alpha, siz: TGeoFloat; TextColor: TRColor);
-var
-  fSiz: TVec2;
-  sc: TGeoFloat;
-  fPt: TVec2;
+procedure TMemoryRaster.DrawText(Text: SystemString; X, Y: TGeoFloat; RotateVec: TVec2; Angle, alpha, siz: TGeoFloat; TextColor: TRColor);
 begin
-  fSiz := Font.TextSize(Text);
-  sc := siz / Font.FontSize;
-  fPt := Vec2Mul(Vec2Sub(fSiz, Vec2Mul(fSiz, sc)), RotateVec);
-  Font.Draw(Text, Self, Vec2(X - fPt[0], Y - fPt[1]), TextColor, True, alpha, RotateVec, Angle, sc);
+  Font.DrawText(Text, Self, X, Y, RotateVec, Angle, alpha, siz, TextColor);
 end;
 
-procedure TMemoryRaster.DrawText(Text: SystemString; X, Y: Integer; siz: TGeoFloat; TextColor: TRColor);
+procedure TMemoryRaster.DrawText(Text: SystemString; X, Y: TGeoFloat; siz: TGeoFloat; TextColor: TRColor);
 begin
   DrawText(Text, X, Y, Vec2(0.5, 0.5), 0, 1, siz, TextColor);
+end;
+
+procedure TMemoryRaster.DrawText(Text: SystemString; X, Y: TGeoFloat; RotateVec: TVec2; Angle, alpha, siz: TGeoFloat; TextColor: TRColor; var DrawCoordinate: TArrayV2R4);
+begin
+  Font.DrawText(Text, Self, X, Y, RotateVec, Angle, alpha, siz, TextColor, DrawCoordinate);
+end;
+
+procedure TMemoryRaster.DrawText(Text: SystemString; X, Y: TGeoFloat; siz: TGeoFloat; TextColor: TRColor; var DrawCoordinate: TArrayV2R4);
+begin
+  DrawText(Text, X, Y, Vec2(0.5, 0.5), 0, 1, siz, TextColor, DrawCoordinate);
+end;
+
+function TMemoryRaster.ComputeDrawTextCoordinate(Text: SystemString; X, Y: TGeoFloat; RotateVec: TVec2; Angle, siz: TGeoFloat; var DrawCoordinate, BoundBoxCoordinate: TArrayV2R4): TVec2;
+begin
+  Result := Font.ComputeDrawCoordinate(Text, X, Y, RotateVec, Angle, siz, DrawCoordinate, BoundBoxCoordinate);
+end;
+
+function TMemoryRaster.ComputeTextSize(Text: SystemString; RotateVec: TVec2; Angle, siz: TGeoFloat): TVec2;
+begin
+  Result := Font.ComputeTextSize(Text, RotateVec, Angle, siz);
+end;
+
+function TMemoryRaster.ComputeTextConvexHull(Text: SystemString; X, Y: TGeoFloat; RotateVec: TVec2; Angle, siz: TGeoFloat): TArrayVec2;
+begin
+  Result := Font.ComputeTextConvexHull(Text, X, Y, RotateVec, Angle, siz);
+end;
+
+function TMemoryRaster.GetDrawEngineMap: TCoreClassObject;
+var
+  d: TDrawEngine;
+begin
+  if FDrawEngineMap = nil then
+      FDrawEngineMap := TDrawEngine.Create;
+  d := TDrawEngine(FDrawEngineMap);
+
+  if (d.Rasterization.Memory.Width <> Width) or (d.Rasterization.Memory.Height <> Height) or (d.Rasterization.Memory.FBits <> FBits) then
+    begin
+      d.Rasterization.SetWorkMemory(Self);
+      d.Rasterization.UsedAgg := True;
+      d.Rasterization.Memory.Font := Font;
+      d.ViewOptions := [];
+    end;
+  d.SetSize(Self);
+  d.SetDrawInterfaceAsDefault;
+  Result := d;
 end;
 
 procedure TMemoryRaster.ProjectionTo(Dst: TMemoryRaster; const sourRect, DestRect: TV2Rect4; const bilinear_sampling: Boolean; const alpha: TGeoFloat);
@@ -4921,7 +4968,7 @@ begin
     h1.Width := R.Width;
     h1.Height := R.Height;
     h1.siz := R.Width * R.Height * 4;
-    h1.UsedAGG := R.FAggNeed;
+    h1.UsedAgg := R.FAggNeed;
 
     p := FStream.Size;
     if R.FMemorySerializedPosition >= 0 then
@@ -4994,7 +5041,7 @@ begin
               if FStream.Read(R.FBits^[0], H.siz) = H.siz then
                 begin
                   R.FFreeBits := True;
-                  if H.UsedAGG then
+                  if H.UsedAgg then
                       R.OpenAgg;
                   Result := H.siz;
                 end;

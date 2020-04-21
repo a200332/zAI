@@ -33,7 +33,7 @@ type
     frame: TDETexture;
     cadencer_eng: TCadencer;
     ai: TAI;
-    mmod_hnd: TMMOD_Handle;
+    mmod_hnd: TMMOD6L_Handle;
     tracker_hnd: TTracker_Handle;
   end;
 
@@ -76,7 +76,7 @@ begin
   ai := TAI.OpenEngine();
 
   // 加载dnn-od的检测器
-  mmod_hnd := ai.MMOD_DNN_Open_Stream(umlCombineFileName(TPath.GetLibraryPath, 'dog.svm_dnn_od'));
+  mmod_hnd := ai.MMOD6L_DNN_Open_Stream(umlCombineFileName(TPath.GetLibraryPath, 'dog.svm_dnn_od'));
 
   // 初始化追踪器
   tracker_hnd := nil;
@@ -96,7 +96,7 @@ procedure TForm1.PaintBox1Paint(Sender: TObject; Canvas: TCanvas);
     k: Double;
   begin
     // 使用dnn-od来检测小狗
-    mmod_desc := ai.MMOD_DNN_Process(mmod_hnd, mr);
+    mmod_desc := ai.MMOD6L_DNN_Process(mmod_hnd, mr);
 
     d := TDrawEngine.Create;
     d.ViewOptions := [];

@@ -12416,6 +12416,7 @@ begin
       t := GetTimeTick;
       while (not FStableClientIO.Activted) and (GetTimeTick - t < 5000) do
           Progress;
+      Result := FStableClientIO.Activted;
     end;
 end;
 

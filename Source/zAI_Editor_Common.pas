@@ -56,7 +56,7 @@ type
     Part: TVec2List;
     PrepareRaster: TDETexture;
 
-    constructor Create(AOwner: TEditorImageData);
+    constructor Create(Owner_: TEditorImageData);
     destructor Destroy; override;
 
     procedure SaveToStream(stream: TMemoryStream64); overload;
@@ -254,10 +254,10 @@ implementation
 
 uses Math;
 
-constructor TEditorDetectorDefine.Create(AOwner: TEditorImageData);
+constructor TEditorDetectorDefine.Create(Owner_: TEditorImageData);
 begin
   inherited Create;
-  Owner := AOwner;
+  Owner := Owner_;
   R := Types.Rect(0, 0, 0, 0);
   Token := '';
   Part := TVec2List.Create;
@@ -1064,7 +1064,6 @@ end;
 
 function TEditorImageData.OP_Image_Scale(var Param: TOpParam): Variant;
 begin
-  DoStatus('image script on scale %f', [TGeoFloat(Param[0])]);
   if not Raster.Empty then
     begin
       Scale(Param[0]);
@@ -1078,8 +1077,6 @@ function TEditorImageData.OP_Image_SwapRB(var Param: TOpParam): Variant;
 var
   i: Integer;
 begin
-  DoStatus('image script on SwapRed-Blue');
-
   if not Raster.Empty then
     begin
       Raster.FormatBGRA;
@@ -1097,8 +1094,6 @@ function TEditorImageData.OP_Image_Gray(var Param: TOpParam): Variant;
 var
   i: Integer;
 begin
-  DoStatus('image script on Grayscale');
-
   if not Raster.Empty then
     begin
       Raster.Grayscale;
@@ -1116,8 +1111,6 @@ function TEditorImageData.OP_Image_Sharpen(var Param: TOpParam): Variant;
 var
   i: Integer;
 begin
-  DoStatus('image script on Sharpen');
-
   if not Raster.Empty then
     begin
       Sharpen(Raster, True);
@@ -1135,8 +1128,6 @@ function TEditorImageData.OP_Image_HistogramEqualize(var Param: TOpParam): Varia
 var
   i: Integer;
 begin
-  DoStatus('image script on HistogramEqualize');
-
   if not Raster.Empty then
     begin
       HistogramEqualize(Raster);
@@ -1154,8 +1145,6 @@ function TEditorImageData.OP_Image_RemoveRedEyes(var Param: TOpParam): Variant;
 var
   i: Integer;
 begin
-  DoStatus('image script on RemoveRedEyes');
-
   if not Raster.Empty then
     begin
       RemoveRedEyes(Raster);
@@ -1173,8 +1162,6 @@ function TEditorImageData.OP_Image_Sepia(var Param: TOpParam): Variant;
 var
   i: Integer;
 begin
-  DoStatus('image script on Sepia');
-
   if not Raster.Empty then
     begin
       Sepia32(Raster, Param[0]);
@@ -1192,8 +1179,6 @@ function TEditorImageData.OP_Image_Blur(var Param: TOpParam): Variant;
 var
   i: Integer;
 begin
-  DoStatus('image script on Sepia');
-
   if not Raster.Empty then
     begin
       GaussianBlur(Raster, Param[0], Raster.BoundsRect);
@@ -1211,8 +1196,6 @@ function TEditorImageData.OP_Image_CalibrateRotate(var Param: TOpParam): Variant
 var
   i: Integer;
 begin
-  DoStatus('image script on CalibrateRotate');
-
   if not Raster.Empty then
     begin
       Raster.CalibrateRotate;
@@ -1235,7 +1218,6 @@ begin
       n := Param[0]
   else
       n := '';
-  DoStatus('image script on setLabel %s', [n]);
   for i := 0 to DetectorDefineList.count - 1 do
       DetectorDefineList[i].Token := n;
   for i := 0 to GeometryList.count - 1 do
@@ -1317,7 +1299,6 @@ begin
 
   if length(Param) <> 3 then
     begin
-      DoStatus('DeleteDetector param error. exmples: DeleteDetector(1, 0.5, 0.5)');
       Result := False;
       exit;
     end;
@@ -1453,19 +1434,12 @@ end;
 function TEditorImageData.RunExpCondition(ScriptStyle: TTextStyle; exp: SystemString): Boolean;
 begin
   CheckAndRegOPRT;
-  DoStatusNoLn('Image (%d * %d, detector:%d) EvaluateExpression: %s', [Raster.Width, Raster.Height, DetectorDefineList.count, exp]);
 
   try
       Result := EvaluateExpressionValue(False, ScriptStyle, exp, FOP_RT);
   except
       Result := False;
   end;
-
-  if Result then
-      DoStatusNoLn(' = yes.')
-  else
-      DoStatusNoLn(' = no.');
-  DoStatusNoLn;
 end;
 
 function TEditorImageData.RunExpProcess(ScriptStyle: TTextStyle; exp: SystemString): Boolean;
@@ -1810,10 +1784,11 @@ begin
   needReset :=
     (Alignment is TAlignment_Face)
     or (Alignment is TAlignment_FastFace)
-    or (Alignment is TAlignment_OD)
-    or (Alignment is TAlignment_FastOD)
-    or (Alignment is TAlignment_MMOD)
-    or (Alignment is TAlignment_FastMMOD)
+    or (Alignment is TAlignment_OD6L)
+    or (Alignment is TAlignment_FastOD6L)
+    or (Alignment is TAlignment_MMOD6L)
+    or (Alignment is TAlignment_FastMMOD6L)
+    or (Alignment is TAlignment_MMOD3L)
     or (ai_img.DetectorDefineList.count <> DetectorDefineList.count);
 
   if needReset then
@@ -1938,7 +1913,6 @@ begin
 
       if img.FOP_RT_RunDeleted then
         begin
-          DoStatus('image script on delete %d', [i]);
           Delete(i);
         end
       else

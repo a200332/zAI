@@ -71,7 +71,7 @@ begin
       param: PMetric_ResNet_Train_Parameter;
       training_successed: Boolean;
       mdnn_hnd: TMDNN_Handle;
-      mmod_hnd: TMMOD_Handle;
+      mmod_hnd: TMMOD6L_Handle;
       face_hnd: TFACE_Handle;
       mmod_desc: TMMOD_Desc;
       tk: TTimeTick;
@@ -153,7 +153,7 @@ begin
         DoStatus('并行化高斯预处理耗时:%dms', [GetTimeTick() - tk]);
 
         DoStatus('读取DNN-OD文件', []);
-        mmod_hnd := AI.MMOD_DNN_Open_Stream(umlCombineFileName(TPath.GetLibraryPath, 'human_face_detector.svm_dnn_od'));
+        mmod_hnd := AI.MMOD6L_DNN_Open_Stream(umlCombineFileName(TPath.GetLibraryPath, 'human_face_detector.svm_dnn_od'));
 
         // ZAI对cuda的支持机制说明：在10.x版本，一个ZAI进程一次只能用一个cuda，不能并行化使用cuda，如果有多种cuda计算多开进程即可
         // 使用zAI的cuda必行保证在主进程中计算，否则会发生显存泄漏
@@ -164,7 +164,7 @@ begin
             // 上层api的只管调用，不需要关心底层
             DoStatus('正在检测人脸. demo图片分辨率 %d*%d', [new_face_tile.width, new_face_tile.height]);
             tk := GetTimeTick();
-            mmod_desc := AI.MMOD_DNN_Process(mmod_hnd, new_face_tile);
+            mmod_desc := AI.MMOD6L_DNN_Process(mmod_hnd, new_face_tile);
             DoStatus('检测人脸完成. 发现 %d 张人脸，耗时:%dms', [length(mmod_desc), GetTimeTick() - tk]);
           end);
 
@@ -231,7 +231,7 @@ begin
       end;
 
       AI.Face_Close(face_hnd);
-      AI.MMOD_DNN_Close(mmod_hnd);
+      AI.MMOD6L_DNN_Close(mmod_hnd);
       AI.Metric_ResNet_Close(mdnn_hnd);
     end);
 end;

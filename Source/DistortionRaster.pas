@@ -33,9 +33,12 @@ function BuildDistortionCalibratePiture(const width, height, metric: Integer): T
 function BuildDistortionModel_Polynomial(DistortionCoord: TArrayVec2; degree: Integer; var model: TBarycentricInterpolant): Boolean; overload;
 function BuildDistortionModel_Polynomial(DistortionCoord: TArrayVec2; degree: Integer): TLVec; overload;
 // Least squares fitting by polynomial: process for undistortion
+function ProcessDistortionRaster_Polynomial(model: TBarycentricInterpolant; axis: TVec2; raster: TMemoryRaster; fast: Boolean): TMemoryRaster; overload;
 function ProcessDistortionRaster_Polynomial(model: TBarycentricInterpolant; axis: TVec2; raster: TMemoryRaster): TMemoryRaster; overload;
+function ProcessDistortionRaster_Polynomial(model: TLVec; axis: TVec2; raster: TMemoryRaster; fast: Boolean): TMemoryRaster; overload;
 function ProcessDistortionRaster_Polynomial(model: TLVec; axis: TVec2; raster: TMemoryRaster): TMemoryRaster; overload;
 // Least squares fitting by polynomial: end-to-end process for undistortion
+function ProcessDistortionRaster_Polynomial(DistortionCoord: TArrayVec2; degree: Integer; raster: TMemoryRaster; fast: Boolean): TMemoryRaster; overload;
 function ProcessDistortionRaster_Polynomial(DistortionCoord: TArrayVec2; degree: Integer; raster: TMemoryRaster): TMemoryRaster; overload;
 
 implementation
@@ -178,7 +181,7 @@ begin
       Result := LVec(0);
 end;
 
-function ProcessDistortionRaster_Polynomial(model: TBarycentricInterpolant; axis: TVec2; raster: TMemoryRaster): TMemoryRaster;
+function ProcessDistortionRaster_Polynomial(model: TBarycentricInterpolant; axis: TVec2; raster: TMemoryRaster; fast: Boolean): TMemoryRaster;
 var
   nRaster: TMemoryRaster;
 {$IFDEF Parallel}
@@ -199,7 +202,10 @@ var
             dx := dx + (i - axis[0]) * f;
             dy := dy + (pass - axis[1]) * f;
           end;
-        nRaster.FastPixel[i, pass] := raster.PixelLinear[round(dx), round(dy)];
+        if fast then
+            nRaster.FastPixel[i, pass] := raster.Pixel[round(dx), round(dy)]
+        else
+            nRaster.FastPixel[i, pass] := raster.PixelLinear[round(dx), round(dy)];
       end;
   end;
 {$ENDIF FPC}
@@ -223,7 +229,10 @@ var
                 dx := dx + (i - axis[0]) * f;
                 dy := dy + (pass - axis[1]) * f;
               end;
-            nRaster.FastPixel[i, pass] := raster.PixelLinear[round(dx), round(dy)];
+            if fast then
+                nRaster.FastPixel[i, pass] := raster.Pixel[round(dx), round(dy)]
+            else
+                nRaster.FastPixel[i, pass] := raster.PixelLinear[round(dx), round(dy)];
           end;
       end;
   end;
@@ -254,7 +263,10 @@ begin
               dx := dx + (i - axis[0]) * f;
               dy := dy + (pass - axis[1]) * f;
             end;
-          nRaster.FastPixel[i, pass] := raster.PixelLinear[round(dx), round(dy)];
+          if fast then
+              nRaster.FastPixel[i, pass] := raster.Pixel[round(dx), round(dy)]
+          else
+              nRaster.FastPixel[i, pass] := raster.PixelLinear[round(dx), round(dy)];
         end;
     end);
 {$ENDIF FPC}
@@ -262,6 +274,22 @@ begin
   DoFor;
 {$ENDIF Parallel}
   Result := nRaster;
+end;
+
+function ProcessDistortionRaster_Polynomial(model: TBarycentricInterpolant; axis: TVec2; raster: TMemoryRaster): TMemoryRaster;
+begin
+  Result := ProcessDistortionRaster_Polynomial(model, axis, raster, False);
+end;
+
+function ProcessDistortionRaster_Polynomial(model: TLVec; axis: TVec2; raster: TMemoryRaster; fast: Boolean): TMemoryRaster;
+var
+  p: TBarycentricInterpolant;
+begin
+  Result := nil;
+  if length(model) = 0 then
+      exit;
+  BarycentricUnserialize(model, p);
+  Result := ProcessDistortionRaster_Polynomial(p, axis, raster, False);
 end;
 
 function ProcessDistortionRaster_Polynomial(model: TLVec; axis: TVec2; raster: TMemoryRaster): TMemoryRaster;
@@ -273,6 +301,15 @@ begin
       exit;
   BarycentricUnserialize(model, p);
   Result := ProcessDistortionRaster_Polynomial(p, axis, raster);
+end;
+
+function ProcessDistortionRaster_Polynomial(DistortionCoord: TArrayVec2; degree: Integer; raster: TMemoryRaster; fast: Boolean): TMemoryRaster;
+var
+  model: TBarycentricInterpolant;
+begin
+  Result := nil;
+  if BuildDistortionModel_Polynomial(DistortionCoord, degree, model) then
+      Result := ProcessDistortionRaster_Polynomial(model, DistortionCoord[0], raster, False);
 end;
 
 function ProcessDistortionRaster_Polynomial(DistortionCoord: TArrayVec2; degree: Integer; raster: TMemoryRaster): TMemoryRaster;

@@ -277,6 +277,7 @@ begin
       row_last_x := 0;
       if (j >= 0) and (j < Window.Height) then // if empty line
         begin
+          // prepare row_frag_count
           i := minX;
           while i < maxX do
             begin
@@ -349,7 +350,7 @@ begin
   i := 0;
   while i < frag_count do
     begin
-      if (bitX >= 0) and (bitX < WindowSize) and (FNearestWriteBuffer[bitX] <> FNearestWriterID) then
+      if (start_x + i >= 0) and (start_x + i < Window.Width) and (bitX >= 0) and (bitX < WindowSize) and (FNearestWriteBuffer[bitX] <> FNearestWriterID) then
         begin
           FNearestWriteBuffer[bitX] := FNearestWriterID;
           case FS of

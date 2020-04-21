@@ -54,14 +54,16 @@ type
 
   TRGB_Image_Handle = Pointer;
   TMatrix_Image_Handle = Pointer;
-  TOD_Handle = Pointer;
-  TOD_Marshal_Handle = THashList;
+  TOD6L_Handle = Pointer;
+  TOD3L_Handle = Pointer;
+  TOD6L_Marshal_Handle = THashList;
   TSP_Handle = Pointer;
   TFACE_Handle = Pointer;
   TMDNN_Handle = Pointer;
   TMetric_Handle = Pointer;
   TLMetric_Handle = Pointer;
-  TMMOD_Handle = Pointer;
+  TMMOD6L_Handle = Pointer;
+  TMMOD3L_Handle = Pointer;
   TRNIC_Handle = Pointer;
   TLRNIC_Handle = Pointer;
   TGDCNIC_Handle = Pointer;
@@ -103,6 +105,10 @@ type
 
   TImage_Handle = packed record
     image: TAI_Image;
+    AccessImage: Int64;
+    AccessDetectorImage: Int64;
+    AccessDetectorRect: Int64;
+    AccessMask: Int64;
   end;
 
   PImage_Handle = ^TImage_Handle;
@@ -243,11 +249,13 @@ type
     min_detector_window_overlap_iou: Double;
     iterations_without_progress_threshold: Integer;
     learning_rate, completed_learning_rate: Double;
+    saveMemory: Integer;
     // overlap non-max suppression param
     overlap_NMS_iou_thresh, overlap_NMS_percent_covered_thresh: Double;
     // overlap ignore param
     overlap_ignore_iou_thresh, overlap_ignore_percent_covered_thresh: Double;
     // cropper param
+    prepare_crops_img_num: Integer;
     num_crops: Integer;
     chip_dims_x, chip_dims_y: Integer;
     min_object_size_x, min_object_size_y: Integer;
@@ -349,7 +357,7 @@ type
 {$ENDIF FPC}
 
   TOneStep = packed record
-    StepTime: TDateTime;
+    StepTime: TTimeTick;
     one_step_calls: UInt64;
     average_loss: Double;
     learning_rate: Double;
@@ -411,27 +419,39 @@ type
     procedure Alignment(imgList: TAI_ImageList); override;
   end;
 
-  TAlignment_OD = class(TAlignment)
+  TAlignment_OD6L = class(TAlignment)
   public
-    od_hnd: TOD_Handle;
+    od_hnd: TOD6L_Handle;
     procedure Alignment(imgList: TAI_ImageList); override;
   end;
 
-  TAlignment_FastOD = class(TAlignment)
+  TAlignment_FastOD6L = class(TAlignment)
   public
-    od_hnd: TOD_Handle;
+    od_hnd: TOD6L_Handle;
     procedure Alignment(imgList: TAI_ImageList); override;
   end;
 
-  TAlignment_OD_Marshal = class(TAlignment)
+  TAlignment_OD3L = class(TAlignment)
   public
-    od_hnd: TOD_Marshal_Handle;
+    od_hnd: TOD3L_Handle;
     procedure Alignment(imgList: TAI_ImageList); override;
   end;
 
-  TAlignment_FastOD_Marshal = class(TAlignment)
+  TAlignment_FastOD3L = class(TAlignment)
   public
-    od_hnd: TOD_Marshal_Handle;
+    od_hnd: TOD3L_Handle;
+    procedure Alignment(imgList: TAI_ImageList); override;
+  end;
+
+  TAlignment_OD6L_Marshal = class(TAlignment)
+  public
+    od_hnd: TOD6L_Marshal_Handle;
+    procedure Alignment(imgList: TAI_ImageList); override;
+  end;
+
+  TAlignment_FastOD6L_Marshal = class(TAlignment)
+  public
+    od_hnd: TOD6L_Marshal_Handle;
     procedure Alignment(imgList: TAI_ImageList); override;
   end;
 
@@ -447,15 +467,27 @@ type
     procedure Alignment(imgList: TAI_ImageList); override;
   end;
 
-  TAlignment_MMOD = class(TAlignment)
+  TAlignment_MMOD6L = class(TAlignment)
   public
-    MMOD_hnd: TMMOD_Handle;
+    MMOD_hnd: TMMOD6L_Handle;
     procedure Alignment(imgList: TAI_ImageList); override;
   end;
 
-  TAlignment_FastMMOD = class(TAlignment)
+  TAlignment_FastMMOD6L = class(TAlignment)
   public
-    MMOD_hnd: TMMOD_Handle;
+    MMOD_hnd: TMMOD6L_Handle;
+    procedure Alignment(imgList: TAI_ImageList); override;
+  end;
+
+  TAlignment_MMOD3L = class(TAlignment)
+  public
+    MMOD_hnd: TMMOD3L_Handle;
+    procedure Alignment(imgList: TAI_ImageList); override;
+  end;
+
+  TAlignment_FastMMOD3L = class(TAlignment)
+  public
+    MMOD_hnd: TMMOD3L_Handle;
     procedure Alignment(imgList: TAI_ImageList); override;
   end;
 
@@ -470,8 +502,8 @@ type
 {$REGION 'APIEntry'}
 
   TAI_EntryAPI = packed record
-    // Authentication
-    Authentication: Integer;
+    // engine support
+    Authentication, Training, CUDA, MKL: Integer;
 
     // prepare image
     Prepare_RGB_Image: function(const raster_ptr: PRColorArray; const Width, Height: Integer): TRGB_Image_Handle; stdcall;
@@ -507,23 +539,28 @@ type
       const projection_x, projection_y, paper: Integer); stdcall;
 
     // grabcut
-    CutRaster: procedure(const raster_ptr: PRColorArray; maskIO: PByte; const Width, Height: Integer; box: TAI_Rect;
-      iterCount, mode: Integer); stdcall;
+    CutRaster: procedure(const raster_ptr: PRColorArray; maskIO: PByte; const Width, Height: Integer; box: TAI_Rect; iterCount, mode: Integer); stdcall;
 
     // surf detector
-    fast_surf: function(const raster_ptr: PRColorArray; const Width, Height: Integer;
-      const max_points: Integer; const detection_threshold: Double; const output: PSurf_Desc): Integer; stdcall;
+    fast_surf: function(const raster_ptr: PRColorArray; const Width, Height: Integer; const max_points: Integer; const detection_threshold: Double; const output: PSurf_Desc): Integer; stdcall;
 
-    // object detector
-    OD_Train: function(train_cfg, train_output: P_Bytes; window_w, window_h, thread_num: Integer): Integer; stdcall;
-    LargeScale_OD_Train: function(img_: PPImage_Handle; num_: Integer; train_output: P_Bytes; window_w, window_h, thread_num: Integer): Integer; stdcall;
-    OD_Init: function(train_data: P_Bytes): TOD_Handle; stdcall;
-    OD_Init_Memory: function(memory: Pointer; Size: Integer): TOD_Handle; stdcall;
-    OD_Free: function(hnd: TOD_Handle): Integer; stdcall;
-    OD_Process: function(hnd: TOD_Handle; const raster_ptr: PRColorArray; const Width, Height: Integer;
-      const OD_Rect: POD_Rect; const max_OD_Rect: Integer; var OD_Rect_num: Integer): Integer; stdcall;
-    OD_Process_Image: function(hnd: TOD_Handle; rgb_img: TRGB_Image_Handle;
-      const OD_Rect: POD_Rect; const max_OD_Rect: Integer; var OD_Rect_num: Integer): Integer; stdcall;
+    // object detector 6 layer
+    OD6L_Train: function(train_cfg, train_output: P_Bytes; window_w, window_h, thread_num: Integer): Integer; stdcall;
+    LargeScale_OD6L_Train: function(img_: PPImage_Handle; num_: Integer; train_output: P_Bytes; window_w, window_h, thread_num: Integer): Integer; stdcall;
+    OD6L_Init: function(train_data: P_Bytes): TOD6L_Handle; stdcall;
+    OD6L_Init_Memory: function(memory: Pointer; Size: Integer): TOD6L_Handle; stdcall;
+    OD6L_Free: function(hnd: TOD6L_Handle): Integer; stdcall;
+    OD6L_Process: function(hnd: TOD6L_Handle; const raster_ptr: PRColorArray; const Width, Height: Integer; const OD_Rect: POD_Rect; const max_OD_Rect: Integer; var OD_Rect_num: Integer): Integer; stdcall;
+    OD6L_Process_Image: function(hnd: TOD6L_Handle; rgb_img: TRGB_Image_Handle; const OD_Rect: POD_Rect; const max_OD_Rect: Integer; var OD_Rect_num: Integer): Integer; stdcall;
+
+    // object detector 3 layer
+    OD3L_Train: function(train_cfg, train_output: P_Bytes; window_w, window_h, thread_num: Integer): Integer; stdcall;
+    LargeScale_OD3L_Train: function(img_: PPImage_Handle; num_: Integer; train_output: P_Bytes; window_w, window_h, thread_num: Integer): Integer; stdcall;
+    OD3L_Init: function(train_data: P_Bytes): TOD6L_Handle; stdcall;
+    OD3L_Init_Memory: function(memory: Pointer; Size: Integer): TOD6L_Handle; stdcall;
+    OD3L_Free: function(hnd: TOD6L_Handle): Integer; stdcall;
+    OD3L_Process: function(hnd: TOD6L_Handle; const raster_ptr: PRColorArray; const Width, Height: Integer; const OD_Rect: POD_Rect; const max_OD_Rect: Integer; var OD_Rect_num: Integer): Integer; stdcall;
+    OD3L_Process_Image: function(hnd: TOD6L_Handle; rgb_img: TRGB_Image_Handle; const OD_Rect: POD_Rect; const max_OD_Rect: Integer; var OD_Rect_num: Integer): Integer; stdcall;
 
     // shape predictor and shape detector
     SP_Train: function(train_cfg, train_output: P_Bytes; oversampling_amount, tree_depth, thread_num: Integer): Integer; stdcall;
@@ -531,10 +568,8 @@ type
     SP_Init: function(train_data: P_Bytes): TSP_Handle; stdcall;
     SP_Init_Memory: function(memory: Pointer; Size: Integer): TSP_Handle; stdcall;
     SP_Free: function(hnd: TSP_Handle): Integer; stdcall;
-    SP_Process: function(hnd: TSP_Handle; const raster_ptr: PRColorArray; const Width, Height: Integer;
-      const AI_Rect: PAI_Rect; const AI_Point: PAI_Point; const max_AI_Point: Integer; var AI_Point_num: Integer): Integer; stdcall;
-    SP_Process_Image: function(hnd: TSP_Handle; rgb_img: TRGB_Image_Handle;
-      const AI_Rect: PAI_Rect; const AI_Point: PAI_Point; const max_AI_Point: Integer; var AI_Point_num: Integer): Integer; stdcall;
+    SP_Process: function(hnd: TSP_Handle; const raster_ptr: PRColorArray; const Width, Height: Integer; const AI_Rect: PAI_Rect; const AI_Point: PAI_Point; const max_AI_Point: Integer; var AI_Point_num: Integer): Integer; stdcall;
+    SP_Process_Image: function(hnd: TSP_Handle; rgb_img: TRGB_Image_Handle; const AI_Rect: PAI_Rect; const AI_Point: PAI_Point; const max_AI_Point: Integer; var AI_Point_num: Integer): Integer; stdcall;
 
     // face recognition shape predictor
     SP_extract_face_rect_desc_chips: function(hnd: TSP_Handle; const raster_ptr: PRColorArray; const Width, Height, extract_face_size: Integer; rect_desc_: PAI_Rect; rect_num: Integer): TFACE_Handle; stdcall;
@@ -549,7 +584,7 @@ type
     SP_get_num: function(hnd: TFACE_Handle): Integer; stdcall;
     SP_get: function(hnd: TFACE_Handle; const index: Integer; const AI_Point: PAI_Point; const max_AI_Point: Integer): Integer; stdcall;
 
-    // MDNN-ResNet(ResNet metric DNN 256 input net size 150*150, full resnet jitter)
+    // MDNN-ResNet(ResNet metric DNN input net size 150*150, full resnet jitter)
     MDNN_ResNet_Train: function(param: PMetric_ResNet_Train_Parameter): Integer; stdcall;
     MDNN_ResNet_Full_GPU_Train: function(param: PMetric_ResNet_Train_Parameter): Integer; stdcall;
     MDNN_ResNet_Init: function(train_data: P_Bytes): TMDNN_Handle; stdcall;
@@ -558,7 +593,7 @@ type
     MDNN_ResNet_Process: function(hnd: TMDNN_Handle; imgArry_ptr: PAI_Raster_Data_Array; img_num: Integer; output: PDouble): Integer; stdcall;
     MDNN_DebugInfo: procedure(hnd: TMDNN_Handle; var p: PPascalString); stdcall;
 
-    // LMDNN-ResNet(ResNet metric DNN 1024 input net size 200*200, resnet no jitter)
+    // LMDNN-ResNet(ResNet metric DNN input net size 200*200, resnet no jitter)
     LMDNN_ResNet_Train: function(param: PMetric_ResNet_Train_Parameter): Integer; stdcall;
     LMDNN_ResNet_Full_GPU_Train: function(param: PMetric_ResNet_Train_Parameter): Integer; stdcall;
     LMDNN_ResNet_Init: function(train_data: P_Bytes): TMDNN_Handle; stdcall;
@@ -567,17 +602,25 @@ type
     LMDNN_ResNet_Process: function(hnd: TMDNN_Handle; imgArry_ptr: PAI_Raster_Data_Array; img_num: Integer; output: PDouble): Integer; stdcall;
     LMDNN_DebugInfo: procedure(hnd: TMDNN_Handle; var p: PPascalString); stdcall;
 
-    // MMOD-DNN(max-margin DNN object detector)
-    MMOD_DNN_Train: function(param: PMMOD_Train_Parameter): Integer; stdcall;
-    LargeScale_MMOD_Train: function(param: PMMOD_Train_Parameter; img_: PPImage_Handle; num_: Integer): Integer; stdcall;
-    MMOD_DNN_Init: function(train_data: P_Bytes): TMMOD_Handle; stdcall;
-    MMOD_DNN_Init_Memory: function(memory: Pointer; Size: Integer): TMMOD_Handle; stdcall;
-    MMOD_DNN_Free: function(hnd: TMMOD_Handle): Integer; stdcall;
-    MMOD_DNN_Process: function(hnd: TMMOD_Handle; const raster_ptr: PRColorArray; const Width, Height: Integer;
-      const MMOD_AI_Rect: PAI_MMOD_Rect; const max_AI_Rect: Integer): Integer; stdcall;
-    MMOD_DNN_Process_Image: function(hnd: TMMOD_Handle; matrix_img: TMatrix_Image_Handle;
-      const MMOD_AI_Rect: PAI_MMOD_Rect; const max_AI_Rect: Integer): Integer; stdcall;
-    MMOD_DebugInfo: procedure(hnd: TMMOD_Handle; var p: PPascalString); stdcall;
+    // MMOD-DNN(max-margin DNN object detector) 6 Layer
+    MMOD6L_DNN_Train: function(param: PMMOD_Train_Parameter): Integer; stdcall;
+    LargeScale_MMOD6L_Train: function(param: PMMOD_Train_Parameter; img_: PPImage_Handle; num_: Integer): Integer; stdcall;
+    MMOD6L_DNN_Init: function(train_data: P_Bytes): TMMOD6L_Handle; stdcall;
+    MMOD6L_DNN_Init_Memory: function(memory: Pointer; Size: Integer): TMMOD6L_Handle; stdcall;
+    MMOD6L_DNN_Free: function(hnd: TMMOD6L_Handle): Integer; stdcall;
+    MMOD6L_DNN_Process: function(hnd: TMMOD6L_Handle; const raster_ptr: PRColorArray; const Width, Height: Integer; const MMOD6L_AI_Rect: PAI_MMOD_Rect; const max_AI_Rect: Integer): Integer; stdcall;
+    MMOD6L_DNN_Process_Image: function(hnd: TMMOD6L_Handle; matrix_img: TMatrix_Image_Handle; const MMOD6L_AI_Rect: PAI_MMOD_Rect; const max_AI_Rect: Integer): Integer; stdcall;
+    MMOD6L_DebugInfo: procedure(hnd: TMMOD6L_Handle; var p: PPascalString); stdcall;
+
+    // MMOD-DNN(max-margin DNN object detector) 3 Layer
+    MMOD3L_DNN_Train: function(param: PMMOD_Train_Parameter): Integer; stdcall;
+    LargeScale_MMOD3L_Train: function(param: PMMOD_Train_Parameter; img_: PPImage_Handle; num_: Integer): Integer; stdcall;
+    MMOD3L_DNN_Init: function(train_data: P_Bytes): TMMOD3L_Handle; stdcall;
+    MMOD3L_DNN_Init_Memory: function(memory: Pointer; Size: Integer): TMMOD3L_Handle; stdcall;
+    MMOD3L_DNN_Free: function(hnd: TMMOD3L_Handle): Integer; stdcall;
+    MMOD3L_DNN_Process: function(hnd: TMMOD3L_Handle; const raster_ptr: PRColorArray; const Width, Height: Integer; const MMOD3L_AI_Rect: PAI_MMOD_Rect; const max_AI_Rect: Integer): Integer; stdcall;
+    MMOD3L_DNN_Process_Image: function(hnd: TMMOD3L_Handle; matrix_img: TMatrix_Image_Handle; const MMOD3L_AI_Rect: PAI_MMOD_Rect; const max_AI_Rect: Integer): Integer; stdcall;
+    MMOD3L_DebugInfo: procedure(hnd: TMMOD3L_Handle; var p: PPascalString); stdcall;
 
     // ResNet-Image-Classifier
     RNIC_Train: function(param: PRNIC_Train_Parameter): Integer; stdcall;
@@ -662,6 +705,7 @@ type
     API_FreeString: procedure(p: Pointer); stdcall;
     API_GetRaster: function(hnd: PRaster_Handle; var Bits: Pointer; var Width, Height: Integer): Byte; stdcall;
     API_GetImage: function(hnd: PImage_Handle; var Bits: Pointer; var Width, Height: Integer): Byte; stdcall;
+    API_RecycleImage: function(Sender: PAI_EntryAPI; hnd: PImage_Handle): Byte; stdcall;
     API_GetDetectorDefineNum: function(hnd: PImage_Handle): Integer; stdcall;
     API_GetDetectorDefineImage: function(hnd: PImage_Handle; detIndex: Integer; var Bits: Pointer; var Width, Height: Integer): Byte; stdcall;
     API_GetDetectorDefineRect: function(hnd: PImage_Handle; detIndex: Integer; var rect_: TAI_Rect): Byte; stdcall;
@@ -686,7 +730,7 @@ type
     SerializedTime: TTimeTick;
   end;
 {$ENDREGION 'APIEntry'}
-{$REGION 'Core'}
+{$REGION 'AI Core'}
 
   TAI = class(TCoreClassObject)
   protected
@@ -698,8 +742,9 @@ type
   public
   var
     // Parallel handle
-    Parallel_OD_Hnd: TOD_Handle;
-    Parallel_OD_Marshal_Hnd: TOD_Marshal_Handle;
+    Parallel_OD6L_Hnd: TOD6L_Handle;
+    Parallel_OD3L_Hnd: TOD3L_Handle;
+    Parallel_OD_Marshal_Hnd: TOD6L_Marshal_Handle;
     Parallel_SP_Hnd: TSP_Handle;
 
     // root path
@@ -720,6 +765,13 @@ type
     // engine activted
     function Activted: Boolean;
 
+    // GPU supported
+    function isGPU: Boolean;
+    // Intel-MKL supported
+    function isMKL: Boolean;
+    // trainer supported
+    function isTrainer: Boolean;
+
 {$REGION 'general'}
     // MemoryRasterSerialized
     function MakeSerializedFileName: U_String;
@@ -736,14 +788,15 @@ type
 {$ENDREGION 'general'}
 {$REGION 'graphics'}
     // structor draw
-    procedure DrawOD(od_hnd: TOD_Handle; Raster: TMemoryRaster; color: TDEColor); overload;
-    procedure DrawOD(od_desc: TOD_Desc; Raster: TMemoryRaster; color: TDEColor); overload;
-    procedure DrawODM(odm_hnd: TOD_Marshal_Handle; Raster: TMemoryRaster; color: TDEColor);
-    procedure DrawSP(od_hnd: TOD_Handle; sp_hnd: TSP_Handle; Raster: TMemoryRaster);
-    function DrawMMOD(MMOD_hnd: TMMOD_Handle; Raster: TMemoryRaster; color: TDEColor; fontSiz: TGeoFloat): TMMOD_Desc; overload;
-    function DrawMMOD(MMOD_hnd: TMMOD_Handle; Raster: TMemoryRaster; color: TDEColor): TMMOD_Desc; overload;
-    function DrawMMOD(MMOD_hnd: TMMOD_Handle; confidence: Double; Raster: TMemoryRaster; color: TDEColor; fontSiz: TGeoFloat): Integer; overload;
-    function DrawMMOD(MMOD_hnd: TMMOD_Handle; confidence: Double; Raster: TMemoryRaster; color: TDEColor): Integer; overload;
+    procedure DrawOD6L(od_hnd: TOD6L_Handle; Raster: TMemoryRaster; color: TDEColor);
+    procedure DrawOD3L(od_hnd: TOD3L_Handle; Raster: TMemoryRaster; color: TDEColor);
+    procedure DrawOD(od_desc: TOD_Desc; Raster: TMemoryRaster; color: TDEColor);
+    procedure DrawODM(odm_hnd: TOD6L_Marshal_Handle; Raster: TMemoryRaster; color: TDEColor);
+    procedure DrawSP(od_hnd: TOD6L_Handle; sp_hnd: TSP_Handle; Raster: TMemoryRaster);
+    function DrawMMOD(MMOD_hnd: TMMOD6L_Handle; Raster: TMemoryRaster; color: TDEColor; fontSiz: TGeoFloat): TMMOD_Desc; overload;
+    function DrawMMOD(MMOD_hnd: TMMOD6L_Handle; Raster: TMemoryRaster; color: TDEColor): TMMOD_Desc; overload;
+    function DrawMMOD(MMOD_hnd: TMMOD6L_Handle; confidence: Double; Raster: TMemoryRaster; color: TDEColor; fontSiz: TGeoFloat): Integer; overload;
+    function DrawMMOD(MMOD_hnd: TMMOD6L_Handle; confidence: Double; Raster: TMemoryRaster; color: TDEColor): Integer; overload;
     function DrawMMOD(MMOD_Desc: TMMOD_Desc; Raster: TMemoryRaster; color: TDEColor): Integer; overload;
     procedure DrawFace(Raster: TMemoryRaster); overload;
     procedure DrawFace(face_hnd: TFACE_Handle; d: TDrawEngine); overload;
@@ -957,40 +1010,63 @@ type
     function BuildMatchInfoView(var MatchInfo: TSurfMatchedBuffer): TMemoryRaster;
     function BuildSurfMatchOutput(raster1, raster2: TMemoryRaster): TMemoryRaster;
 {$ENDREGION 'Speeded Up Robust Features'}
-{$REGION 'object detector'}
-    // object detector training(cpu), usage XML swap dataset.
-    function OD_Train(train_cfg, train_output: U_String; window_w, window_h, thread_num: Integer): Boolean; overload;
-    function OD_Train(imgList: TAI_ImageList; TokenFilter, train_output: U_String; window_w, window_h, thread_num: Integer): Boolean; overload;
-    function OD_Train(imgMat: TAI_ImageMatrix; TokenFilter, train_output: U_String; window_w, window_h, thread_num: Integer): Boolean; overload;
-    function OD_Train_Stream(imgList: TAI_ImageList; window_w, window_h, thread_num: Integer): TMemoryStream64; overload;
-    function OD_Train_Stream(imgMat: TAI_ImageMatrix; window_w, window_h, thread_num: Integer): TMemoryStream64; overload;
-    // large-scale object detector training(cpu), direct input without XML swap dataset.
-    function LargeScale_OD_Train(imgList: TAI_ImageList; train_output: U_String; window_w, window_h, thread_num: Integer): Boolean; overload;
-    function LargeScale_OD_Train(imgMat: TAI_ImageMatrix; train_output: U_String; window_w, window_h, thread_num: Integer): Boolean; overload;
-    function LargeScale_OD_Train_Stream(imgList: TAI_ImageList; window_w, window_h, thread_num: Integer): TMemoryStream64; overload;
-    function LargeScale_OD_Train_Stream(imgMat: TAI_ImageMatrix; window_w, window_h, thread_num: Integer): TMemoryStream64; overload;
-    // object detector api(cpu)
-    function OD_Open(train_file: U_String): TOD_Handle;
-    function OD_Open_Stream(stream: TMemoryStream64): TOD_Handle; overload;
-    function OD_Open_Stream(train_file: U_String): TOD_Handle; overload;
-    function OD_Close(var hnd: TOD_Handle): Boolean;
-    function OD_Process(hnd: TOD_Handle; Raster: TMemoryRaster; const max_AI_Rect: Integer): TOD_Desc; overload;
-    function OD_Process(hnd: TOD_Handle; Raster: TMemoryRaster): TOD_List; overload;
-    procedure OD_Process(hnd: TOD_Handle; Raster: TMemoryRaster; output: TOD_List); overload;
-    function OD_Process(hnd: TOD_Handle; rgb_img: TRGB_Image_Handle; const max_AI_Rect: Integer): TOD_Desc; overload;
-    function OD_ProcessScaleSpace(hnd: TOD_Handle; Raster: TMemoryRaster; scale: TGeoFloat): TOD_Desc; overload;
-{$ENDREGION 'object detector'}
-{$REGION 'object marshal detector'}
-    // object marshal detector training(cpu), usage XML swap dataset.
-    function OD_Marshal_Train(imgList: TAI_ImageList; window_w, window_h, thread_num: Integer): TMemoryStream64; overload;
-    function OD_Marshal_Train(imgMat: TAI_ImageMatrix; window_w, window_h, thread_num: Integer): TMemoryStream64; overload;
-    // object marshal detector api(cpu)
-    function OD_Marshal_Open_Stream(stream: TMemoryStream64): TOD_Marshal_Handle; overload;
-    function OD_Marshal_Open_Stream(train_file: U_String): TOD_Marshal_Handle; overload;
-    function OD_Marshal_Close(var hnd: TOD_Marshal_Handle): Boolean;
-    function OD_Marshal_Process(hnd: TOD_Marshal_Handle; Raster: TMemoryRaster): TOD_Marshal_Desc;
-    function OD_Marshal_ProcessScaleSpace(hnd: TOD_Marshal_Handle; Raster: TMemoryRaster; scale: TGeoFloat): TOD_Marshal_Desc;
-{$ENDREGION 'object marshal detector'}
+{$REGION 'object detector 6 layer'}
+    // object detector 6 layer training(cpu), usage XML swap dataset.
+    function OD6L_Train(train_cfg, train_output: U_String; window_w, window_h, thread_num: Integer): Boolean; overload;
+    function OD6L_Train(imgList: TAI_ImageList; TokenFilter, train_output: U_String; window_w, window_h, thread_num: Integer): Boolean; overload;
+    function OD6L_Train(imgMat: TAI_ImageMatrix; TokenFilter, train_output: U_String; window_w, window_h, thread_num: Integer): Boolean; overload;
+    function OD6L_Train_Stream(imgList: TAI_ImageList; window_w, window_h, thread_num: Integer): TMemoryStream64; overload;
+    function OD6L_Train_Stream(imgMat: TAI_ImageMatrix; window_w, window_h, thread_num: Integer): TMemoryStream64; overload;
+    // large-scale object detector 6 layer training(cpu), direct input without XML swap dataset.
+    function LargeScale_OD6L_Train(imgList: TAI_ImageList; train_output: U_String; window_w, window_h, thread_num: Integer): Boolean; overload;
+    function LargeScale_OD6L_Train(imgMat: TAI_ImageMatrix; train_output: U_String; window_w, window_h, thread_num: Integer): Boolean; overload;
+    function LargeScale_OD6L_Train_Stream(imgList: TAI_ImageList; window_w, window_h, thread_num: Integer): TMemoryStream64; overload;
+    function LargeScale_OD6L_Train_Stream(imgMat: TAI_ImageMatrix; window_w, window_h, thread_num: Integer): TMemoryStream64; overload;
+    // object detector 6 layer api(cpu)
+    function OD6L_Open(train_file: U_String): TOD6L_Handle;
+    function OD6L_Open_Stream(stream: TMemoryStream64): TOD6L_Handle; overload;
+    function OD6L_Open_Stream(train_file: U_String): TOD6L_Handle; overload;
+    function OD6L_Close(var hnd: TOD6L_Handle): Boolean;
+    function OD6L_Process(hnd: TOD6L_Handle; Raster: TMemoryRaster; const max_AI_Rect: Integer): TOD_Desc; overload;
+    function OD6L_Process(hnd: TOD6L_Handle; Raster: TMemoryRaster): TOD_List; overload;
+    procedure OD6L_Process(hnd: TOD6L_Handle; Raster: TMemoryRaster; output: TOD_List); overload;
+    function OD6L_Process(hnd: TOD6L_Handle; rgb_img: TRGB_Image_Handle; const max_AI_Rect: Integer): TOD_Desc; overload;
+    function OD6L_ProcessScaleSpace(hnd: TOD6L_Handle; Raster: TMemoryRaster; scale: TGeoFloat): TOD_Desc; overload;
+{$ENDREGION 'object detector 6 layer'}
+{$REGION 'object detector 3 layer'}
+    // object detector 3 layer training(cpu), usage XML swap dataset.
+    function OD3L_Train(train_cfg, train_output: U_String; window_w, window_h, thread_num: Integer): Boolean; overload;
+    function OD3L_Train(imgList: TAI_ImageList; TokenFilter, train_output: U_String; window_w, window_h, thread_num: Integer): Boolean; overload;
+    function OD3L_Train(imgMat: TAI_ImageMatrix; TokenFilter, train_output: U_String; window_w, window_h, thread_num: Integer): Boolean; overload;
+    function OD3L_Train_Stream(imgList: TAI_ImageList; window_w, window_h, thread_num: Integer): TMemoryStream64; overload;
+    function OD3L_Train_Stream(imgMat: TAI_ImageMatrix; window_w, window_h, thread_num: Integer): TMemoryStream64; overload;
+    // large-scale object detector 3 layer training(cpu), direct input without XML swap dataset.
+    function LargeScale_OD3L_Train(imgList: TAI_ImageList; train_output: U_String; window_w, window_h, thread_num: Integer): Boolean; overload;
+    function LargeScale_OD3L_Train(imgMat: TAI_ImageMatrix; train_output: U_String; window_w, window_h, thread_num: Integer): Boolean; overload;
+    function LargeScale_OD3L_Train_Stream(imgList: TAI_ImageList; window_w, window_h, thread_num: Integer): TMemoryStream64; overload;
+    function LargeScale_OD3L_Train_Stream(imgMat: TAI_ImageMatrix; window_w, window_h, thread_num: Integer): TMemoryStream64; overload;
+    // object detector 3 layer api(cpu)
+    function OD3L_Open(train_file: U_String): TOD3L_Handle;
+    function OD3L_Open_Stream(stream: TMemoryStream64): TOD3L_Handle; overload;
+    function OD3L_Open_Stream(train_file: U_String): TOD3L_Handle; overload;
+    function OD3L_Close(var hnd: TOD3L_Handle): Boolean;
+    function OD3L_Process(hnd: TOD3L_Handle; Raster: TMemoryRaster; const max_AI_Rect: Integer): TOD_Desc; overload;
+    function OD3L_Process(hnd: TOD3L_Handle; Raster: TMemoryRaster): TOD_List; overload;
+    procedure OD3L_Process(hnd: TOD3L_Handle; Raster: TMemoryRaster; output: TOD_List); overload;
+    function OD3L_Process(hnd: TOD3L_Handle; rgb_img: TRGB_Image_Handle; const max_AI_Rect: Integer): TOD_Desc; overload;
+    function OD3L_ProcessScaleSpace(hnd: TOD3L_Handle; Raster: TMemoryRaster; scale: TGeoFloat): TOD_Desc; overload;
+{$ENDREGION 'object detector 3 layer'}
+{$REGION 'object marshal(6 layer) detector'}
+    // object marshal detector(6 layer) training(cpu), usage XML swap dataset.
+    function OD6L_Marshal_Train(imgList: TAI_ImageList; window_w, window_h, thread_num: Integer): TMemoryStream64; overload;
+    function OD6L_Marshal_Train(imgMat: TAI_ImageMatrix; window_w, window_h, thread_num: Integer): TMemoryStream64; overload;
+    // object marshal detector(6 layer) api(cpu)
+    function OD6L_Marshal_Open_Stream(stream: TMemoryStream64): TOD6L_Marshal_Handle; overload;
+    function OD6L_Marshal_Open_Stream(train_file: U_String): TOD6L_Marshal_Handle; overload;
+    function OD6L_Marshal_Close(var hnd: TOD6L_Marshal_Handle): Boolean;
+    function OD6L_Marshal_Process(hnd: TOD6L_Marshal_Handle; Raster: TMemoryRaster): TOD_Marshal_Desc;
+    function OD6L_Marshal_ProcessScaleSpace(hnd: TOD6L_Marshal_Handle; Raster: TMemoryRaster; scale: TGeoFloat): TOD_Marshal_Desc;
+{$ENDREGION 'object marshal(6 layer) detector'}
 {$REGION 'shape predictor and shape detector'}
     // shape predictor and shape detector training(cpu), usage XML swap dataset.
     function SP_Train(train_cfg, train_output: U_String; oversampling_amount, tree_depth, thread_num: Integer): Boolean; overload;
@@ -1091,32 +1167,66 @@ type
     procedure LMetric_ResNet_SaveToKDTree(mdnn_hnd: TMDNN_Handle; Snapshot_: Boolean; imgMat: TAI_ImageMatrix; kd: TKDTreeDataList); overload;
     function LMetric_ResNet_DebugInfo(hnd: TMDNN_Handle): U_String;
 {$ENDREGION 'Large-Scale-LMDNN-ResNet(ResNet LMetric DNN)'}
-{$REGION 'MMOD-DNN(DNN+SVM:max-margin object detector)'}
-    // MMOD-DNN(DNN+SVM:max-margin object detector) training(gpu), usage XML swap dataset.
-    class function Init_MMOD_DNN_TrainParam(train_cfg, train_sync_file, train_output: U_String): PMMOD_Train_Parameter;
-    class procedure Free_MMOD_DNN_TrainParam(param: PMMOD_Train_Parameter);
-    function MMOD_DNN_PrepareTrain(imgList: TAI_ImageList; train_sync_file: U_String): PMMOD_Train_Parameter; overload;
-    function MMOD_DNN_PrepareTrain(imgMat: TAI_ImageMatrix; train_sync_file: U_String): PMMOD_Train_Parameter; overload;
-    function MMOD_DNN_Train(param: PMMOD_Train_Parameter): Integer;
-    function MMOD_DNN_Train_Stream(param: PMMOD_Train_Parameter): TMemoryStream64;
-    procedure MMOD_DNN_FreeTrain(param: PMMOD_Train_Parameter);
-    // Large-Scale MMOD-DNN(DNN+SVM:max-margin object detector) training(gpu), direct input without XML swap dataset.
-    function LargeScale_MMOD_DNN_PrepareTrain(train_sync_file, train_output: U_String): PMMOD_Train_Parameter;
-    function LargeScale_MMOD_DNN_Train(param: PMMOD_Train_Parameter; imgList: TAI_ImageList): Integer; overload;
-    function LargeScale_MMOD_DNN_Train(param: PMMOD_Train_Parameter; imgMat: TAI_ImageMatrix): Integer; overload;
-    function LargeScale_MMOD_DNN_Train_Stream(param: PMMOD_Train_Parameter; imgList: TAI_ImageList): TMemoryStream64; overload;
-    function LargeScale_MMOD_DNN_Train_Stream(param: PMMOD_Train_Parameter; imgMat: TAI_ImageMatrix): TMemoryStream64; overload;
-    procedure LargeScale_MMOD_DNN_FreeTrain(param: PMMOD_Train_Parameter);
-    // MMOD-DNN(DNN+SVM:max-margin object detector) api(gpu)
-    function MMOD_DNN_Open(train_file: U_String): TMMOD_Handle;
-    function MMOD_DNN_Open_Face(): TMMOD_Handle; overload;
-    function MMOD_DNN_Open_Stream(stream: TMemoryStream64): TMMOD_Handle; overload;
-    function MMOD_DNN_Open_Stream(train_file: U_String): TMMOD_Handle; overload;
-    function MMOD_DNN_Close(var hnd: TMMOD_Handle): Boolean;
-    function MMOD_DNN_Process(hnd: TMMOD_Handle; Raster: TMemoryRaster): TMMOD_Desc; overload;
-    function MMOD_DNN_Process_Matrix(hnd: TMMOD_Handle; matrix_img: TMatrix_Image_Handle): TMMOD_Desc; overload;
-    function MMOD_DNN_DebugInfo(hnd: TMMOD_Handle): U_String;
-{$ENDREGION 'MMOD-DNN(DNN+SVM:max-margin object detector)'}
+{$REGION 'MMOD-DNN(DNN+SVM:max-margin object detector 6 layer)'}
+    // MMOD-DNN(DNN+SVM:max-margin object detector 6 layer) training(gpu), usage XML swap dataset.
+    class function Init_MMOD6L_DNN_TrainParam(train_cfg, train_sync_file, train_output: U_String): PMMOD_Train_Parameter;
+    class procedure Free_MMOD6L_DNN_TrainParam(param: PMMOD_Train_Parameter);
+    function MMOD6L_DNN_PrepareTrain(imgList: TAI_ImageList; train_sync_file: U_String): PMMOD_Train_Parameter; overload;
+    function MMOD6L_DNN_PrepareTrain(imgMat: TAI_ImageMatrix; train_sync_file: U_String): PMMOD_Train_Parameter; overload;
+    function MMOD6L_DNN_Train(param: PMMOD_Train_Parameter): Integer;
+    function MMOD6L_DNN_Train_Stream(param: PMMOD_Train_Parameter): TMemoryStream64;
+    procedure MMOD6L_DNN_FreeTrain(param: PMMOD_Train_Parameter);
+    // Large-Scale MMOD-DNN(DNN+SVM:max-margin object detector 6 layer) training(gpu), direct input without XML swap dataset.
+    function LargeScale_MMOD6L_DNN_PrepareTrain(train_sync_file, train_output: U_String): PMMOD_Train_Parameter;
+    function LargeScale_MMOD6L_DNN_Train(param: PMMOD_Train_Parameter; imgList: TAI_ImageList): Integer; overload;
+    function LargeScale_MMOD6L_DNN_Train(param: PMMOD_Train_Parameter; imgMat: TAI_ImageMatrix): Integer; overload;
+    function LargeScale_MMOD6L_DNN_Train(param: PMMOD_Train_Parameter; RSeri: TRasterSerialized; imgList: TAI_ImageList): Integer; overload;
+    function LargeScale_MMOD6L_DNN_Train(param: PMMOD_Train_Parameter; RSeri: TRasterSerialized; imgMat: TAI_ImageMatrix): Integer; overload;
+    function LargeScale_MMOD6L_DNN_Train_Stream(param: PMMOD_Train_Parameter; imgList: TAI_ImageList): TMemoryStream64; overload;
+    function LargeScale_MMOD6L_DNN_Train_Stream(param: PMMOD_Train_Parameter; imgMat: TAI_ImageMatrix): TMemoryStream64; overload;
+    function LargeScale_MMOD6L_DNN_Train_Stream(param: PMMOD_Train_Parameter; RSeri: TRasterSerialized; imgList: TAI_ImageList): TMemoryStream64; overload;
+    function LargeScale_MMOD6L_DNN_Train_Stream(param: PMMOD_Train_Parameter; RSeri: TRasterSerialized; imgMat: TAI_ImageMatrix): TMemoryStream64; overload;
+    procedure LargeScale_MMOD6L_DNN_FreeTrain(param: PMMOD_Train_Parameter);
+    // MMOD-DNN(DNN+SVM:max-margin object detector 6 layer) api(gpu)
+    function MMOD6L_DNN_Open(train_file: U_String): TMMOD6L_Handle;
+    function MMOD6L_DNN_Open_Face(): TMMOD6L_Handle; overload;
+    function MMOD6L_DNN_Open_Stream(stream: TMemoryStream64): TMMOD6L_Handle; overload;
+    function MMOD6L_DNN_Open_Stream(train_file: U_String): TMMOD6L_Handle; overload;
+    function MMOD6L_DNN_Close(var hnd: TMMOD6L_Handle): Boolean;
+    function MMOD6L_DNN_Process(hnd: TMMOD6L_Handle; Raster: TMemoryRaster): TMMOD_Desc; overload;
+    function MMOD6L_DNN_Process_Matrix(hnd: TMMOD6L_Handle; matrix_img: TMatrix_Image_Handle): TMMOD_Desc; overload;
+    function MMOD6L_DNN_DebugInfo(hnd: TMMOD6L_Handle): U_String;
+{$ENDREGION 'MMOD-DNN(DNN+SVM:max-margin object detector 6 layer)'}
+{$REGION 'MMOD-DNN(DNN+SVM:max-margin object detector 3 layer)'}
+    // MMOD-DNN(DNN+SVM:max-margin object detector 3 layer) training(gpu), usage XML swap dataset.
+    class function Init_MMOD3L_DNN_TrainParam(train_cfg, train_sync_file, train_output: U_String): PMMOD_Train_Parameter;
+    class procedure Free_MMOD3L_DNN_TrainParam(param: PMMOD_Train_Parameter);
+    function MMOD3L_DNN_PrepareTrain(imgList: TAI_ImageList; train_sync_file: U_String): PMMOD_Train_Parameter; overload;
+    function MMOD3L_DNN_PrepareTrain(imgMat: TAI_ImageMatrix; train_sync_file: U_String): PMMOD_Train_Parameter; overload;
+    function MMOD3L_DNN_Train(param: PMMOD_Train_Parameter): Integer;
+    function MMOD3L_DNN_Train_Stream(param: PMMOD_Train_Parameter): TMemoryStream64;
+    procedure MMOD3L_DNN_FreeTrain(param: PMMOD_Train_Parameter);
+    // Large-Scale MMOD-DNN(DNN+SVM:max-margin object detector 3 layer) training(gpu), direct input without XML swap dataset.
+    function LargeScale_MMOD3L_DNN_PrepareTrain(train_sync_file, train_output: U_String): PMMOD_Train_Parameter;
+    function LargeScale_MMOD3L_DNN_Train(param: PMMOD_Train_Parameter; imgList: TAI_ImageList): Integer; overload;
+    function LargeScale_MMOD3L_DNN_Train(param: PMMOD_Train_Parameter; imgMat: TAI_ImageMatrix): Integer; overload;
+    function LargeScale_MMOD3L_DNN_Train(param: PMMOD_Train_Parameter; RSeri: TRasterSerialized; imgList: TAI_ImageList): Integer; overload;
+    function LargeScale_MMOD3L_DNN_Train(param: PMMOD_Train_Parameter; RSeri: TRasterSerialized; imgMat: TAI_ImageMatrix): Integer; overload;
+    function LargeScale_MMOD3L_DNN_Train_Stream(param: PMMOD_Train_Parameter; imgList: TAI_ImageList): TMemoryStream64; overload;
+    function LargeScale_MMOD3L_DNN_Train_Stream(param: PMMOD_Train_Parameter; imgMat: TAI_ImageMatrix): TMemoryStream64; overload;
+    function LargeScale_MMOD3L_DNN_Train_Stream(param: PMMOD_Train_Parameter; RSeri: TRasterSerialized; imgList: TAI_ImageList): TMemoryStream64; overload;
+    function LargeScale_MMOD3L_DNN_Train_Stream(param: PMMOD_Train_Parameter; RSeri: TRasterSerialized; imgMat: TAI_ImageMatrix): TMemoryStream64; overload;
+    procedure LargeScale_MMOD3L_DNN_FreeTrain(param: PMMOD_Train_Parameter);
+    // MMOD-DNN(DNN+SVM:max-margin object detector 3 layer) api(gpu)
+    function MMOD3L_DNN_Open(train_file: U_String): TMMOD3L_Handle;
+    function MMOD3L_DNN_Open_Face(): TMMOD3L_Handle; overload;
+    function MMOD3L_DNN_Open_Stream(stream: TMemoryStream64): TMMOD3L_Handle; overload;
+    function MMOD3L_DNN_Open_Stream(train_file: U_String): TMMOD3L_Handle; overload;
+    function MMOD3L_DNN_Close(var hnd: TMMOD3L_Handle): Boolean;
+    function MMOD3L_DNN_Process(hnd: TMMOD3L_Handle; Raster: TMemoryRaster): TMMOD_Desc; overload;
+    function MMOD3L_DNN_Process_Matrix(hnd: TMMOD3L_Handle; matrix_img: TMatrix_Image_Handle): TMMOD_Desc; overload;
+    function MMOD3L_DNN_DebugInfo(hnd: TMMOD3L_Handle): U_String;
+{$ENDREGION 'MMOD-DNN(DNN+SVM:max-margin object detector 3 layer)'}
 {$REGION 'ResNet-Image-Classifier'}
     // ResNet-Image-Classifier training(gpu), crop size 227, max classifier 1000, direct input without XML swap dataset.
     class function Init_RNIC_Train_Parameter(train_sync_file, train_output: U_String): PRNIC_Train_Parameter;
@@ -1402,7 +1512,7 @@ type
   public
     constructor Create;
   end;
-{$ENDREGION 'Core'}
+{$ENDREGION 'AI Core'}
 {$REGION 'Parallel'}
 
   TAI_Parallel_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TAI>;
@@ -1423,8 +1533,9 @@ type
     procedure Prepare_Parallel; overload;
 
     procedure Prepare_Face;
-    procedure Prepare_OD(stream: TMemoryStream64);
-    procedure Prepare_OD_Marshal(stream: TMemoryStream64);
+    procedure Prepare_OD6L(stream: TMemoryStream64);
+    procedure Prepare_OD3L(stream: TMemoryStream64);
+    procedure Prepare_OD6L_Marshal(stream: TMemoryStream64);
     procedure Prepare_SP(stream: TMemoryStream64);
     function GetAndLockAI: TAI;
     procedure UnLockAI(AI: TAI);
@@ -1511,6 +1622,7 @@ function API_BuildString(p: Pointer; Size: Integer): Pointer; stdcall;
 procedure API_FreeString(p: Pointer); stdcall;
 function API_GetRaster(hnd: PRaster_Handle; var Bits: Pointer; var Width, Height: Integer): Byte; stdcall;
 function API_GetImage(hnd: PImage_Handle; var Bits: Pointer; var Width, Height: Integer): Byte; stdcall;
+function API_RecycleImage(Sender: PAI_EntryAPI; hnd: PImage_Handle): Byte; stdcall;
 function API_GetDetectorDefineNum(hnd: PImage_Handle): Integer; stdcall;
 function API_GetDetectorDefineImage(hnd: PImage_Handle; detIndex: Integer; var Bits: Pointer; var Width, Height: Integer): Byte; stdcall;
 function API_GetDetectorDefineRect(hnd: PImage_Handle; detIndex: Integer; var rect_: TAI_Rect): Byte; stdcall;
@@ -1524,6 +1636,7 @@ function API_QuerySegmentationMaskColorID(cl: PSegmentationColorList; color: TRC
 {$REGION 'API'}
 procedure Wait_AI_Init;
 
+function CheckZAI(libFile: SystemString): Boolean;
 function Load_ZAI(libFile: SystemString): PAI_EntryAPI; // instance
 function Prepare_AI_Engine(eng: SystemString): PAI_EntryAPI; overload;
 function Prepare_AI_Engine: PAI_EntryAPI; overload;
@@ -1554,17 +1667,15 @@ function InRect(v: TAI_Point; R: TAI_Rect): Boolean; overload;
 function InRect(v: TSP_Desc; R: TAI_Rect): Boolean; overload;
 function InRect(v: TSP_Desc; R: TRectV2): Boolean; overload;
 
+// sp vector
 procedure SPToVec(v: TSP_Desc; L: TVec2List); overload;
-
 function GetSPBound(desc: TSP_Desc; endge_threshold: TGeoFloat): TRectV2;
 procedure DrawSPLine(sp_desc: TSP_Desc; bp, ep: Integer; closeLine: Boolean; color: TDEColor; d: TDrawEngine); overload;
 procedure DrawFaceSP(sp_desc: TSP_Desc; color: TDEColor; d: TDrawEngine); overload;
 
-{$ENDREGION 'API'}
-{$REGION 'training task'}
 // training task
 function RunTrainingTask(Task: TTrainingTask; const AI: TAI; const paramFile: SystemString): Boolean;
-{$ENDREGION 'training task'}
+{$ENDREGION 'API'}
 {$REGION 'core parameter'}
 
 
@@ -1579,7 +1690,7 @@ const
   C_GDCNIC_Dim: Integer = 10000;
   C_GNIC_Dim: Integer = 10000;
 {$ENDREGION 'core parameter'}
-{$REGION 'Var and const'}
+{$REGION 'var and const'}
 
 
 var
@@ -1611,11 +1722,12 @@ const
   C_CUT_PR_BGD = 2; // possible background pixel
   C_CUT_PR_FGD = 3; // a possible foreground pixel
 
-{$ENDREGION 'Var and const'}
+{$ENDREGION 'var and const'}
 {$REGION 'TEST'}
 procedure test_imageProcessing(imgfile: U_String);
 procedure test_poissonBlend(sourfile, sourMask, destFile: U_String);
 procedure test_Unmixed(sourfile: U_String);
+procedure test_mmod_largescale_training(dataset_file, sync_file, output_file: U_String);
 {$ENDREGION 'TEST'}
 
 implementation
@@ -1754,6 +1866,18 @@ begin
   Width := hnd^.image.Raster.Width;
   Height := hnd^.image.Raster.Height;
   Result := 1;
+  AtomInc(hnd^.AccessImage);
+end;
+
+function API_RecycleImage(Sender: PAI_EntryAPI; hnd: PImage_Handle): Byte; stdcall;
+begin
+  Result := 0;
+  if Sender^.RasterSerialized <> nil then
+    begin
+      Sender^.RasterSerialized.Critical.Acquire;
+      hnd^.image.RecycleMemory();
+      Sender^.RasterSerialized.Critical.Release;
+    end;
 end;
 
 function API_GetDetectorDefineNum(hnd: PImage_Handle): Integer; stdcall;
@@ -1778,6 +1902,7 @@ begin
   Width := img.Width;
   Height := img.Height;
   Result := 1;
+  AtomInc(hnd^.AccessDetectorImage);
 end;
 
 function API_GetDetectorDefineRect(hnd: PImage_Handle; detIndex: Integer; var rect_: TAI_Rect): Byte; stdcall;
@@ -1795,6 +1920,7 @@ begin
   rect_.Right := detDef.R.Right;
   rect_.Bottom := detDef.R.Bottom;
   Result := 1;
+  AtomInc(hnd^.AccessDetectorRect);
 end;
 
 function API_GetDetectorDefineLabel(hnd: PImage_Handle; detIndex: Integer; var p: P_Bytes): Byte; stdcall;
@@ -1861,6 +1987,7 @@ begin
   Width := img.Width;
   Height := img.Height;
   Result := 1;
+  AtomInc(hnd^.AccessMask);
 end;
 
 function API_QuerySegmentationMaskColorID(cl: PSegmentationColorList; color: TRColor; def: WORD): WORD; stdcall;
@@ -1870,6 +1997,26 @@ end;
 
 {$ENDREGION 'back caller'}
 
+
+function CheckZAI(libFile: SystemString): Boolean;
+var
+  currDir: U_String;
+  hnd: HMODULE;
+begin
+  Result := False;
+  if CurrentPlatform in [epWin64, epWin32] then
+    begin
+      currDir := umlGetCurrentPath;
+      try
+        umlSetCurrentPath(umlGetFilePath(libFile));
+        hnd := GetExtLib(libFile);
+        Result := hnd <> 0;
+      except
+      end;
+      FreeExtLib(libFile);
+      umlSetCurrentPath(currDir);
+    end;
+end;
 
 function Load_ZAI(libFile: SystemString): PAI_EntryAPI;
 type
@@ -1914,6 +2061,7 @@ begin
                 FAI_EntryAPI^.API_FreeString := {$IFDEF FPC}@{$ENDIF FPC}API_FreeString;
                 FAI_EntryAPI^.API_GetRaster := {$IFDEF FPC}@{$ENDIF FPC}API_GetRaster;
                 FAI_EntryAPI^.API_GetImage := {$IFDEF FPC}@{$ENDIF FPC}API_GetImage;
+                FAI_EntryAPI^.API_RecycleImage := {$IFDEF FPC}@{$ENDIF FPC}API_RecycleImage;
                 FAI_EntryAPI^.API_GetDetectorDefineNum := {$IFDEF FPC}@{$ENDIF FPC}API_GetDetectorDefineNum;
                 FAI_EntryAPI^.API_GetDetectorDefineImage := {$IFDEF FPC}@{$ENDIF FPC}API_GetDetectorDefineImage;
                 FAI_EntryAPI^.API_GetDetectorDefineRect := {$IFDEF FPC}@{$ENDIF FPC}API_GetDetectorDefineRect;
@@ -1933,24 +2081,28 @@ begin
                 try
                   proc_init_ai_(FAI_EntryAPI^);
 
-                  if (FAI_EntryAPI^.MajorVer = 1) and (FAI_EntryAPI^.MinorVer = 30) then
+                  if (FAI_EntryAPI^.MajorVer = 1) and (FAI_EntryAPI^.MinorVer = 31) then
                     begin
-                      if FAI_EntryAPI^.Authentication <> 0 then
+                      if FAI_EntryAPI^.Authentication = 1 then
                           FAI_EntryAPI^.Key := AIKey(FAI_EntryAPI^.Key);
                       AI_Entry_Cache.Add(libFile, FAI_EntryAPI, False);
                       Result := FAI_EntryAPI;
                       if (FAI_EntryAPI^.CheckKey() = 0) then
                         begin
-                          DoStatus('illegal License for Engine: %s', [libFile]);
+                          DoStatus('illegal License key for %s', [libFile]);
                         end
                       else
                         begin
-                          DoStatus('Activted Engine: %s' + if_(FAI_EntryAPI^.Authentication = 0, '(Free)', ''), [libFile]);
+                          DoStatus('Activted Engine: %s', [libFile]);
+                          DoStatus('CUDA: ' + if_(FAI_EntryAPI^.CUDA = 1, 'YES', 'NO'));
+                          DoStatus('Intel-MKL: ' + if_(FAI_EntryAPI^.MKL = 1, 'YES', 'NO'));
+                          DoStatus('Trainer: ' + if_(FAI_EntryAPI^.Training = 1, 'YES', 'NO'));
+                          DoStatus('Licensed: ' + if_(FAI_EntryAPI^.Authentication = 1, 'Authorized', 'Free'));
                         end;
                     end
                   else
                     begin
-                      DoStatus('nonsupport AI engine %s edition: %d.%d', [libFile, FAI_EntryAPI^.MajorVer, FAI_EntryAPI^.MinorVer]);
+                      DoStatus('nonsupport AI engine %s edition: %d.%d', [umlGetFileName(libFile).Text, FAI_EntryAPI^.MajorVer, FAI_EntryAPI^.MinorVer]);
                       FAI_EntryAPI^.LibraryFile := '';
                       DisposeObject(FAI_EntryAPI^.OneStepList);
                       DisposeObject(FAI_EntryAPI^.Log);
@@ -2066,7 +2218,7 @@ begin
   AI_Entry_Cache := THashList.Create;
   AI_Entry_Cache.AutoFreeData := False;
   AI_Entry_Cache.AccessOptimization := False;
-  AI_Status_Buffer := TMemoryStream64.CustomCreate(1024);
+  AI_Status_Buffer := TMemoryStream64.CustomCreate(8192);
 
   AI_BuildIn_DBEngine := nil;
   build_in_face_shape_memory := nil;
@@ -2150,7 +2302,7 @@ end;
 function Alloc_P_Bytes_FromBuff(const buff: TBytes): P_Bytes;
 begin
   new(Result);
-  Result^.Size := length(buff);
+  Result^.Size := Length(buff);
   if Result^.Size > 0 then
     begin
       Result^.Bytes := GetMemory(Result^.Size + 1);
@@ -2281,7 +2433,7 @@ var
   i: Integer;
 begin
   Result := False;
-  for i := 0 to length(v) - 1 do
+  for i := 0 to Length(v) - 1 do
     if not InRect(v[i], R) then
         exit;
   Result := True;
@@ -2292,7 +2444,7 @@ var
   i: Integer;
 begin
   Result := False;
-  for i := 0 to length(v) - 1 do
+  for i := 0 to Length(v) - 1 do
     if not PointInRect(Vec2(v[i]), R) then
         exit;
   Result := True;
@@ -2302,7 +2454,7 @@ procedure SPToVec(v: TSP_Desc; L: TVec2List);
 var
   i: Integer;
 begin
-  for i := 0 to length(v) - 1 do
+  for i := 0 to Length(v) - 1 do
       L.Add(Vec2(v[i]));
 end;
 
@@ -2312,13 +2464,13 @@ var
   i: Integer;
   siz: TVec2;
 begin
-  if length(desc) = 0 then
+  if Length(desc) = 0 then
     begin
       Result := NullRect;
       exit;
     end;
-  SetLength(vbuff, length(desc));
-  for i := 0 to length(desc) - 1 do
+  SetLength(vbuff, Length(desc));
+  for i := 0 to Length(desc) - 1 do
       vbuff[i] := Vec2(desc[i]);
 
   Result := FixRect(BoundRect(vbuff));
@@ -2347,7 +2499,7 @@ end;
 
 procedure DrawFaceSP(sp_desc: TSP_Desc; color: TDEColor; d: TDrawEngine);
 begin
-  if length(sp_desc) <> 68 then
+  if Length(sp_desc) <> 68 then
       exit;
   DrawSPLine(sp_desc, 0, 16, False, color, d);
   DrawSPLine(sp_desc, 17, 21, False, color, d);
@@ -2461,7 +2613,7 @@ begin
           end;
 {$ENDREGION 'surf'}
       end
-    else if umlMultipleMatch(['TrainOD', 'TrainingOD', 'TrainObjectDetector'], ComputeFunc) then
+    else if umlMultipleMatch(['TrainOD', 'TrainingOD', 'TrainObjectDetector', 'TrainOD6L', 'TrainingOD6L', 'TrainObjectDetector6L'], ComputeFunc) then
       begin
 {$REGION 'OD'}
         inputfile1 := param.GetDefaultValue('source', '');
@@ -2481,14 +2633,14 @@ begin
                 end;
 
               if umlMultipleMatch('*' + C_ImageMatrix_Ext, inputfile1) then
-                  outputstream := AI.LargeScale_OD_Train_Stream(
+                  outputstream := AI.LargeScale_OD6L_Train_Stream(
                   inputImgMatrix,
                   param.GetDefaultValue('window_width', 80),
                   param.GetDefaultValue('window_height', 80),
                   param.GetDefaultValue('thread', 2)
                   )
               else
-                  outputstream := AI.LargeScale_OD_Train_Stream(
+                  outputstream := AI.LargeScale_OD6L_Train_Stream(
                   inputImgList,
                   param.GetDefaultValue('window_width', 80),
                   param.GetDefaultValue('window_height', 80),
@@ -2497,7 +2649,7 @@ begin
 
               if outputstream <> nil then
                 begin
-                  Task.write(param.GetDefaultValue('output', 'output' + C_OD_Ext), outputstream);
+                  Task.write(param.GetDefaultValue('output', 'output' + C_OD6L_Ext), outputstream);
                   DisposeObject(outputstream);
                   Result := True;
                 end;
@@ -2506,7 +2658,52 @@ begin
           end;
 {$ENDREGION 'OD'}
       end
-    else if umlMultipleMatch(['TrainOD_Marshal', 'TrainingOD_Marshal', 'TrainObjectDetectorMarshal'], ComputeFunc) then
+    else if umlMultipleMatch(['TrainOD3L', 'TrainingOD3L', 'TrainObjectDetector3L'], ComputeFunc) then
+      begin
+{$REGION 'OD3L'}
+        inputfile1 := param.GetDefaultValue('source', '');
+
+        if Task.Exists(inputfile1) then
+          begin
+            try
+              if umlMultipleMatch('*' + C_ImageMatrix_Ext, inputfile1) then
+                begin
+                  Task.Read(inputfile1, inputImgMatrix);
+                  inputImgMatrix.scale(param.GetDefaultValue('scale', 1.0));
+                end
+              else
+                begin
+                  Task.Read(inputfile1, inputImgList);
+                  inputImgList.scale(param.GetDefaultValue('scale', 1.0));
+                end;
+
+              if umlMultipleMatch('*' + C_ImageMatrix_Ext, inputfile1) then
+                  outputstream := AI.LargeScale_OD3L_Train_Stream(
+                  inputImgMatrix,
+                  param.GetDefaultValue('window_width', 80),
+                  param.GetDefaultValue('window_height', 80),
+                  param.GetDefaultValue('thread', 2)
+                  )
+              else
+                  outputstream := AI.LargeScale_OD3L_Train_Stream(
+                  inputImgList,
+                  param.GetDefaultValue('window_width', 80),
+                  param.GetDefaultValue('window_height', 80),
+                  param.GetDefaultValue('thread', 2)
+                  );
+
+              if outputstream <> nil then
+                begin
+                  Task.write(param.GetDefaultValue('output', 'output' + C_OD3L_Ext), outputstream);
+                  DisposeObject(outputstream);
+                  Result := True;
+                end;
+            except
+            end;
+          end;
+{$ENDREGION 'OD3L'}
+      end
+    else if umlMultipleMatch(['TrainOD_Marshal', 'TrainingOD_Marshal', 'TrainObjectDetectorMarshal', 'TrainOD6L_Marshal', 'TrainingOD6L_Marshal', 'TrainObjectDetector6LMarshal'], ComputeFunc) then
       begin
 {$REGION 'OD Marshal'}
         inputfile1 := param.GetDefaultValue('source', '');
@@ -2526,14 +2723,14 @@ begin
                 end;
 
               if umlMultipleMatch('*' + C_ImageMatrix_Ext, inputfile1) then
-                  outputstream := AI.OD_Marshal_Train(
+                  outputstream := AI.OD6L_Marshal_Train(
                   inputImgMatrix,
                   param.GetDefaultValue('window_width', 80),
                   param.GetDefaultValue('window_height', 80),
                   param.GetDefaultValue('thread', 2)
                   )
               else
-                  outputstream := AI.OD_Marshal_Train(
+                  outputstream := AI.OD6L_Marshal_Train(
                   inputImgList,
                   param.GetDefaultValue('window_width', 80),
                   param.GetDefaultValue('window_height', 80),
@@ -2542,7 +2739,7 @@ begin
 
               if outputstream <> nil then
                 begin
-                  Task.write(param.GetDefaultValue('output', 'output' + C_OD_Marshal_Ext), outputstream);
+                  Task.write(param.GetDefaultValue('output', 'output' + C_OD6L_Marshal_Ext), outputstream);
                   DisposeObject(outputstream);
                   Result := True;
                 end;
@@ -2786,9 +2983,9 @@ begin
           end;
 {$ENDREGION 'LMetric'}
       end
-    else if umlMultipleMatch(['TrainMMOD', 'TrainingMMOD', 'TrainMaxMarginDNNObjectDetector'], ComputeFunc) then
+    else if umlMultipleMatch(['TrainMMOD', 'TrainingMMOD', 'TrainMaxMarginDNNObjectDetector', 'TrainMMOD6L', 'TrainingMMOD6L', 'TrainMaxMarginDNNObjectDetector6L'], ComputeFunc) then
       begin
-{$REGION 'MMOD'}
+{$REGION 'MMOD6L'}
         inputfile1 := param.GetDefaultValue('source', '');
 
         if Task.Exists(inputfile1) then
@@ -2798,14 +2995,18 @@ begin
                 begin
                   Task.Read(inputfile1, inputImgMatrix);
                   inputImgMatrix.scale(param.GetDefaultValue('scale', 1.0));
+                  if param.GetDefaultValue('NoLabel', True) = True then
+                      inputImgMatrix.RunScript('True', 'SetLabel(' + #39#39 + ')');
                 end
               else
                 begin
                   Task.Read(inputfile1, inputImgList);
                   inputImgList.scale(param.GetDefaultValue('scale', 1.0));
+                  if param.GetDefaultValue('NoLabel', True) = True then
+                      inputImgList.RunScript('True', 'SetLabel(' + #39#39 + ')');
                 end;
 
-              local_sync := param.GetDefaultValue('syncfile', 'output' + C_MMOD_Ext + C_Sync_Ext);
+              local_sync := param.GetDefaultValue('syncfile', 'output' + C_MMOD6L_Ext + C_Sync_Ext);
               sync_file := umlCombineFileName(AI.rootPath, local_sync + '_' + umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5)));
               if Task.Exists(local_sync) then
                 if not umlFileExists(sync_file) then
@@ -2813,8 +3014,8 @@ begin
 
               TCoreClassThread.Sleep(1);
 
-              output_file := umlCombineFileName(AI.rootPath, 'MMOD_DNN_' + umlMakeRanName + '_output' + C_MMOD_Ext);
-              mmod_param := AI.LargeScale_MMOD_DNN_PrepareTrain(sync_file, output_file);
+              output_file := umlCombineFileName(AI.rootPath, 'MMOD6L_DNN_' + umlMakeRanName + '_output' + C_MMOD6L_Ext);
+              mmod_param := AI.LargeScale_MMOD6L_DNN_PrepareTrain(sync_file, output_file);
 
               mmod_param^.timeout := param.GetDefaultValue('timeout', mmod_param^.timeout);
               mmod_param^.weight_decay := param.GetDefaultValue('weight_decay', mmod_param^.weight_decay);
@@ -2840,16 +3041,16 @@ begin
               mmod_param^.max_object_size := param.GetDefaultValue('max_object_size', mmod_param^.max_object_size);
 
               if umlMultipleMatch('*' + C_ImageMatrix_Ext, inputfile1) then
-                  outputstream := AI.LargeScale_MMOD_DNN_Train_Stream(mmod_param, inputImgMatrix)
+                  outputstream := AI.LargeScale_MMOD6L_DNN_Train_Stream(mmod_param, inputImgMatrix)
               else
-                  outputstream := AI.LargeScale_MMOD_DNN_Train_Stream(mmod_param, inputImgList);
+                  outputstream := AI.LargeScale_MMOD6L_DNN_Train_Stream(mmod_param, inputImgList);
 
-              AI.LargeScale_MMOD_DNN_FreeTrain(mmod_param);
+              AI.LargeScale_MMOD6L_DNN_FreeTrain(mmod_param);
 
               if outputstream <> nil then
                 begin
-                  Task.write(param.GetDefaultValue('output', 'output' + C_MMOD_Ext), outputstream);
-                  Task.WriteFile(param.GetDefaultValue('output.sync', 'output' + C_MMOD_Ext + C_Sync_Ext), sync_file);
+                  Task.write(param.GetDefaultValue('output', 'output' + C_MMOD6L_Ext), outputstream);
+                  Task.WriteFile(param.GetDefaultValue('output.sync', 'output' + C_MMOD6L_Ext + C_Sync_Ext), sync_file);
                   DisposeObject(outputstream);
                   ResultValues['Loss'] := AI.Last_training_average_loss;
                   ResultValues['Rate'] := AI.Last_training_learning_rate;
@@ -2860,7 +3061,87 @@ begin
             except
             end;
           end;
-{$ENDREGION 'MMOD'}
+{$ENDREGION 'MMOD6L'}
+      end
+    else if umlMultipleMatch(['TrainMMOD3L', 'TrainingMMOD3L', 'TrainMaxMarginDNNObjectDetector3L'], ComputeFunc) then
+      begin
+{$REGION 'MMOD3L'}
+        inputfile1 := param.GetDefaultValue('source', '');
+
+        if Task.Exists(inputfile1) then
+          begin
+            try
+              if umlMultipleMatch('*' + C_ImageMatrix_Ext, inputfile1) then
+                begin
+                  Task.Read(inputfile1, inputImgMatrix);
+                  inputImgMatrix.scale(param.GetDefaultValue('scale', 1.0));
+                  if param.GetDefaultValue('NoLabel', True) = True then
+                      inputImgMatrix.RunScript('True', 'SetLabel(' + #39#39 + ')');
+                end
+              else
+                begin
+                  Task.Read(inputfile1, inputImgList);
+                  inputImgList.scale(param.GetDefaultValue('scale', 1.0));
+                  if param.GetDefaultValue('NoLabel', True) = True then
+                      inputImgList.RunScript('True', 'SetLabel(' + #39#39 + ')');
+                end;
+
+              local_sync := param.GetDefaultValue('syncfile', 'output' + C_MMOD3L_Ext + C_Sync_Ext);
+              sync_file := umlCombineFileName(AI.rootPath, local_sync + '_' + umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5)));
+              if Task.Exists(local_sync) then
+                if not umlFileExists(sync_file) then
+                    Task.ReadToFile(local_sync, sync_file);
+
+              TCoreClassThread.Sleep(1);
+
+              output_file := umlCombineFileName(AI.rootPath, 'MMOD3L_DNN_' + umlMakeRanName + '_output' + C_MMOD3L_Ext);
+              mmod_param := AI.LargeScale_MMOD3L_DNN_PrepareTrain(sync_file, output_file);
+
+              mmod_param^.timeout := param.GetDefaultValue('timeout', mmod_param^.timeout);
+              mmod_param^.weight_decay := param.GetDefaultValue('weight_decay', mmod_param^.weight_decay);
+              mmod_param^.momentum := param.GetDefaultValue('momentum', mmod_param^.momentum);
+              mmod_param^.target_size := param.GetDefaultValue('target_size', mmod_param^.target_size);
+              mmod_param^.min_target_size := param.GetDefaultValue('min_target_size', mmod_param^.min_target_size);
+              mmod_param^.min_detector_window_overlap_iou := param.GetDefaultValue('min_detector_window_overlap_iou', mmod_param^.min_detector_window_overlap_iou);
+              mmod_param^.iterations_without_progress_threshold := param.GetDefaultValue('iterations_without_progress_threshold', mmod_param^.iterations_without_progress_threshold);
+              mmod_param^.learning_rate := param.GetDefaultValue('learning_rate', mmod_param^.learning_rate);
+              mmod_param^.completed_learning_rate := param.GetDefaultValue('completed_learning_rate', mmod_param^.completed_learning_rate);
+
+              mmod_param^.overlap_NMS_iou_thresh := param.GetDefaultValue('overlap_NMS_iou_thresh', mmod_param^.overlap_NMS_iou_thresh);
+              mmod_param^.overlap_NMS_percent_covered_thresh := param.GetDefaultValue('overlap_NMS_percent_covered_thresh', mmod_param^.overlap_NMS_percent_covered_thresh);
+              mmod_param^.overlap_ignore_iou_thresh := param.GetDefaultValue('overlap_ignore_iou_thresh', mmod_param^.overlap_ignore_iou_thresh);
+              mmod_param^.overlap_ignore_percent_covered_thresh := param.GetDefaultValue('overlap_ignore_percent_covered_thresh', mmod_param^.overlap_ignore_percent_covered_thresh);
+
+              mmod_param^.num_crops := param.GetDefaultValue('num_crops', mmod_param^.num_crops);
+              mmod_param^.chip_dims_x := param.GetDefaultValue('chip_dims_x', mmod_param^.chip_dims_x);
+              mmod_param^.chip_dims_y := param.GetDefaultValue('chip_dims_y', mmod_param^.chip_dims_y);
+              mmod_param^.min_object_size_x := param.GetDefaultValue('min_object_size_x', mmod_param^.min_object_size_x);
+              mmod_param^.min_object_size_y := param.GetDefaultValue('min_object_size_y', mmod_param^.min_object_size_y);
+              mmod_param^.max_rotation_degrees := param.GetDefaultValue('max_rotation_degrees', mmod_param^.max_rotation_degrees);
+              mmod_param^.max_object_size := param.GetDefaultValue('max_object_size', mmod_param^.max_object_size);
+
+              if umlMultipleMatch('*' + C_ImageMatrix_Ext, inputfile1) then
+                  outputstream := AI.LargeScale_MMOD3L_DNN_Train_Stream(mmod_param, inputImgMatrix)
+              else
+                  outputstream := AI.LargeScale_MMOD3L_DNN_Train_Stream(mmod_param, inputImgList);
+
+              AI.LargeScale_MMOD3L_DNN_FreeTrain(mmod_param);
+
+              if outputstream <> nil then
+                begin
+                  Task.write(param.GetDefaultValue('output', 'output' + C_MMOD3L_Ext), outputstream);
+                  Task.WriteFile(param.GetDefaultValue('output.sync', 'output' + C_MMOD3L_Ext + C_Sync_Ext), sync_file);
+                  DisposeObject(outputstream);
+                  ResultValues['Loss'] := AI.Last_training_average_loss;
+                  ResultValues['Rate'] := AI.Last_training_learning_rate;
+                  Result := True;
+                end;
+              umlDeleteFile(sync_file);
+              umlDeleteFile(output_file);
+            except
+            end;
+          end;
+{$ENDREGION 'MMOD3L'}
       end
     else if umlMultipleMatch(['TrainRNIC', 'TrainingRNIC', 'TrainResNetImageClassifier'], ComputeFunc) then
       begin
@@ -3282,7 +3563,7 @@ begin
   DisposeObject(rOut);
 
   rDesc := AI.CandidateObject(rIn, 50, 20000);
-  for i := 0 to length(rDesc) - 1 do
+  for i := 0 to Length(rDesc) - 1 do
       rIn.DrawRect(Rect(rDesc[i]), RColorF(0.5, 0.1, 0.1, 0.5));
   rIn.SaveToBmp24File(umlCombineFileName(ph, 'CandidateObject_out.bmp'));
 
@@ -3377,6 +3658,24 @@ begin
   DisposeObject(AI);
 end;
 
+procedure test_mmod_largescale_training(dataset_file, sync_file, output_file: U_String);
+var
+  AI: TAI;
+  imgL: TAI_ImageList;
+  RSeri: TRasterSerialized;
+  param: PMMOD_Train_Parameter;
+begin
+  AI := TAI.OpenEngine();
+  RSeri := TRasterSerialized.Create(TCoreClassFileStream.Create(AI.MakeSerializedFileName, fmCreate));
+  imgL := TAI_ImageList.Create;
+  imgL.LoadFromFile(dataset_file);
+  imgL.SerializedAndRecycleMemory(RSeri);
+  param := AI.LargeScale_MMOD6L_DNN_PrepareTrain(sync_file, output_file);
+  param^.prepare_crops_img_num := 20;
+  param^.num_crops := 50;
+  AI.LargeScale_MMOD6L_DNN_Train(param, RSeri, imgL);
+end;
+
 constructor TOneStepList.Create;
 begin
   inherited Create;
@@ -3420,7 +3719,7 @@ var
   p: POneStep;
 begin
   new(p);
-  p^.StepTime := umlNow();
+  p^.StepTime := GetTimeTick();
   p^.one_step_calls := one_step_calls;
   p^.average_loss := average_loss;
   p^.learning_rate := learning_rate;
@@ -3509,9 +3808,9 @@ begin
           for j := 0 to AI.Face_chips_num(face_hnd) - 1 do
             begin
               sp_desc := AI.Face_Shape(face_hnd, j);
-              if (length(sp_desc) > 0) then
+              if (Length(sp_desc) > 0) then
                 begin
-                  for k := 0 to length(sp_desc) - 1 do
+                  for k := 0 to Length(sp_desc) - 1 do
                     begin
                       sp_desc[k].X := Round(sp_desc[k].X * 0.25);
                       sp_desc[k].Y := Round(sp_desc[k].Y * 0.25);
@@ -3532,9 +3831,9 @@ begin
           for j := 0 to AI.Face_chips_num(face_hnd) - 1 do
             begin
               sp_desc := AI.Face_Shape(face_hnd, j);
-              if (length(sp_desc) > 0) then
+              if (Length(sp_desc) > 0) then
                 begin
-                  for k := 0 to length(sp_desc) - 1 do
+                  for k := 0 to Length(sp_desc) - 1 do
                     begin
                       sp_desc[k].X := Round(sp_desc[k].X * 0.25);
                       sp_desc[k].Y := Round(sp_desc[k].Y * 0.25);
@@ -3584,7 +3883,7 @@ begin
           for j := 0 to AI.Face_chips_num(face_hnd) - 1 do
             begin
               sp_desc := AI.Face_Shape(face_hnd, j);
-              if (length(sp_desc) > 0) then
+              if (Length(sp_desc) > 0) then
                 begin
                   R1 := RectV2(AI.Face_Rect(face_hnd, j));
                   R2 := ForwardRect(GetSPBound(sp_desc, 0.1));
@@ -3601,7 +3900,7 @@ begin
           for j := 0 to AI.Face_chips_num(face_hnd) - 1 do
             begin
               sp_desc := AI.Face_Shape(face_hnd, j);
-              if (length(sp_desc) > 0) then
+              if (Length(sp_desc) > 0) then
                 begin
                   R1 := RectV2(AI.Face_Rect(face_hnd, j));
                   R2 := ForwardRect(GetSPBound(sp_desc, 0.1));
@@ -3649,7 +3948,7 @@ begin
     end;
 end;
 
-procedure TAlignment_OD.Alignment(imgList: TAI_ImageList);
+procedure TAlignment_OD6L.Alignment(imgList: TAI_ImageList);
 var
   i, j: Integer;
   img: TAI_Image;
@@ -3664,15 +3963,15 @@ begin
       img := imgList[i];
       mr := NewRaster();
       mr.ZoomFrom(img.Raster, img.Raster.Width * 4, img.Raster.Height * 4);
-      od_desc := AI.OD_Process(od_hnd, mr, 1024);
+      od_desc := AI.OD6L_Process(od_hnd, mr, 8192);
       DisposeObject(mr);
 
       // remove overlap detector
-      for j := 0 to length(od_desc) - 1 do
+      for j := 0 to Length(od_desc) - 1 do
           img.RemoveDetectorFromRect(RectMul(RectV2(od_desc[j]), 0.25));
 
       // make detector
-      for j := 0 to length(od_desc) - 1 do
+      for j := 0 to Length(od_desc) - 1 do
         begin
           detDef := TAI_DetectorDefine.Create(img);
           detDef.R := MakeRect(RectMul(RectV2(od_desc[j]), 0.25));
@@ -3681,7 +3980,7 @@ begin
     end;
 end;
 
-procedure TAlignment_FastOD.Alignment(imgList: TAI_ImageList);
+procedure TAlignment_FastOD6L.Alignment(imgList: TAI_ImageList);
 var
   i, j: Integer;
   img: TAI_Image;
@@ -3693,14 +3992,14 @@ begin
   for i := 0 to imgList.Count - 1 do
     begin
       img := imgList[i];
-      od_desc := AI.OD_Process(od_hnd, img.Raster, 1024);
+      od_desc := AI.OD6L_Process(od_hnd, img.Raster, 8192);
 
       // remove overlap detector
-      for j := 0 to length(od_desc) - 1 do
+      for j := 0 to Length(od_desc) - 1 do
           img.RemoveDetectorFromRect(RectV2(od_desc[j]));
 
       // make detector
-      for j := 0 to length(od_desc) - 1 do
+      for j := 0 to Length(od_desc) - 1 do
         begin
           detDef := TAI_DetectorDefine.Create(img);
           detDef.R := Rect(od_desc[j]);
@@ -3709,7 +4008,67 @@ begin
     end;
 end;
 
-procedure TAlignment_OD_Marshal.Alignment(imgList: TAI_ImageList);
+procedure TAlignment_OD3L.Alignment(imgList: TAI_ImageList);
+var
+  i, j: Integer;
+  img: TAI_Image;
+  detDef: TAI_DetectorDefine;
+  od_desc: TOD_Desc;
+  mr: TMemoryRaster;
+begin
+  if od_hnd = nil then
+      exit;
+  for i := 0 to imgList.Count - 1 do
+    begin
+      img := imgList[i];
+      mr := NewRaster();
+      mr.ZoomFrom(img.Raster, img.Raster.Width * 4, img.Raster.Height * 4);
+      od_desc := AI.OD3L_Process(od_hnd, mr, 8192);
+      DisposeObject(mr);
+
+      // remove overlap detector
+      for j := 0 to Length(od_desc) - 1 do
+          img.RemoveDetectorFromRect(RectMul(RectV2(od_desc[j]), 0.25));
+
+      // make detector
+      for j := 0 to Length(od_desc) - 1 do
+        begin
+          detDef := TAI_DetectorDefine.Create(img);
+          detDef.R := MakeRect(RectMul(RectV2(od_desc[j]), 0.25));
+          img.DetectorDefineList.Add(detDef);
+        end;
+    end;
+end;
+
+procedure TAlignment_FastOD3L.Alignment(imgList: TAI_ImageList);
+var
+  i, j: Integer;
+  img: TAI_Image;
+  detDef: TAI_DetectorDefine;
+  od_desc: TOD_Desc;
+begin
+  if od_hnd = nil then
+      exit;
+  for i := 0 to imgList.Count - 1 do
+    begin
+      img := imgList[i];
+      od_desc := AI.OD3L_Process(od_hnd, img.Raster, 8192);
+
+      // remove overlap detector
+      for j := 0 to Length(od_desc) - 1 do
+          img.RemoveDetectorFromRect(RectV2(od_desc[j]));
+
+      // make detector
+      for j := 0 to Length(od_desc) - 1 do
+        begin
+          detDef := TAI_DetectorDefine.Create(img);
+          detDef.R := Rect(od_desc[j]);
+          img.DetectorDefineList.Add(detDef);
+        end;
+    end;
+end;
+
+procedure TAlignment_OD6L_Marshal.Alignment(imgList: TAI_ImageList);
 var
   i, j: Integer;
   img: TAI_Image;
@@ -3724,15 +4083,15 @@ begin
       img := imgList[i];
       mr := NewRaster();
       mr.ZoomFrom(img.Raster, img.Raster.Width * 4, img.Raster.Height * 4);
-      od_desc := AI.OD_Marshal_Process(od_hnd, mr);
+      od_desc := AI.OD6L_Marshal_Process(od_hnd, mr);
       DisposeObject(mr);
 
       // remove overlap detector
-      for j := 0 to length(od_desc) - 1 do
+      for j := 0 to Length(od_desc) - 1 do
           img.RemoveDetectorFromRect(RectMul(od_desc[j].R, 0.25));
 
       // make detector
-      for j := 0 to length(od_desc) - 1 do
+      for j := 0 to Length(od_desc) - 1 do
         begin
           detDef := TAI_DetectorDefine.Create(img);
           detDef.R := MakeRect(RectMul(od_desc[j].R, 0.25));
@@ -3742,7 +4101,7 @@ begin
     end;
 end;
 
-procedure TAlignment_FastOD_Marshal.Alignment(imgList: TAI_ImageList);
+procedure TAlignment_FastOD6L_Marshal.Alignment(imgList: TAI_ImageList);
 var
   i, j: Integer;
   img: TAI_Image;
@@ -3754,14 +4113,14 @@ begin
   for i := 0 to imgList.Count - 1 do
     begin
       img := imgList[i];
-      od_desc := AI.OD_Marshal_Process(od_hnd, img.Raster);
+      od_desc := AI.OD6L_Marshal_Process(od_hnd, img.Raster);
 
       // remove overlap detector
-      for j := 0 to length(od_desc) - 1 do
+      for j := 0 to Length(od_desc) - 1 do
           img.RemoveDetectorFromRect(od_desc[j].R);
 
       // make detector
-      for j := 0 to length(od_desc) - 1 do
+      for j := 0 to Length(od_desc) - 1 do
         begin
           detDef := TAI_DetectorDefine.Create(img);
           detDef.R := MakeRect(od_desc[j].R);
@@ -3787,8 +4146,8 @@ begin
         begin
           detDef := img.DetectorDefineList[j];
 
-          sp_desc := AI.SP_Process(sp_hnd, detDef.Owner.Raster, AIRect(detDef.R), 1024);
-          if length(sp_desc) > 0 then
+          sp_desc := AI.SP_Process(sp_hnd, detDef.Owner.Raster, AIRect(detDef.R), 8192);
+          if Length(sp_desc) > 0 then
             begin
               detDef.Part.Clear;
               SPToVec(sp_desc, detDef.Part);
@@ -3836,7 +4195,7 @@ begin
     end;
 end;
 
-procedure TAlignment_MMOD.Alignment(imgList: TAI_ImageList);
+procedure TAlignment_MMOD6L.Alignment(imgList: TAI_ImageList);
 var
   i, j: Integer;
   img: TAI_Image;
@@ -3851,15 +4210,15 @@ begin
       img := imgList[i];
       mr := NewRaster();
       mr.ZoomFrom(img.Raster, img.Raster.Width * 4, img.Raster.Height * 4);
-      MMOD_Desc := AI.MMOD_DNN_Process(MMOD_hnd, mr);
+      MMOD_Desc := AI.MMOD6L_DNN_Process(MMOD_hnd, mr);
       DisposeObject(mr);
 
       // remove overlap detector
-      for j := 0 to length(MMOD_Desc) - 1 do
+      for j := 0 to Length(MMOD_Desc) - 1 do
           img.RemoveDetectorFromRect(RectMul(MMOD_Desc[j].R, 0.25));
 
       // make detector
-      for j := 0 to length(MMOD_Desc) - 1 do
+      for j := 0 to Length(MMOD_Desc) - 1 do
         begin
           detDef := TAI_DetectorDefine.Create(img);
           detDef.R := MakeRect(RectMul(MMOD_Desc[j].R, 0.25));
@@ -3869,7 +4228,7 @@ begin
     end;
 end;
 
-procedure TAlignment_FastMMOD.Alignment(imgList: TAI_ImageList);
+procedure TAlignment_FastMMOD6L.Alignment(imgList: TAI_ImageList);
 var
   i, j: Integer;
   img: TAI_Image;
@@ -3881,14 +4240,76 @@ begin
   for i := 0 to imgList.Count - 1 do
     begin
       img := imgList[i];
-      MMOD_Desc := AI.MMOD_DNN_Process(MMOD_hnd, img.Raster);
+      MMOD_Desc := AI.MMOD6L_DNN_Process(MMOD_hnd, img.Raster);
 
       // remove overlap detector
-      for j := 0 to length(MMOD_Desc) - 1 do
+      for j := 0 to Length(MMOD_Desc) - 1 do
           img.RemoveDetectorFromRect(MMOD_Desc[j].R);
 
       // make detector
-      for j := 0 to length(MMOD_Desc) - 1 do
+      for j := 0 to Length(MMOD_Desc) - 1 do
+        begin
+          detDef := TAI_DetectorDefine.Create(img);
+          detDef.R := MakeRect(MMOD_Desc[j].R);
+          detDef.Token := MMOD_Desc[j].Token;
+          img.DetectorDefineList.Add(detDef);
+        end;
+    end;
+end;
+
+procedure TAlignment_MMOD3L.Alignment(imgList: TAI_ImageList);
+var
+  i, j: Integer;
+  img: TAI_Image;
+  detDef: TAI_DetectorDefine;
+  MMOD_Desc: TMMOD_Desc;
+  mr: TMemoryRaster;
+begin
+  if MMOD_hnd = nil then
+      exit;
+  for i := 0 to imgList.Count - 1 do
+    begin
+      img := imgList[i];
+      mr := NewRaster();
+      mr.ZoomFrom(img.Raster, img.Raster.Width * 4, img.Raster.Height * 4);
+      MMOD_Desc := AI.MMOD3L_DNN_Process(MMOD_hnd, mr);
+      DisposeObject(mr);
+
+      // remove overlap detector
+      for j := 0 to Length(MMOD_Desc) - 1 do
+          img.RemoveDetectorFromRect(RectMul(MMOD_Desc[j].R, 0.25));
+
+      // make detector
+      for j := 0 to Length(MMOD_Desc) - 1 do
+        begin
+          detDef := TAI_DetectorDefine.Create(img);
+          detDef.R := MakeRect(RectMul(MMOD_Desc[j].R, 0.25));
+          detDef.Token := MMOD_Desc[j].Token;
+          img.DetectorDefineList.Add(detDef);
+        end;
+    end;
+end;
+
+procedure TAlignment_FastMMOD3L.Alignment(imgList: TAI_ImageList);
+var
+  i, j: Integer;
+  img: TAI_Image;
+  detDef: TAI_DetectorDefine;
+  MMOD_Desc: TMMOD_Desc;
+begin
+  if MMOD_hnd = nil then
+      exit;
+  for i := 0 to imgList.Count - 1 do
+    begin
+      img := imgList[i];
+      MMOD_Desc := AI.MMOD3L_DNN_Process(MMOD_hnd, img.Raster);
+
+      // remove overlap detector
+      for j := 0 to Length(MMOD_Desc) - 1 do
+          img.RemoveDetectorFromRect(MMOD_Desc[j].R);
+
+      // make detector
+      for j := 0 to Length(MMOD_Desc) - 1 do
         begin
           detDef := TAI_DetectorDefine.Create(img);
           detDef.R := MakeRect(MMOD_Desc[j].R);
@@ -3950,7 +4371,8 @@ begin
   TrainingControl.stop := 0;
   Critical := TCritical.Create;
 
-  Parallel_OD_Hnd := nil;
+  Parallel_OD6L_Hnd := nil;
+  Parallel_OD3L_Hnd := nil;
   Parallel_OD_Marshal_Hnd := nil;
   Parallel_SP_Hnd := nil;
 
@@ -4006,10 +4428,12 @@ begin
           Parallel_SP_Hnd := nil;
       SP_Close(face_sp_hnd);
     end;
-  if Parallel_OD_Hnd <> nil then
-      OD_Close(Parallel_OD_Hnd);
+  if Parallel_OD6L_Hnd <> nil then
+      OD6L_Close(Parallel_OD6L_Hnd);
+  if Parallel_OD3L_Hnd <> nil then
+      OD3L_Close(Parallel_OD3L_Hnd);
   if Parallel_OD_Marshal_Hnd <> nil then
-      OD_Marshal_Close(Parallel_OD_Marshal_Hnd);
+      OD6L_Marshal_Close(Parallel_OD_Marshal_Hnd);
   if Parallel_SP_Hnd <> nil then
       SP_Close(Parallel_SP_Hnd);
 
@@ -4020,6 +4444,21 @@ end;
 function TAI.Activted: Boolean;
 begin
   Result := FAI_EntryAPI <> nil;
+end;
+
+function TAI.isGPU: Boolean;
+begin
+  Result := (FAI_EntryAPI <> nil) and (FAI_EntryAPI^.CUDA = 1);
+end;
+
+function TAI.isMKL: Boolean;
+begin
+  Result := (FAI_EntryAPI <> nil) and (FAI_EntryAPI^.MKL = 1);
+end;
+
+function TAI.isTrainer: Boolean;
+begin
+  Result := (FAI_EntryAPI <> nil) and (FAI_EntryAPI^.Training = 1);
 end;
 
 function TAI.MakeSerializedFileName: U_String;
@@ -4059,7 +4498,7 @@ begin
   TrainingControl.pause := 0;
 end;
 
-procedure TAI.DrawOD(od_hnd: TOD_Handle; Raster: TMemoryRaster; color: TDEColor);
+procedure TAI.DrawOD6L(od_hnd: TOD6L_Handle; Raster: TMemoryRaster; color: TDEColor);
 var
   od_desc: TOD_Desc;
   i: Integer;
@@ -4067,13 +4506,33 @@ var
   dt: TTimeTick;
 begin
   dt := GetTimeTick();
-  od_desc := OD_Process(od_hnd, Raster, 1024);
+  od_desc := OD6L_Process(od_hnd, Raster, 8192);
   dt := GetTimeTick() - dt;
   d := TDrawEngine.Create;
   d.ViewOptions := [];
   d.Rasterization.SetWorkMemory(Raster);
   d.Rasterization.UsedAgg := True;
-  for i := 0 to length(od_desc) - 1 do
+  for i := 0 to Length(od_desc) - 1 do
+      d.DrawLabelBox(PFormat('%f', [od_desc[i].confidence]), 20, DEColor(1, 1, 1, 1), RectV2(od_desc[i]), color, 2);
+  d.Flush;
+  DisposeObject(d);
+end;
+
+procedure TAI.DrawOD3L(od_hnd: TOD3L_Handle; Raster: TMemoryRaster; color: TDEColor);
+var
+  od_desc: TOD_Desc;
+  i: Integer;
+  d: TDrawEngine;
+  dt: TTimeTick;
+begin
+  dt := GetTimeTick();
+  od_desc := OD3L_Process(od_hnd, Raster, 8192);
+  dt := GetTimeTick() - dt;
+  d := TDrawEngine.Create;
+  d.ViewOptions := [];
+  d.Rasterization.SetWorkMemory(Raster);
+  d.Rasterization.UsedAgg := True;
+  for i := 0 to Length(od_desc) - 1 do
       d.DrawLabelBox(PFormat('%f', [od_desc[i].confidence]), 20, DEColor(1, 1, 1, 1), RectV2(od_desc[i]), color, 2);
   d.Flush;
   DisposeObject(d);
@@ -4088,13 +4547,13 @@ begin
   d.ViewOptions := [];
   d.Rasterization.SetWorkMemory(Raster);
   d.Rasterization.UsedAgg := True;
-  for i := 0 to length(od_desc) - 1 do
+  for i := 0 to Length(od_desc) - 1 do
       d.DrawLabelBox(PFormat('%f', [od_desc[i].confidence]), 20, DEColor(1, 1, 1, 1), RectV2(od_desc[i]), color, 2);
   d.Flush;
   DisposeObject(d);
 end;
 
-procedure TAI.DrawODM(odm_hnd: TOD_Marshal_Handle; Raster: TMemoryRaster; color: TDEColor);
+procedure TAI.DrawODM(odm_hnd: TOD6L_Marshal_Handle; Raster: TMemoryRaster; color: TDEColor);
 var
   odm_desc: TOD_Marshal_Desc;
   i: Integer;
@@ -4102,13 +4561,13 @@ var
   dt: TTimeTick;
 begin
   dt := GetTimeTick();
-  odm_desc := OD_Marshal_Process(odm_hnd, Raster);
+  odm_desc := OD6L_Marshal_Process(odm_hnd, Raster);
   dt := GetTimeTick() - dt;
   d := TDrawEngine.Create;
   d.ViewOptions := [];
   d.Rasterization.SetWorkMemory(Raster);
   d.Rasterization.UsedAgg := True;
-  for i := 0 to length(odm_desc) - 1 do
+  for i := 0 to Length(odm_desc) - 1 do
     begin
       d.DrawLabelBox(PFormat('%s-%f', [odm_desc[i].Token.Text, odm_desc[i].confidence]), 20, DEColor(1, 1, 1, 1), odm_desc[i].R, color, 2);
     end;
@@ -4116,30 +4575,30 @@ begin
   DisposeObject(d);
 end;
 
-procedure TAI.DrawSP(od_hnd: TOD_Handle; sp_hnd: TSP_Handle; Raster: TMemoryRaster);
+procedure TAI.DrawSP(od_hnd: TOD6L_Handle; sp_hnd: TSP_Handle; Raster: TMemoryRaster);
 var
   od_desc: TOD_Desc;
   sp_desc: TSP_Desc;
   i, j: Integer;
   d: TDrawEngine;
 begin
-  od_desc := OD_Process(od_hnd, Raster, 1024);
+  od_desc := OD6L_Process(od_hnd, Raster, 8192);
   d := TDrawEngine.Create;
   d.ViewOptions := [];
   d.Rasterization.SetWorkMemory(Raster);
   d.Rasterization.UsedAgg := True;
-  for i := 0 to length(od_desc) - 1 do
+  for i := 0 to Length(od_desc) - 1 do
     begin
       d.DrawBox(RectV2(od_desc[i]), DEColor(1, 0, 0, 0.9), 2);
       sp_desc := SP_Process(sp_hnd, Raster, AIRect(od_desc[i]), 1024);
-      for j := 0 to length(sp_desc) - 1 do
+      for j := 0 to Length(sp_desc) - 1 do
           d.DrawPoint(Vec2(sp_desc[j]), DEColor(1, 0, 0, 0.9), 4, 2);
     end;
   d.Flush;
   DisposeObject(d);
 end;
 
-function TAI.DrawMMOD(MMOD_hnd: TMMOD_Handle; Raster: TMemoryRaster; color: TDEColor; fontSiz: TGeoFloat): TMMOD_Desc;
+function TAI.DrawMMOD(MMOD_hnd: TMMOD6L_Handle; Raster: TMemoryRaster; color: TDEColor; fontSiz: TGeoFloat): TMMOD_Desc;
 var
   MMOD_Desc: TMMOD_Desc;
   i: Integer;
@@ -4148,13 +4607,13 @@ var
   n: U_String;
 begin
   dt := GetTimeTick();
-  MMOD_Desc := MMOD_DNN_Process(MMOD_hnd, Raster);
+  MMOD_Desc := MMOD6L_DNN_Process(MMOD_hnd, Raster);
   dt := GetTimeTick() - dt;
   d := TDrawEngine.Create;
   d.ViewOptions := [];
   d.Rasterization.SetWorkMemory(Raster);
   d.Rasterization.UsedAgg := True;
-  for i := 0 to length(MMOD_Desc) - 1 do
+  for i := 0 to Length(MMOD_Desc) - 1 do
     begin
       if MMOD_Desc[i].Token.Len > 0 then
           n := PFormat('%s|alpha:0.5| %f', [MMOD_Desc[i].Token.Text, MMOD_Desc[i].confidence])
@@ -4168,12 +4627,12 @@ begin
   Result := MMOD_Desc;
 end;
 
-function TAI.DrawMMOD(MMOD_hnd: TMMOD_Handle; Raster: TMemoryRaster; color: TDEColor): TMMOD_Desc;
+function TAI.DrawMMOD(MMOD_hnd: TMMOD6L_Handle; Raster: TMemoryRaster; color: TDEColor): TMMOD_Desc;
 begin
   Result := DrawMMOD(MMOD_hnd, Raster, color, 14);
 end;
 
-function TAI.DrawMMOD(MMOD_hnd: TMMOD_Handle; confidence: Double; Raster: TMemoryRaster; color: TDEColor; fontSiz: TGeoFloat): Integer;
+function TAI.DrawMMOD(MMOD_hnd: TMMOD6L_Handle; confidence: Double; Raster: TMemoryRaster; color: TDEColor; fontSiz: TGeoFloat): Integer;
 var
   MMOD_Desc: TMMOD_Desc;
   i: Integer;
@@ -4182,14 +4641,14 @@ var
   n: U_String;
 begin
   dt := GetTimeTick();
-  MMOD_Desc := MMOD_DNN_Process(MMOD_hnd, Raster);
+  MMOD_Desc := MMOD6L_DNN_Process(MMOD_hnd, Raster);
   dt := GetTimeTick() - dt;
   d := TDrawEngine.Create;
   d.ViewOptions := [];
   d.Rasterization.SetWorkMemory(Raster);
   d.Rasterization.UsedAgg := True;
   Result := 0;
-  for i := 0 to length(MMOD_Desc) - 1 do
+  for i := 0 to Length(MMOD_Desc) - 1 do
     begin
       if confidence < abs(MMOD_Desc[i].confidence) then
         begin
@@ -4206,7 +4665,7 @@ begin
   DisposeObject(d);
 end;
 
-function TAI.DrawMMOD(MMOD_hnd: TMMOD_Handle; confidence: Double; Raster: TMemoryRaster; color: TDEColor): Integer;
+function TAI.DrawMMOD(MMOD_hnd: TMMOD6L_Handle; confidence: Double; Raster: TMemoryRaster; color: TDEColor): Integer;
 begin
   Result := DrawMMOD(MMOD_hnd, confidence, Raster, color, 16);
 end;
@@ -4222,7 +4681,7 @@ begin
   d.Rasterization.SetWorkMemory(Raster);
   d.Rasterization.UsedAgg := True;
   Result := 0;
-  for i := 0 to length(MMOD_Desc) - 1 do
+  for i := 0 to Length(MMOD_Desc) - 1 do
     begin
       n := PFormat('%f', [MMOD_Desc[i].confidence]);
       d.DrawLabelBox(n, 20, DEColor(RColorInv(RColor(color))), MMOD_Desc[i].R, color, 4);
@@ -4583,7 +5042,7 @@ begin
   if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.CandidateObject) then
     begin
       SetLength(Result, $FFFF);
-      n := FAI_EntryAPI^.CandidateObject(Raster.Bits, Raster.Width, Raster.Height, min_size, max_merging_iterations, @Result[0], length(Result));
+      n := FAI_EntryAPI^.CandidateObject(Raster.Bits, Raster.Width, Raster.Height, min_size, max_merging_iterations, @Result[0], Length(Result));
       SetLength(Result, n);
     end;
 end;
@@ -4896,8 +5355,8 @@ var
 
 begin
   SetLength(Result, 0);
-  sd1_len := length(sd1_);
-  sd2_len := length(sd2_);
+  sd1_len := Length(sd1_);
+  sd2_len := Length(sd2_);
 
   if (sd1_len = 0) or (sd2_len = 0) then
       exit;
@@ -4990,7 +5449,7 @@ var
 begin
   Raster.OpenAgg;
   Raster.Agg.LineWidth := 1.0;
-  for i := 0 to length(descbuff) - 1 do
+  for i := 0 to Length(descbuff) - 1 do
     begin
       p := @descbuff[i];
 
@@ -5009,7 +5468,7 @@ var
   RC: TRColor;
   v1, v2: TVec2;
 begin
-  if length(MatchInfo) = 0 then
+  if Length(MatchInfo) = 0 then
     begin
       Result := nil;
       exit;
@@ -5024,7 +5483,7 @@ begin
   Result.Draw(mr1.Width, 0, mr2);
   Result.OpenAgg;
 
-  for i := 0 to length(MatchInfo) - 1 do
+  for i := 0 to Length(MatchInfo) - 1 do
     begin
       p := @MatchInfo[i];
       RC := RColor(RandomRange(0, 255), RandomRange(0, 255), RandomRange(0, 255), $7F);
@@ -5058,11 +5517,11 @@ begin
   SetLength(d2, 0);
 end;
 
-function TAI.OD_Train(train_cfg, train_output: U_String; window_w, window_h, thread_num: Integer): Boolean;
+function TAI.OD6L_Train(train_cfg, train_output: U_String; window_w, window_h, thread_num: Integer): Boolean;
 var
   train_cfg_buff, train_output_buff: P_Bytes;
 begin
-  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.OD_Train) and (umlFileExists(train_cfg)) and (train_output.Len > 0) then
+  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.OD6L_Train) and (umlFileExists(train_cfg)) and (train_output.Len > 0) then
     begin
       train_cfg_buff := Alloc_P_Bytes(train_cfg);
       train_output_buff := Alloc_P_Bytes(train_output);
@@ -5071,7 +5530,7 @@ begin
       FAI_EntryAPI^.SerializedTime := GetTimeTick();
 
       try
-          Result := FAI_EntryAPI^.OD_Train(train_cfg_buff, train_output_buff, window_w, window_h, thread_num) = 0;
+          Result := FAI_EntryAPI^.OD6L_Train(train_cfg_buff, train_output_buff, window_w, window_h, thread_num) = 0;
       except
           Result := False;
       end;
@@ -5086,7 +5545,7 @@ begin
       Result := False;
 end;
 
-function TAI.OD_Train(imgList: TAI_ImageList; TokenFilter, train_output: U_String; window_w, window_h, thread_num: Integer): Boolean;
+function TAI.OD6L_Train(imgList: TAI_ImageList; TokenFilter, train_output: U_String; window_w, window_h, thread_num: Integer): Boolean;
 var
   ph, fn, prefix: U_String;
   tmpFileList: TPascalStringList;
@@ -5096,12 +5555,12 @@ begin
   tmpFileList := TPascalStringList.Create;
 
   TCoreClassThread.Sleep(1);
-  prefix := 'temp_OD_' + umlMakeRanName + '_';
+  prefix := 'temp_OD6L_' + umlMakeRanName + '_';
 
   fn := umlCombineFileName(ph, prefix + 'temp.xml');
   imgList.Build_XML(TokenFilter, False, False, 'ZAI dataset', 'object detector training dataset', fn, prefix, tmpFileList);
 
-  Result := OD_Train(fn, train_output, window_w, window_h, thread_num);
+  Result := OD6L_Train(fn, train_output, window_w, window_h, thread_num);
 
   for i := 0 to tmpFileList.Count - 1 do
       umlDeleteFile(tmpFileList[i]);
@@ -5109,7 +5568,7 @@ begin
   DisposeObject(tmpFileList);
 end;
 
-function TAI.OD_Train(imgMat: TAI_ImageMatrix; TokenFilter, train_output: U_String; window_w, window_h, thread_num: Integer): Boolean;
+function TAI.OD6L_Train(imgMat: TAI_ImageMatrix; TokenFilter, train_output: U_String; window_w, window_h, thread_num: Integer): Boolean;
 var
   ph, fn, prefix: U_String;
   tmpFileList: TPascalStringList;
@@ -5119,12 +5578,12 @@ begin
   tmpFileList := TPascalStringList.Create;
 
   TCoreClassThread.Sleep(1);
-  prefix := 'temp_OD_' + umlMakeRanName + '_';
+  prefix := 'temp_OD6L_' + umlMakeRanName + '_';
 
   fn := umlCombineFileName(ph, prefix + 'temp.xml');
   imgMat.Build_XML(TokenFilter, False, False, 'ZAI dataset', 'object detector training dataset', fn, prefix, tmpFileList);
 
-  Result := OD_Train(fn, train_output, window_w, window_h, thread_num);
+  Result := OD6L_Train(fn, train_output, window_w, window_h, thread_num);
 
   for i := 0 to tmpFileList.Count - 1 do
       umlDeleteFile(tmpFileList[i]);
@@ -5132,15 +5591,15 @@ begin
   DisposeObject(tmpFileList);
 end;
 
-function TAI.OD_Train_Stream(imgList: TAI_ImageList; window_w, window_h, thread_num: Integer): TMemoryStream64;
+function TAI.OD6L_Train_Stream(imgList: TAI_ImageList; window_w, window_h, thread_num: Integer): TMemoryStream64;
 var
   fn: U_String;
 begin
   Result := nil;
   TCoreClassThread.Sleep(1);
-  fn := umlCombineFileName(rootPath, PFormat('temp_OD_%s' + C_OD_Ext, [umlMakeRanName.Text]));
+  fn := umlCombineFileName(rootPath, PFormat('temp_OD6L_%s' + C_OD6L_Ext, [umlMakeRanName.Text]));
 
-  if OD_Train(imgList, '', fn, window_w, window_h, thread_num) then
+  if OD6L_Train(imgList, '', fn, window_w, window_h, thread_num) then
     if umlFileExists(fn) then
       begin
         Result := TMemoryStream64.Create;
@@ -5150,15 +5609,15 @@ begin
   umlDeleteFile(fn);
 end;
 
-function TAI.OD_Train_Stream(imgMat: TAI_ImageMatrix; window_w, window_h, thread_num: Integer): TMemoryStream64;
+function TAI.OD6L_Train_Stream(imgMat: TAI_ImageMatrix; window_w, window_h, thread_num: Integer): TMemoryStream64;
 var
   fn: U_String;
 begin
   Result := nil;
   TCoreClassThread.Sleep(1);
-  fn := umlCombineFileName(rootPath, PFormat('temp_OD_%s' + C_OD_Ext, [umlMakeRanName.Text]));
+  fn := umlCombineFileName(rootPath, PFormat('temp_OD6L_%s' + C_OD6L_Ext, [umlMakeRanName.Text]));
 
-  if OD_Train(imgMat, '', fn, window_w, window_h, thread_num) then
+  if OD6L_Train(imgMat, '', fn, window_w, window_h, thread_num) then
     if umlFileExists(fn) then
       begin
         Result := TMemoryStream64.Create;
@@ -5168,7 +5627,7 @@ begin
   umlDeleteFile(fn);
 end;
 
-function TAI.LargeScale_OD_Train(imgList: TAI_ImageList; train_output: U_String; window_w, window_h, thread_num: Integer): Boolean;
+function TAI.LargeScale_OD6L_Train(imgList: TAI_ImageList; train_output: U_String; window_w, window_h, thread_num: Integer): Boolean;
 var
   imgArry: array of TImage_Handle;
   imgArry_P: array of PImage_Handle;
@@ -5182,16 +5641,20 @@ begin
   for i := 0 to imgList.Count - 1 do
     begin
       imgArry[i].image := imgList[i];
+      imgArry[i].AccessImage := 0;
+      imgArry[i].AccessDetectorImage := 0;
+      imgArry[i].AccessDetectorRect := 0;
+      imgArry[i].AccessMask := 0;
       imgArry_P[i] := @imgArry[i];
     end;
 
-  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.LargeScale_OD_Train) then
+  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.LargeScale_OD6L_Train) then
     begin
       train_output_buff := Alloc_P_Bytes(train_output);
       FAI_EntryAPI^.RasterSerialized := nil;
       FAI_EntryAPI^.SerializedTime := GetTimeTick();
       try
-          Result := FAI_EntryAPI^.LargeScale_OD_Train(@imgArry_P[0], imgList.Count, train_output_buff, window_w, window_h, thread_num) = 0;
+          Result := FAI_EntryAPI^.LargeScale_OD6L_Train(@imgArry_P[0], imgList.Count, train_output_buff, window_w, window_h, thread_num) = 0;
       except
           Result := False;
       end;
@@ -5202,7 +5665,7 @@ begin
   SetLength(imgArry_P, 0);
 end;
 
-function TAI.LargeScale_OD_Train(imgMat: TAI_ImageMatrix; train_output: U_String; window_w, window_h, thread_num: Integer): Boolean;
+function TAI.LargeScale_OD6L_Train(imgMat: TAI_ImageMatrix; train_output: U_String; window_w, window_h, thread_num: Integer): Boolean;
 var
   imgL: TImageList_Decl;
   imgArry: array of TImage_Handle;
@@ -5218,14 +5681,18 @@ begin
   for i := 0 to imgL.Count - 1 do
     begin
       imgArry[i].image := imgL[i];
+      imgArry[i].AccessImage := 0;
+      imgArry[i].AccessDetectorImage := 0;
+      imgArry[i].AccessDetectorRect := 0;
+      imgArry[i].AccessMask := 0;
       imgArry_P[i] := @imgArry[i];
     end;
 
-  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.LargeScale_OD_Train) then
+  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.LargeScale_OD6L_Train) then
     begin
       train_output_buff := Alloc_P_Bytes(train_output);
       try
-          Result := FAI_EntryAPI^.LargeScale_OD_Train(@imgArry_P[0], imgL.Count, train_output_buff, window_w, window_h, thread_num) = 0;
+          Result := FAI_EntryAPI^.LargeScale_OD6L_Train(@imgArry_P[0], imgL.Count, train_output_buff, window_w, window_h, thread_num) = 0;
       except
           Result := False;
       end;
@@ -5237,15 +5704,15 @@ begin
   DisposeObject(imgL);
 end;
 
-function TAI.LargeScale_OD_Train_Stream(imgList: TAI_ImageList; window_w, window_h, thread_num: Integer): TMemoryStream64;
+function TAI.LargeScale_OD6L_Train_Stream(imgList: TAI_ImageList; window_w, window_h, thread_num: Integer): TMemoryStream64;
 var
   fn: U_String;
 begin
   Result := nil;
   TCoreClassThread.Sleep(1);
-  fn := umlCombineFileName(rootPath, PFormat('temp_OD_%s' + C_OD_Ext, [umlMakeRanName.Text]));
+  fn := umlCombineFileName(rootPath, PFormat('temp_OD6L_%s' + C_OD6L_Ext, [umlMakeRanName.Text]));
 
-  if LargeScale_OD_Train(imgList, fn, window_w, window_h, thread_num) then
+  if LargeScale_OD6L_Train(imgList, fn, window_w, window_h, thread_num) then
     if umlFileExists(fn) then
       begin
         Result := TMemoryStream64.Create;
@@ -5255,15 +5722,15 @@ begin
   umlDeleteFile(fn);
 end;
 
-function TAI.LargeScale_OD_Train_Stream(imgMat: TAI_ImageMatrix; window_w, window_h, thread_num: Integer): TMemoryStream64;
+function TAI.LargeScale_OD6L_Train_Stream(imgMat: TAI_ImageMatrix; window_w, window_h, thread_num: Integer): TMemoryStream64;
 var
   fn: U_String;
 begin
   Result := nil;
   TCoreClassThread.Sleep(1);
-  fn := umlCombineFileName(rootPath, PFormat('temp_OD_%s' + C_OD_Ext, [umlMakeRanName.Text]));
+  fn := umlCombineFileName(rootPath, PFormat('temp_OD6L_%s' + C_OD6L_Ext, [umlMakeRanName.Text]));
 
-  if LargeScale_OD_Train(imgMat, fn, window_w, window_h, thread_num) then
+  if LargeScale_OD6L_Train(imgMat, fn, window_w, window_h, thread_num) then
     if umlFileExists(fn) then
       begin
         Result := TMemoryStream64.Create;
@@ -5273,15 +5740,15 @@ begin
   umlDeleteFile(fn);
 end;
 
-function TAI.OD_Open(train_file: U_String): TOD_Handle;
+function TAI.OD6L_Open(train_file: U_String): TOD6L_Handle;
 var
   train_file_buff: P_Bytes;
 begin
-  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.OD_Init) then
+  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.OD6L_Init) then
     begin
       train_file_buff := Alloc_P_Bytes(train_file);
       try
-          Result := FAI_EntryAPI^.OD_Init(train_file_buff);
+          Result := FAI_EntryAPI^.OD6L_Init(train_file_buff);
       finally
           Free_P_Bytes(train_file_buff);
       end;
@@ -5292,11 +5759,11 @@ begin
       Result := nil;
 end;
 
-function TAI.OD_Open_Stream(stream: TMemoryStream64): TOD_Handle;
+function TAI.OD6L_Open_Stream(stream: TMemoryStream64): TOD6L_Handle;
 begin
-  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.OD_Init_Memory) then
+  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.OD6L_Init_Memory) then
     begin
-      Result := FAI_EntryAPI^.OD_Init_Memory(stream.memory, stream.Size);
+      Result := FAI_EntryAPI^.OD6L_Init_Memory(stream.memory, stream.Size);
       if Result <> nil then
           DoStatus('Object Detector open memory %s size:%s', [umlPointerToStr(stream.memory).Text, umlSizeToStr(stream.Size).Text]);
     end
@@ -5304,23 +5771,23 @@ begin
       Result := nil;
 end;
 
-function TAI.OD_Open_Stream(train_file: U_String): TOD_Handle;
+function TAI.OD6L_Open_Stream(train_file: U_String): TOD6L_Handle;
 var
   m64: TMemoryStream64;
 begin
   m64 := TMemoryStream64.Create;
   m64.LoadFromFile(train_file);
-  Result := OD_Open_Stream(m64);
+  Result := OD6L_Open_Stream(m64);
   DisposeObject(m64);
   if Result <> nil then
       DoStatus('Object detector open: %s', [train_file.Text]);
 end;
 
-function TAI.OD_Close(var hnd: TOD_Handle): Boolean;
+function TAI.OD6L_Close(var hnd: TOD6L_Handle): Boolean;
 begin
-  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.OD_Free) and (hnd <> nil) then
+  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.OD6L_Free) and (hnd <> nil) then
     begin
-      Result := FAI_EntryAPI^.OD_Free(hnd) = 0;
+      Result := FAI_EntryAPI^.OD6L_Free(hnd) = 0;
       DoStatus('Object detector Close.', []);
     end
   else
@@ -5329,7 +5796,7 @@ begin
   hnd := nil;
 end;
 
-function TAI.OD_Process(hnd: TOD_Handle; Raster: TMemoryRaster; const max_AI_Rect: Integer): TOD_Desc;
+function TAI.OD6L_Process(hnd: TOD6L_Handle; Raster: TMemoryRaster; const max_AI_Rect: Integer): TOD_Desc;
 var
   rect_num: Integer;
 begin
@@ -5338,12 +5805,12 @@ begin
       exit;
   if (FAI_EntryAPI = nil) then
       exit;
-  if not Assigned(FAI_EntryAPI^.OD_Process) then
+  if not Assigned(FAI_EntryAPI^.OD6L_Process) then
       exit;
   SetLength(Result, max_AI_Rect);
 
   try
-    if FAI_EntryAPI^.OD_Process(hnd, Raster.Bits, Raster.Width, Raster.Height,
+    if FAI_EntryAPI^.OD6L_Process(hnd, Raster.Bits, Raster.Width, Raster.Height,
       @Result[0], max_AI_Rect, rect_num) > 0 then
         SetLength(Result, rect_num)
     else
@@ -5353,28 +5820,28 @@ begin
   end;
 end;
 
-function TAI.OD_Process(hnd: TOD_Handle; Raster: TMemoryRaster): TOD_List;
+function TAI.OD6L_Process(hnd: TOD6L_Handle; Raster: TMemoryRaster): TOD_List;
 var
   od_desc: TOD_Desc;
   i: Integer;
 begin
   Result := TOD_List.Create;
-  od_desc := OD_Process(hnd, Raster, 1024);
+  od_desc := OD6L_Process(hnd, Raster, 1024);
   for i := Low(od_desc) to High(od_desc) do
       Result.Add(od_desc[i]);
 end;
 
-procedure TAI.OD_Process(hnd: TOD_Handle; Raster: TMemoryRaster; output: TOD_List);
+procedure TAI.OD6L_Process(hnd: TOD6L_Handle; Raster: TMemoryRaster; output: TOD_List);
 var
   od_desc: TOD_Desc;
   i: Integer;
 begin
-  od_desc := OD_Process(hnd, Raster, 1024);
+  od_desc := OD6L_Process(hnd, Raster, 1024);
   for i := Low(od_desc) to High(od_desc) do
       output.Add(od_desc[i]);
 end;
 
-function TAI.OD_Process(hnd: TOD_Handle; rgb_img: TRGB_Image_Handle; const max_AI_Rect: Integer): TOD_Desc;
+function TAI.OD6L_Process(hnd: TOD6L_Handle; rgb_img: TRGB_Image_Handle; const max_AI_Rect: Integer): TOD_Desc;
 var
   rect_num: Integer;
 begin
@@ -5383,12 +5850,12 @@ begin
       exit;
   if (FAI_EntryAPI = nil) then
       exit;
-  if not Assigned(FAI_EntryAPI^.OD_Process_Image) then
+  if not Assigned(FAI_EntryAPI^.OD6L_Process_Image) then
       exit;
   SetLength(Result, max_AI_Rect);
 
   try
-    if FAI_EntryAPI^.OD_Process_Image(hnd, rgb_img, @Result[0], max_AI_Rect, rect_num) > 0 then
+    if FAI_EntryAPI^.OD6L_Process_Image(hnd, rgb_img, @Result[0], max_AI_Rect, rect_num) > 0 then
         SetLength(Result, rect_num)
     else
         SetLength(Result, 0);
@@ -5397,7 +5864,7 @@ begin
   end;
 end;
 
-function TAI.OD_ProcessScaleSpace(hnd: TOD_Handle; Raster: TMemoryRaster; scale: TGeoFloat): TOD_Desc;
+function TAI.OD6L_ProcessScaleSpace(hnd: TOD6L_Handle; Raster: TMemoryRaster; scale: TGeoFloat): TOD_Desc;
 var
   nr: TMemoryRaster;
   buff: TOD_Desc;
@@ -5406,11 +5873,11 @@ begin
   nr := NewRaster();
   nr.ZoomFrom(Raster, scale);
 
-  buff := OD_Process(hnd, nr, 1024);
+  buff := OD6L_Process(hnd, nr, 1024);
 
-  SetLength(Result, length(buff));
+  SetLength(Result, Length(buff));
 
-  for i := 0 to length(buff) - 1 do
+  for i := 0 to Length(buff) - 1 do
     begin
       Result[i].Left := Round(buff[i].Left / scale);
       Result[i].Top := Round(buff[i].Top / scale);
@@ -5423,7 +5890,380 @@ begin
   DisposeObject(nr);
 end;
 
-function TAI.OD_Marshal_Train(imgList: TAI_ImageList; window_w, window_h, thread_num: Integer): TMemoryStream64;
+function TAI.OD3L_Train(train_cfg, train_output: U_String; window_w, window_h, thread_num: Integer): Boolean;
+var
+  train_cfg_buff, train_output_buff: P_Bytes;
+begin
+  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.OD3L_Train) and (umlFileExists(train_cfg)) and (train_output.Len > 0) then
+    begin
+      train_cfg_buff := Alloc_P_Bytes(train_cfg);
+      train_output_buff := Alloc_P_Bytes(train_output);
+
+      FAI_EntryAPI^.RasterSerialized := nil;
+      FAI_EntryAPI^.SerializedTime := GetTimeTick();
+
+      try
+          Result := FAI_EntryAPI^.OD3L_Train(train_cfg_buff, train_output_buff, window_w, window_h, thread_num) = 0;
+      except
+          Result := False;
+      end;
+
+      Free_P_Bytes(train_cfg_buff);
+      Free_P_Bytes(train_output_buff);
+
+      if not Result then
+          DoStatus('ZAI: Object Detector training failed.');
+    end
+  else
+      Result := False;
+end;
+
+function TAI.OD3L_Train(imgList: TAI_ImageList; TokenFilter, train_output: U_String; window_w, window_h, thread_num: Integer): Boolean;
+var
+  ph, fn, prefix: U_String;
+  tmpFileList: TPascalStringList;
+  i: Integer;
+begin
+  ph := rootPath;
+  tmpFileList := TPascalStringList.Create;
+
+  TCoreClassThread.Sleep(1);
+  prefix := 'temp_OD3L_' + umlMakeRanName + '_';
+
+  fn := umlCombineFileName(ph, prefix + 'temp.xml');
+  imgList.Build_XML(TokenFilter, False, False, 'ZAI dataset', 'object detector training dataset', fn, prefix, tmpFileList);
+
+  Result := OD3L_Train(fn, train_output, window_w, window_h, thread_num);
+
+  for i := 0 to tmpFileList.Count - 1 do
+      umlDeleteFile(tmpFileList[i]);
+
+  DisposeObject(tmpFileList);
+end;
+
+function TAI.OD3L_Train(imgMat: TAI_ImageMatrix; TokenFilter, train_output: U_String; window_w, window_h, thread_num: Integer): Boolean;
+var
+  ph, fn, prefix: U_String;
+  tmpFileList: TPascalStringList;
+  i: Integer;
+begin
+  ph := rootPath;
+  tmpFileList := TPascalStringList.Create;
+
+  TCoreClassThread.Sleep(1);
+  prefix := 'temp_OD3L_' + umlMakeRanName + '_';
+
+  fn := umlCombineFileName(ph, prefix + 'temp.xml');
+  imgMat.Build_XML(TokenFilter, False, False, 'ZAI dataset', 'object detector training dataset', fn, prefix, tmpFileList);
+
+  Result := OD3L_Train(fn, train_output, window_w, window_h, thread_num);
+
+  for i := 0 to tmpFileList.Count - 1 do
+      umlDeleteFile(tmpFileList[i]);
+
+  DisposeObject(tmpFileList);
+end;
+
+function TAI.OD3L_Train_Stream(imgList: TAI_ImageList; window_w, window_h, thread_num: Integer): TMemoryStream64;
+var
+  fn: U_String;
+begin
+  Result := nil;
+  TCoreClassThread.Sleep(1);
+  fn := umlCombineFileName(rootPath, PFormat('temp_OD3L_%s' + C_OD3L_Ext, [umlMakeRanName.Text]));
+
+  if OD3L_Train(imgList, '', fn, window_w, window_h, thread_num) then
+    if umlFileExists(fn) then
+      begin
+        Result := TMemoryStream64.Create;
+        Result.LoadFromFile(fn);
+        Result.Position := 0;
+      end;
+  umlDeleteFile(fn);
+end;
+
+function TAI.OD3L_Train_Stream(imgMat: TAI_ImageMatrix; window_w, window_h, thread_num: Integer): TMemoryStream64;
+var
+  fn: U_String;
+begin
+  Result := nil;
+  TCoreClassThread.Sleep(1);
+  fn := umlCombineFileName(rootPath, PFormat('temp_OD3L_%s' + C_OD3L_Ext, [umlMakeRanName.Text]));
+
+  if OD3L_Train(imgMat, '', fn, window_w, window_h, thread_num) then
+    if umlFileExists(fn) then
+      begin
+        Result := TMemoryStream64.Create;
+        Result.LoadFromFile(fn);
+        Result.Position := 0;
+      end;
+  umlDeleteFile(fn);
+end;
+
+function TAI.LargeScale_OD3L_Train(imgList: TAI_ImageList; train_output: U_String; window_w, window_h, thread_num: Integer): Boolean;
+var
+  imgArry: array of TImage_Handle;
+  imgArry_P: array of PImage_Handle;
+  i: Integer;
+  train_output_buff: P_Bytes;
+begin
+  Result := False;
+  SetLength(imgArry, imgList.Count);
+  SetLength(imgArry_P, imgList.Count);
+
+  for i := 0 to imgList.Count - 1 do
+    begin
+      imgArry[i].image := imgList[i];
+      imgArry[i].AccessImage := 0;
+      imgArry[i].AccessDetectorImage := 0;
+      imgArry[i].AccessDetectorRect := 0;
+      imgArry[i].AccessMask := 0;
+      imgArry_P[i] := @imgArry[i];
+    end;
+
+  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.LargeScale_OD3L_Train) then
+    begin
+      train_output_buff := Alloc_P_Bytes(train_output);
+      FAI_EntryAPI^.RasterSerialized := nil;
+      FAI_EntryAPI^.SerializedTime := GetTimeTick();
+      try
+          Result := FAI_EntryAPI^.LargeScale_OD3L_Train(@imgArry_P[0], imgList.Count, train_output_buff, window_w, window_h, thread_num) = 0;
+      except
+          Result := False;
+      end;
+      Free_P_Bytes(train_output_buff);
+    end;
+
+  SetLength(imgArry, 0);
+  SetLength(imgArry_P, 0);
+end;
+
+function TAI.LargeScale_OD3L_Train(imgMat: TAI_ImageMatrix; train_output: U_String; window_w, window_h, thread_num: Integer): Boolean;
+var
+  imgL: TImageList_Decl;
+  imgArry: array of TImage_Handle;
+  imgArry_P: array of PImage_Handle;
+  i: Integer;
+  train_output_buff: P_Bytes;
+begin
+  Result := False;
+  imgL := imgMat.ImageList();
+  SetLength(imgArry, imgL.Count);
+  SetLength(imgArry_P, imgL.Count);
+
+  for i := 0 to imgL.Count - 1 do
+    begin
+      imgArry[i].image := imgL[i];
+      imgArry[i].AccessImage := 0;
+      imgArry[i].AccessDetectorImage := 0;
+      imgArry[i].AccessDetectorRect := 0;
+      imgArry[i].AccessMask := 0;
+      imgArry_P[i] := @imgArry[i];
+    end;
+
+  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.LargeScale_OD3L_Train) then
+    begin
+      train_output_buff := Alloc_P_Bytes(train_output);
+      try
+          Result := FAI_EntryAPI^.LargeScale_OD3L_Train(@imgArry_P[0], imgL.Count, train_output_buff, window_w, window_h, thread_num) = 0;
+      except
+          Result := False;
+      end;
+      Free_P_Bytes(train_output_buff);
+    end;
+
+  SetLength(imgArry, 0);
+  SetLength(imgArry_P, 0);
+  DisposeObject(imgL);
+end;
+
+function TAI.LargeScale_OD3L_Train_Stream(imgList: TAI_ImageList; window_w, window_h, thread_num: Integer): TMemoryStream64;
+var
+  fn: U_String;
+begin
+  Result := nil;
+  TCoreClassThread.Sleep(1);
+  fn := umlCombineFileName(rootPath, PFormat('temp_OD3L_%s' + C_OD3L_Ext, [umlMakeRanName.Text]));
+
+  if LargeScale_OD3L_Train(imgList, fn, window_w, window_h, thread_num) then
+    if umlFileExists(fn) then
+      begin
+        Result := TMemoryStream64.Create;
+        Result.LoadFromFile(fn);
+        Result.Position := 0;
+      end;
+  umlDeleteFile(fn);
+end;
+
+function TAI.LargeScale_OD3L_Train_Stream(imgMat: TAI_ImageMatrix; window_w, window_h, thread_num: Integer): TMemoryStream64;
+var
+  fn: U_String;
+begin
+  Result := nil;
+  TCoreClassThread.Sleep(1);
+  fn := umlCombineFileName(rootPath, PFormat('temp_OD3L_%s' + C_OD3L_Ext, [umlMakeRanName.Text]));
+
+  if LargeScale_OD3L_Train(imgMat, fn, window_w, window_h, thread_num) then
+    if umlFileExists(fn) then
+      begin
+        Result := TMemoryStream64.Create;
+        Result.LoadFromFile(fn);
+        Result.Position := 0;
+      end;
+  umlDeleteFile(fn);
+end;
+
+function TAI.OD3L_Open(train_file: U_String): TOD3L_Handle;
+var
+  train_file_buff: P_Bytes;
+begin
+  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.OD3L_Init) then
+    begin
+      train_file_buff := Alloc_P_Bytes(train_file);
+      try
+          Result := FAI_EntryAPI^.OD3L_Init(train_file_buff);
+      finally
+          Free_P_Bytes(train_file_buff);
+      end;
+      if Result <> nil then
+          DoStatus('Object detector open: %s', [train_file.Text]);
+    end
+  else
+      Result := nil;
+end;
+
+function TAI.OD3L_Open_Stream(stream: TMemoryStream64): TOD3L_Handle;
+begin
+  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.OD3L_Init_Memory) then
+    begin
+      Result := FAI_EntryAPI^.OD3L_Init_Memory(stream.memory, stream.Size);
+      if Result <> nil then
+          DoStatus('Object Detector open memory %s size:%s', [umlPointerToStr(stream.memory).Text, umlSizeToStr(stream.Size).Text]);
+    end
+  else
+      Result := nil;
+end;
+
+function TAI.OD3L_Open_Stream(train_file: U_String): TOD3L_Handle;
+var
+  m64: TMemoryStream64;
+begin
+  m64 := TMemoryStream64.Create;
+  m64.LoadFromFile(train_file);
+  Result := OD3L_Open_Stream(m64);
+  DisposeObject(m64);
+  if Result <> nil then
+      DoStatus('Object detector open: %s', [train_file.Text]);
+end;
+
+function TAI.OD3L_Close(var hnd: TOD3L_Handle): Boolean;
+begin
+  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.OD3L_Free) and (hnd <> nil) then
+    begin
+      Result := FAI_EntryAPI^.OD3L_Free(hnd) = 0;
+      DoStatus('Object detector Close.', []);
+    end
+  else
+      Result := False;
+
+  hnd := nil;
+end;
+
+function TAI.OD3L_Process(hnd: TOD3L_Handle; Raster: TMemoryRaster; const max_AI_Rect: Integer): TOD_Desc;
+var
+  rect_num: Integer;
+begin
+  SetLength(Result, 0);
+  if hnd = nil then
+      exit;
+  if (FAI_EntryAPI = nil) then
+      exit;
+  if not Assigned(FAI_EntryAPI^.OD3L_Process) then
+      exit;
+  SetLength(Result, max_AI_Rect);
+
+  try
+    if FAI_EntryAPI^.OD3L_Process(hnd, Raster.Bits, Raster.Width, Raster.Height,
+      @Result[0], max_AI_Rect, rect_num) > 0 then
+        SetLength(Result, rect_num)
+    else
+        SetLength(Result, 0);
+  except
+      SetLength(Result, 0);
+  end;
+end;
+
+function TAI.OD3L_Process(hnd: TOD3L_Handle; Raster: TMemoryRaster): TOD_List;
+var
+  od_desc: TOD_Desc;
+  i: Integer;
+begin
+  Result := TOD_List.Create;
+  od_desc := OD3L_Process(hnd, Raster, 1024);
+  for i := Low(od_desc) to High(od_desc) do
+      Result.Add(od_desc[i]);
+end;
+
+procedure TAI.OD3L_Process(hnd: TOD3L_Handle; Raster: TMemoryRaster; output: TOD_List);
+var
+  od_desc: TOD_Desc;
+  i: Integer;
+begin
+  od_desc := OD3L_Process(hnd, Raster, 1024);
+  for i := Low(od_desc) to High(od_desc) do
+      output.Add(od_desc[i]);
+end;
+
+function TAI.OD3L_Process(hnd: TOD3L_Handle; rgb_img: TRGB_Image_Handle; const max_AI_Rect: Integer): TOD_Desc;
+var
+  rect_num: Integer;
+begin
+  SetLength(Result, 0);
+  if hnd = nil then
+      exit;
+  if (FAI_EntryAPI = nil) then
+      exit;
+  if not Assigned(FAI_EntryAPI^.OD3L_Process_Image) then
+      exit;
+  SetLength(Result, max_AI_Rect);
+
+  try
+    if FAI_EntryAPI^.OD3L_Process_Image(hnd, rgb_img, @Result[0], max_AI_Rect, rect_num) > 0 then
+        SetLength(Result, rect_num)
+    else
+        SetLength(Result, 0);
+  except
+      SetLength(Result, 0);
+  end;
+end;
+
+function TAI.OD3L_ProcessScaleSpace(hnd: TOD3L_Handle; Raster: TMemoryRaster; scale: TGeoFloat): TOD_Desc;
+var
+  nr: TMemoryRaster;
+  buff: TOD_Desc;
+  i: Integer;
+begin
+  nr := NewRaster();
+  nr.ZoomFrom(Raster, scale);
+
+  buff := OD3L_Process(hnd, nr, 1024);
+
+  SetLength(Result, Length(buff));
+
+  for i := 0 to Length(buff) - 1 do
+    begin
+      Result[i].Left := Round(buff[i].Left / scale);
+      Result[i].Top := Round(buff[i].Top / scale);
+      Result[i].Right := Round(buff[i].Right / scale);
+      Result[i].Bottom := Round(buff[i].Bottom / scale);
+      Result[i].confidence := buff[i].confidence;
+    end;
+
+  SetLength(buff, 0);
+  DisposeObject(nr);
+end;
+
+function TAI.OD6L_Marshal_Train(imgList: TAI_ImageList; window_w, window_h, thread_num: Integer): TMemoryStream64;
 var
   dbEng: TObjectDataManager;
   token_arry: TArrayPascalString;
@@ -5441,9 +6281,9 @@ begin
   for Token in token_arry do
     begin
       TCoreClassThread.Sleep(1);
-      fn := umlCombineFileName(rootPath, PFormat('temp_OD_%s' + C_OD_Ext, [umlMakeRanName.Text]));
+      fn := umlCombineFileName(rootPath, PFormat('temp_OD_%s' + C_OD6L_Ext, [umlMakeRanName.Text]));
 
-      if OD_Train(imgList, Token, fn, window_w, window_h, thread_num) then
+      if OD6L_Train(imgList, Token, fn, window_w, window_h, thread_num) then
         begin
           if umlFileExists(fn) then
             begin
@@ -5469,7 +6309,7 @@ begin
   DisposeObject(dbEng);
 end;
 
-function TAI.OD_Marshal_Train(imgMat: TAI_ImageMatrix; window_w, window_h, thread_num: Integer): TMemoryStream64;
+function TAI.OD6L_Marshal_Train(imgMat: TAI_ImageMatrix; window_w, window_h, thread_num: Integer): TMemoryStream64;
 var
   i: Integer;
   dbEng: TObjectDataManager;
@@ -5489,9 +6329,9 @@ begin
   for Token in token_arry do
     begin
       TCoreClassThread.Sleep(1);
-      fn := umlCombineFileName(rootPath, PFormat('temp_OD_%s' + C_OD_Ext, [umlMakeRanName.Text]));
+      fn := umlCombineFileName(rootPath, PFormat('temp_OD_%s' + C_OD6L_Ext, [umlMakeRanName.Text]));
 
-      if OD_Train(imgMat, Token, fn, window_w, window_h, thread_num) then
+      if OD6L_Train(imgMat, Token, fn, window_w, window_h, thread_num) then
         begin
           if umlFileExists(fn) then
             begin
@@ -5517,19 +6357,19 @@ begin
   DisposeObject(dbEng);
 end;
 
-function TAI.OD_Marshal_Open_Stream(stream: TMemoryStream64): TOD_Marshal_Handle;
+function TAI.OD6L_Marshal_Open_Stream(stream: TMemoryStream64): TOD6L_Marshal_Handle;
 var
   m64: TMemoryStream64;
   dbEng: TObjectDataManager;
   itmSR: TItemSearch;
   itmHnd: TItemHandle;
-  od_hnd: TOD_Handle;
+  od_hnd: TOD6L_Handle;
 begin
   m64 := TMemoryStream64.Create;
   m64.SetPointerWithProtectedMode(stream.memory, stream.Size);
   dbEng := TObjectDataManagerOfCache.CreateAsStream(m64, '', DBMarshal.ID, True, False, True);
 
-  Result := TOD_Marshal_Handle.Create;
+  Result := TOD6L_Marshal_Handle.Create;
   Result.AutoFreeData := False;
 
   if dbEng.ItemFastFindFirst(dbEng.RootField, '', itmSR) then
@@ -5543,8 +6383,8 @@ begin
 
         od_hnd := Result[itmHnd.name];
         if od_hnd <> nil then
-            OD_Close(od_hnd);
-        od_hnd := OD_Open_Stream(m64);
+            OD6L_Close(od_hnd);
+        od_hnd := OD6L_Open_Stream(m64);
         Result.Add(itmHnd.name, od_hnd, False);
         DisposeObject(m64);
 
@@ -5556,19 +6396,19 @@ begin
   DoStatus('Object Detector marshal open memory %s size:%s', [umlPointerToStr(stream.memory).Text, umlSizeToStr(stream.Size).Text]);
 end;
 
-function TAI.OD_Marshal_Open_Stream(train_file: U_String): TOD_Marshal_Handle;
+function TAI.OD6L_Marshal_Open_Stream(train_file: U_String): TOD6L_Marshal_Handle;
 var
   m64: TMemoryStream64;
 begin
   m64 := TMemoryStream64.Create;
   m64.LoadFromFile(train_file);
-  Result := OD_Marshal_Open_Stream(m64);
+  Result := OD6L_Marshal_Open_Stream(m64);
   DisposeObject(m64);
   if Result <> nil then
       DoStatus('Object marshal detector open: %s', [train_file.Text]);
 end;
 
-function TAI.OD_Marshal_Close(var hnd: TOD_Marshal_Handle): Boolean;
+function TAI.OD6L_Marshal_Close(var hnd: TOD6L_Marshal_Handle): Boolean;
 var
   i: Integer;
   p: PHashListData;
@@ -5579,7 +6419,7 @@ begin
       p := hnd.FirstPtr;
       while i < hnd.Count do
         begin
-          OD_Close(TOD_Handle(p^.data));
+          OD6L_Close(TOD6L_Handle(p^.data));
           inc(i);
           p := p^.Next;
         end;
@@ -5588,7 +6428,7 @@ begin
   Result := True;
 end;
 
-function TAI.OD_Marshal_Process(hnd: TOD_Marshal_Handle; Raster: TMemoryRaster): TOD_Marshal_Desc;
+function TAI.OD6L_Marshal_Process(hnd: TOD6L_Marshal_Handle; Raster: TMemoryRaster): TOD_Marshal_Desc;
 var
   lst: TCoreClassList;
   output: TOD_Marshal_List;
@@ -5604,7 +6444,7 @@ var
     omr: TOD_Marshal_Rect;
   begin
     p := PHashListData(lst[pass]);
-    od_desc := OD_Process(p^.data, rgb_img, 1024);
+    od_desc := OD6L_Process(p^.data, rgb_img, 1024);
     for j := low(od_desc) to high(od_desc) do
       begin
         omr.R := RectV2(od_desc[j]);
@@ -5627,7 +6467,7 @@ var
     for pass := 0 to lst.Count - 1 do
       begin
         p := PHashListData(lst[pass]);
-        od_desc := OD_Process(p^.data, rgb_img, 1024);
+        od_desc := OD6L_Process(p^.data, rgb_img, 1024);
         for j := low(od_desc) to high(od_desc) do
           begin
             omr.R := RectV2(od_desc[j]);
@@ -5666,7 +6506,7 @@ begin
       omr: TOD_Marshal_Rect;
     begin
       p := PHashListData(lst[pass]);
-      od_desc := OD_Process(p^.data, rgb_img, 1024);
+      od_desc := OD6L_Process(p^.data, rgb_img, 1024);
       for j := low(od_desc) to high(od_desc) do
         begin
           omr.R := RectV2(od_desc[j]);
@@ -5689,7 +6529,7 @@ begin
   DisposeObject(lst);
 end;
 
-function TAI.OD_Marshal_ProcessScaleSpace(hnd: TOD_Marshal_Handle; Raster: TMemoryRaster; scale: TGeoFloat): TOD_Marshal_Desc;
+function TAI.OD6L_Marshal_ProcessScaleSpace(hnd: TOD6L_Marshal_Handle; Raster: TMemoryRaster; scale: TGeoFloat): TOD_Marshal_Desc;
 var
   nr: TMemoryRaster;
   buff: TOD_Marshal_Desc;
@@ -5698,11 +6538,11 @@ begin
   nr := NewRaster();
   nr.ZoomFrom(Raster, scale);
 
-  buff := OD_Marshal_Process(hnd, nr);
+  buff := OD6L_Marshal_Process(hnd, nr);
 
-  SetLength(Result, length(buff));
+  SetLength(Result, Length(buff));
 
-  for i := 0 to length(buff) - 1 do
+  for i := 0 to Length(buff) - 1 do
     begin
       Result[i].R := RectDiv(buff[i].R, scale);
       Result[i].Token := buff[i].Token;
@@ -5835,6 +6675,10 @@ begin
   for i := 0 to imgList.Count - 1 do
     begin
       imgArry[i].image := imgList[i];
+      imgArry[i].AccessImage := 0;
+      imgArry[i].AccessDetectorImage := 0;
+      imgArry[i].AccessDetectorRect := 0;
+      imgArry[i].AccessMask := 0;
       imgArry_P[i] := @imgArry[i];
     end;
 
@@ -5871,6 +6715,10 @@ begin
   for i := 0 to imgL.Count - 1 do
     begin
       imgArry[i].image := imgL[i];
+      imgArry[i].AccessImage := 0;
+      imgArry[i].AccessDetectorImage := 0;
+      imgArry[i].AccessDetectorRect := 0;
+      imgArry[i].AccessMask := 0;
       imgArry_P[i] := @imgArry[i];
     end;
 
@@ -6008,9 +6856,9 @@ var
   desc: TSP_Desc;
   i: Integer;
 begin
-  desc := SP_Process(hnd, Raster, AIRect(R), 1024);
+  desc := SP_Process(hnd, Raster, AIRect(R), 8192);
   Result := TVec2List.Create;
-  for i := 0 to length(desc) - 1 do
+  for i := 0 to Length(desc) - 1 do
       Result.Add(Vec2(desc[i]));
 end;
 
@@ -6019,9 +6867,9 @@ var
   desc: TSP_Desc;
   i: Integer;
 begin
-  desc := SP_Process(hnd, Raster, AIRect(R), 1024);
-  SetLength(Result, length(desc));
-  for i := 0 to length(desc) - 1 do
+  desc := SP_Process(hnd, Raster, AIRect(R), 8192);
+  SetLength(Result, Length(desc));
+  for i := 0 to Length(desc) - 1 do
       Result[i] := Vec2(desc[i]);
 end;
 
@@ -6030,9 +6878,9 @@ var
   desc: TSP_Desc;
   i: Integer;
 begin
-  desc := SP_Process(hnd, Raster, R, 1024);
-  SetLength(Result, length(desc));
-  for i := 0 to length(desc) - 1 do
+  desc := SP_Process(hnd, Raster, R, 8192);
+  SetLength(Result, Length(desc));
+  for i := 0 to Length(desc) - 1 do
       Result[i] := Vec2(desc[i]);
 end;
 
@@ -6041,9 +6889,9 @@ var
   desc: TSP_Desc;
   i: Integer;
 begin
-  desc := SP_Process(hnd, Raster, AIRect(R), 1024);
-  SetLength(Result, length(desc));
-  for i := 0 to length(desc) - 1 do
+  desc := SP_Process(hnd, Raster, AIRect(R), 8192);
+  SetLength(Result, Length(desc));
+  for i := 0 to Length(desc) - 1 do
       Result[i] := Vec2(desc[i]);
 end;
 
@@ -6088,16 +6936,16 @@ begin
       exit;
   if not Assigned(FAI_EntryAPI^.SP_extract_face_rect_desc_chips) then
       exit;
-  if length(desc) = 0 then
+  if Length(desc) = 0 then
       exit;
 
   PrepareFaceDataSource;
-  SetLength(fixed_desc, length(desc));
-  for i := 0 to length(desc) - 1 do
+  SetLength(fixed_desc, Length(desc));
+  for i := 0 to Length(desc) - 1 do
       fixed_desc[i] := AIRect(RectScaleSpace(RectV2(desc[i]), extract_face_size, extract_face_size));
 
   try
-      Result := FAI_EntryAPI^.SP_extract_face_rect_desc_chips(face_sp_hnd, Raster.Bits, Raster.Width, Raster.Height, extract_face_size, @fixed_desc[0], length(desc));
+      Result := FAI_EntryAPI^.SP_extract_face_rect_desc_chips(face_sp_hnd, Raster.Bits, Raster.Width, Raster.Height, extract_face_size, @fixed_desc[0], Length(desc));
   except
       Result := nil;
   end;
@@ -6109,8 +6957,8 @@ var
   i: Integer;
   ai_rect_desc: TAI_Rect_Desc;
 begin
-  SetLength(ai_rect_desc, length(MMOD_Desc));
-  for i := 0 to length(MMOD_Desc) - 1 do
+  SetLength(ai_rect_desc, Length(MMOD_Desc));
+  for i := 0 to Length(MMOD_Desc) - 1 do
       ai_rect_desc[i] := AIRect(MMOD_Desc[i].R);
   Result := Face_Detector(Raster, ai_rect_desc, extract_face_size);
   SetLength(ai_rect_desc, 0);
@@ -6121,8 +6969,8 @@ var
   i: Integer;
   ai_rect_desc: TAI_Rect_Desc;
 begin
-  SetLength(ai_rect_desc, length(od_desc));
-  for i := 0 to length(od_desc) - 1 do
+  SetLength(ai_rect_desc, Length(od_desc));
+  for i := 0 to Length(od_desc) - 1 do
       ai_rect_desc[i] := AIRect(od_desc[i]);
   Result := Face_Detector(Raster, ai_rect_desc, extract_face_size);
   SetLength(ai_rect_desc, 0);
@@ -6188,7 +7036,7 @@ begin
   if face_hnd = nil then
       exit;
   SetLength(Result, Face_Rect_Num(face_hnd));
-  for i := 0 to length(Result) - 1 do
+  for i := 0 to Length(Result) - 1 do
       Result[i] := Face_Rect(face_hnd, i);
   Face_Close(face_hnd);
 end;
@@ -6285,8 +7133,8 @@ begin
   if not Assigned(FAI_EntryAPI^.SP_get) then
       exit;
 
-  SetLength(Result, 1024);
-  sp_num := FAI_EntryAPI^.SP_get(hnd, index, @Result[0], length(Result));
+  SetLength(Result, 8192);
+  sp_num := FAI_EntryAPI^.SP_get(hnd, index, @Result[0], Length(Result));
   SetLength(Result, sp_num);
 end;
 
@@ -6304,8 +7152,8 @@ begin
   if not Assigned(FAI_EntryAPI^.SP_get) then
       exit;
 
-  SetLength(buff, 1024);
-  sp_num := FAI_EntryAPI^.SP_get(hnd, index, @buff[0], length(buff));
+  SetLength(buff, 8192);
+  sp_num := FAI_EntryAPI^.SP_get(hnd, index, @buff[0], Length(buff));
   SetLength(buff, sp_num);
   SetLength(Result, sp_num);
   for i := Low(buff) to high(buff) do
@@ -6381,8 +7229,8 @@ begin
       exit;
 
   imgSum := 0;
-  for i := 0 to length(imgList) - 1 do
-      inc(imgSum, length(imgList[i]));
+  for i := 0 to Length(imgList) - 1 do
+      inc(imgSum, Length(imgList[i]));
 
   if imgSum = 0 then
       exit;
@@ -6390,10 +7238,10 @@ begin
   // process sequence
   SetLength(rArry, imgSum);
   ri := 0;
-  for i := 0 to length(imgList) - 1 do
+  for i := 0 to Length(imgList) - 1 do
     begin
       imgArry := imgList[i];
-      for j := 0 to length(imgArry) - 1 do
+      for j := 0 to Length(imgArry) - 1 do
         begin
           new(rArry[ri].raster_Hnd);
           rArry[ri].raster_Hnd^.Raster := imgArry[j];
@@ -6414,7 +7262,7 @@ begin
 
   // set arry
   param^.imgArry_ptr := PAI_Raster_Data_Array(@rArry[0]);
-  param^.img_num := length(rArry);
+  param^.img_num := Length(rArry);
   param^.control := @TrainingControl;
 
   // execute training
@@ -6457,7 +7305,7 @@ begin
   param^.img_num := 0;
 
   // free res
-  for i := 0 to length(rArry) - 1 do
+  for i := 0 to Length(rArry) - 1 do
       Dispose(rArry[i].raster_Hnd);
   SetLength(rArry, 0);
 end;
@@ -6478,13 +7326,13 @@ begin
   else
       imgBuff := imgList.ExtractDetectorDefineAsPrepareRaster(C_Metric_Input_Size, C_Metric_Input_Size);
 
-  if length(imgBuff) = 0 then
+  if Length(imgBuff) = 0 then
       exit;
 
   Result := Metric_ResNet_Train(False, nil, imgBuff, param);
 
-  for i := 0 to length(imgBuff) - 1 do
-    for j := 0 to length(imgBuff[i]) - 1 do
+  for i := 0 to Length(imgBuff) - 1 do
+    for j := 0 to Length(imgBuff[i]) - 1 do
         DisposeObject(imgBuff[i, j]);
   SetLength(imgBuff, 0, 0);
 end;
@@ -6541,13 +7389,13 @@ begin
   else
       imgBuff := imgMat.ExtractDetectorDefineAsPrepareRaster(C_Metric_Input_Size, C_Metric_Input_Size);
 
-  if length(imgBuff) = 0 then
+  if Length(imgBuff) = 0 then
       exit;
 
   Result := Metric_ResNet_Train(False, nil, imgBuff, param);
 
-  for i := 0 to length(imgBuff) - 1 do
-    for j := 0 to length(imgBuff[i]) - 1 do
+  for i := 0 to Length(imgBuff) - 1 do
+    for j := 0 to Length(imgBuff[i]) - 1 do
         DisposeObject(imgBuff[i, j]);
   SetLength(imgBuff, 0, 0);
 end;
@@ -6613,13 +7461,13 @@ begin
           imgBuff := imgMat.ExtractDetectorDefineAsPrepareRaster(C_Metric_Input_Size, C_Metric_Input_Size);
     end;
 
-  if length(imgBuff) = 0 then
+  if Length(imgBuff) = 0 then
       exit;
 
   Result := Metric_ResNet_Train(LargeScale_, RSeri, imgBuff, param);
 
-  for i := 0 to length(imgBuff) - 1 do
-    for j := 0 to length(imgBuff[i]) - 1 do
+  for i := 0 to Length(imgBuff) - 1 do
+    for j := 0 to Length(imgBuff[i]) - 1 do
         DisposeObject(imgBuff[i, j]);
   SetLength(imgBuff, 0, 0);
 end;
@@ -6703,8 +7551,8 @@ var
 begin
   if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.MDNN_ResNet_Process) then
     begin
-      SetLength(rArry, length(RasterArray));
-      for i := 0 to length(RasterArray) - 1 do
+      SetLength(rArry, Length(RasterArray));
+      for i := 0 to Length(RasterArray) - 1 do
         begin
           new(rArry[i].raster_Hnd);
 
@@ -6734,9 +7582,9 @@ begin
       FAI_EntryAPI^.RasterSerialized := nil;
       FAI_EntryAPI^.SerializedTime := GetTimeTick();
 
-      Result := FAI_EntryAPI^.MDNN_ResNet_Process(hnd, PAI_Raster_Data_Array(@rArry[0]), length(rArry), output);
+      Result := FAI_EntryAPI^.MDNN_ResNet_Process(hnd, PAI_Raster_Data_Array(@rArry[0]), Length(rArry), output);
 
-      for i := 0 to length(rArry) - 1 do
+      for i := 0 to Length(rArry) - 1 do
         begin
           DisposeObject(rArry[i].raster_Hnd^.Raster);
           Dispose(rArry[i].raster_Hnd);
@@ -6753,12 +7601,12 @@ var
   i: TLInt;
 begin
   Result := LMatrix(0, 0);
-  if length(RasterArray) > 0 then
+  if Length(RasterArray) > 0 then
     begin
-      SetLength(L, length(RasterArray) * C_Metric_Dim);
+      SetLength(L, Length(RasterArray) * C_Metric_Dim);
       if Metric_ResNet_Process(hnd, RasterArray, @L[0]) > 0 then
         begin
-          Result := LMatrix(length(RasterArray), 0);
+          Result := LMatrix(Length(RasterArray), 0);
           for i := Low(Result) to high(Result) do
               Result[i] := LVecCopy(L, i * C_Metric_Dim, C_Metric_Dim);
         end;
@@ -6794,7 +7642,7 @@ begin
         begin
           mr := imgData.Raster;
           v := Metric_ResNet_Process(mdnn_hnd, mr);
-          if length(v) <> C_Metric_Dim then
+          if Length(v) <> C_Metric_Dim then
               DoStatus('Metric-ResNet vector error!')
           else
               lr.AddMemory(v, imgList.FileInfo);
@@ -6816,7 +7664,7 @@ begin
                     mr := detDef.PrepareRaster;
                     v := Metric_ResNet_Process(mdnn_hnd, mr);
                   end;
-                if length(v) <> C_Metric_Dim then
+                if Length(v) <> C_Metric_Dim then
                     DoStatus('Metric-ResNet vector error!')
                 else
                     lr.AddMemory(v, detDef.Token);
@@ -6848,7 +7696,7 @@ begin
         begin
           mr := imgData.Raster;
           v := Metric_ResNet_Process(mdnn_hnd, mr);
-          if length(v) <> C_Metric_Dim then
+          if Length(v) <> C_Metric_Dim then
               DoStatus('Metric-ResNet vector error!')
           else
               kd.Add(v, imgList.FileInfo);
@@ -6871,7 +7719,7 @@ begin
                     v := Metric_ResNet_Process(mdnn_hnd, mr);
                   end;
 
-                if length(v) <> C_Metric_Dim then
+                if Length(v) <> C_Metric_Dim then
                     DoStatus('Metric-ResNet vector error!')
                 else
                     kd.Add(v, detDef.Token);
@@ -6951,8 +7799,8 @@ begin
       exit;
 
   imgSum := 0;
-  for i := 0 to length(imgList) - 1 do
-      inc(imgSum, length(imgList[i]));
+  for i := 0 to Length(imgList) - 1 do
+      inc(imgSum, Length(imgList[i]));
 
   if imgSum = 0 then
       exit;
@@ -6960,10 +7808,10 @@ begin
   // process sequence
   SetLength(rArry, imgSum);
   ri := 0;
-  for i := 0 to length(imgList) - 1 do
+  for i := 0 to Length(imgList) - 1 do
     begin
       imgArry := imgList[i];
-      for j := 0 to length(imgArry) - 1 do
+      for j := 0 to Length(imgArry) - 1 do
         begin
           new(rArry[ri].raster_Hnd);
           rArry[ri].raster_Hnd^.Raster := imgArry[j];
@@ -6984,7 +7832,7 @@ begin
 
   // set arry
   param^.imgArry_ptr := PAI_Raster_Data_Array(@rArry[0]);
-  param^.img_num := length(rArry);
+  param^.img_num := Length(rArry);
   param^.control := @TrainingControl;
 
   // execute training
@@ -7027,7 +7875,7 @@ begin
   param^.img_num := 0;
 
   // free res
-  for i := 0 to length(rArry) - 1 do
+  for i := 0 to Length(rArry) - 1 do
       Dispose(rArry[i].raster_Hnd);
   SetLength(rArry, 0);
 end;
@@ -7048,13 +7896,13 @@ begin
   else
       imgBuff := imgList.ExtractDetectorDefineAsPrepareRaster(C_LMetric_Input_Size, C_LMetric_Input_Size);
 
-  if length(imgBuff) = 0 then
+  if Length(imgBuff) = 0 then
       exit;
 
   Result := LMetric_ResNet_Train(False, nil, imgBuff, param);
 
-  for i := 0 to length(imgBuff) - 1 do
-    for j := 0 to length(imgBuff[i]) - 1 do
+  for i := 0 to Length(imgBuff) - 1 do
+    for j := 0 to Length(imgBuff[i]) - 1 do
         DisposeObject(imgBuff[i, j]);
   SetLength(imgBuff, 0, 0);
 end;
@@ -7111,13 +7959,13 @@ begin
   else
       imgBuff := imgMat.ExtractDetectorDefineAsPrepareRaster(C_LMetric_Input_Size, C_LMetric_Input_Size);
 
-  if length(imgBuff) = 0 then
+  if Length(imgBuff) = 0 then
       exit;
 
   Result := LMetric_ResNet_Train(False, nil, imgBuff, param);
 
-  for i := 0 to length(imgBuff) - 1 do
-    for j := 0 to length(imgBuff[i]) - 1 do
+  for i := 0 to Length(imgBuff) - 1 do
+    for j := 0 to Length(imgBuff[i]) - 1 do
         DisposeObject(imgBuff[i, j]);
   SetLength(imgBuff, 0, 0);
 end;
@@ -7183,13 +8031,13 @@ begin
           imgBuff := imgMat.ExtractDetectorDefineAsPrepareRaster(C_LMetric_Input_Size, C_LMetric_Input_Size);
     end;
 
-  if length(imgBuff) = 0 then
+  if Length(imgBuff) = 0 then
       exit;
 
   Result := LMetric_ResNet_Train(LargeScale_, RSeri, imgBuff, param);
 
-  for i := 0 to length(imgBuff) - 1 do
-    for j := 0 to length(imgBuff[i]) - 1 do
+  for i := 0 to Length(imgBuff) - 1 do
+    for j := 0 to Length(imgBuff[i]) - 1 do
         DisposeObject(imgBuff[i, j]);
   SetLength(imgBuff, 0, 0);
 end;
@@ -7273,8 +8121,8 @@ var
 begin
   if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.LMDNN_ResNet_Process) then
     begin
-      SetLength(rArry, length(RasterArray));
-      for i := 0 to length(RasterArray) - 1 do
+      SetLength(rArry, Length(RasterArray));
+      for i := 0 to Length(RasterArray) - 1 do
         begin
           new(rArry[i].raster_Hnd);
 
@@ -7304,9 +8152,9 @@ begin
       FAI_EntryAPI^.RasterSerialized := nil;
       FAI_EntryAPI^.SerializedTime := GetTimeTick();
 
-      Result := FAI_EntryAPI^.LMDNN_ResNet_Process(hnd, PAI_Raster_Data_Array(@rArry[0]), length(rArry), output);
+      Result := FAI_EntryAPI^.LMDNN_ResNet_Process(hnd, PAI_Raster_Data_Array(@rArry[0]), Length(rArry), output);
 
-      for i := 0 to length(rArry) - 1 do
+      for i := 0 to Length(rArry) - 1 do
         begin
           DisposeObject(rArry[i].raster_Hnd^.Raster);
           Dispose(rArry[i].raster_Hnd);
@@ -7323,10 +8171,10 @@ var
   i: TLInt;
 begin
   Result := LMatrix(0, 0);
-  SetLength(L, length(RasterArray) * C_LMetric_Dim);
+  SetLength(L, Length(RasterArray) * C_LMetric_Dim);
   if LMetric_ResNet_Process(hnd, RasterArray, @L[0]) > 0 then
     begin
-      Result := LMatrix(length(RasterArray), 0);
+      Result := LMatrix(Length(RasterArray), 0);
       for i := Low(Result) to high(Result) do
           Result[i] := LVecCopy(L, i * C_LMetric_Dim, C_LMetric_Dim);
     end;
@@ -7361,7 +8209,7 @@ begin
         begin
           mr := imgData.Raster;
           v := LMetric_ResNet_Process(mdnn_hnd, mr);
-          if length(v) <> C_LMetric_Dim then
+          if Length(v) <> C_LMetric_Dim then
               DoStatus('LMetric-ResNet vector error!')
           else
               lr.AddMemory(v, imgList.FileInfo);
@@ -7384,7 +8232,7 @@ begin
                     mr := detDef.PrepareRaster;
                     v := LMetric_ResNet_Process(mdnn_hnd, mr);
                   end;
-                if length(v) <> C_LMetric_Dim then
+                if Length(v) <> C_LMetric_Dim then
                     DoStatus('LMetric-ResNet vector error!')
                 else
                     lr.AddMemory(v, detDef.Token);
@@ -7419,7 +8267,7 @@ begin
         begin
           mr := imgData.Raster;
           v := LMetric_ResNet_Process(mdnn_hnd, mr);
-          if length(v) <> C_LMetric_Dim then
+          if Length(v) <> C_LMetric_Dim then
               DoStatus('LMetric-ResNet vector error!')
           else
               kd.Add(v, imgList.FileInfo);
@@ -7441,7 +8289,7 @@ begin
                     mr := detDef.PrepareRaster;
                     v := LMetric_ResNet_Process(mdnn_hnd, mr);
                   end;
-                if length(v) <> C_LMetric_Dim then
+                if Length(v) <> C_LMetric_Dim then
                     DoStatus('LMetric-ResNet vector error!')
                 else
                     kd.Add(v, detDef.Token);
@@ -7474,7 +8322,7 @@ begin
     end;
 end;
 
-class function TAI.Init_MMOD_DNN_TrainParam(train_cfg, train_sync_file, train_output: U_String): PMMOD_Train_Parameter;
+class function TAI.Init_MMOD6L_DNN_TrainParam(train_cfg, train_sync_file, train_output: U_String): PMMOD_Train_Parameter;
 begin
   new(Result);
   FillPtrByte(Result, SizeOf(TMMOD_Train_Parameter), 0);
@@ -7492,13 +8340,15 @@ begin
   Result^.iterations_without_progress_threshold := 800;
   Result^.learning_rate := 0.1;
   Result^.completed_learning_rate := 0.0001;
+  Result^.saveMemory := 0;
   Result^.overlap_NMS_iou_thresh := 0.4;
   Result^.overlap_NMS_percent_covered_thresh := 1.0;
   Result^.overlap_ignore_iou_thresh := 0.5;
   Result^.overlap_ignore_percent_covered_thresh := 0.95;
+  Result^.prepare_crops_img_num := 5;
   Result^.num_crops := 20;
-  Result^.chip_dims_x := 150;
-  Result^.chip_dims_y := 150;
+  Result^.chip_dims_x := 300;
+  Result^.chip_dims_y := 300;
   Result^.min_object_size_x := 75;
   Result^.min_object_size_y := 25;
   Result^.max_rotation_degrees := 10.0;
@@ -7512,7 +8362,7 @@ begin
   Result^.TempFiles := nil;
 end;
 
-class procedure TAI.Free_MMOD_DNN_TrainParam(param: PMMOD_Train_Parameter);
+class procedure TAI.Free_MMOD6L_DNN_TrainParam(param: PMMOD_Train_Parameter);
 begin
   Free_P_Bytes(param^.train_cfg);
   Free_P_Bytes(param^.train_sync_file);
@@ -7520,7 +8370,7 @@ begin
   Dispose(param);
 end;
 
-function TAI.MMOD_DNN_PrepareTrain(imgList: TAI_ImageList; train_sync_file: U_String): PMMOD_Train_Parameter;
+function TAI.MMOD6L_DNN_PrepareTrain(imgList: TAI_ImageList; train_sync_file: U_String): PMMOD_Train_Parameter;
 var
   ph, fn, prefix, train_out: U_String;
   tmpFileList: TPascalStringList;
@@ -7528,16 +8378,16 @@ begin
   ph := rootPath;
   tmpFileList := TPascalStringList.Create;
   TCoreClassThread.Sleep(1);
-  prefix := 'MMOD_DNN_' + umlMakeRanName + '_';
+  prefix := 'MMOD6L_DNN_' + umlMakeRanName + '_';
   fn := umlCombineFileName(ph, prefix + 'temp.xml');
   imgList.Build_XML(True, False, 'ZAI dataset', 'dnn resnet max-margin dataset', fn, prefix, tmpFileList);
-  train_out := prefix + 'output' + C_MMOD_Ext;
-  Result := Init_MMOD_DNN_TrainParam(fn, train_sync_file, train_out);
+  train_out := prefix + 'output' + C_MMOD6L_Ext;
+  Result := Init_MMOD6L_DNN_TrainParam(fn, train_sync_file, train_out);
   Result^.control := @TrainingControl;
   Result^.TempFiles := tmpFileList;
 end;
 
-function TAI.MMOD_DNN_PrepareTrain(imgMat: TAI_ImageMatrix; train_sync_file: U_String): PMMOD_Train_Parameter;
+function TAI.MMOD6L_DNN_PrepareTrain(imgMat: TAI_ImageMatrix; train_sync_file: U_String): PMMOD_Train_Parameter;
 var
   ph, fn, prefix, train_out: U_String;
   tmpFileList: TPascalStringList;
@@ -7545,25 +8395,26 @@ begin
   ph := rootPath;
   tmpFileList := TPascalStringList.Create;
   TCoreClassThread.Sleep(1);
-  prefix := 'MMOD_DNN_' + umlMakeRanName + '_';
+  prefix := 'MMOD6L_DNN_' + umlMakeRanName + '_';
   fn := umlCombineFileName(ph, prefix + 'temp.xml');
   imgMat.Build_XML(True, False, 'ZAI dataset', 'build-in', fn, prefix, tmpFileList);
-  train_out := prefix + 'output' + C_MMOD_Ext;
-  Result := Init_MMOD_DNN_TrainParam(fn, train_sync_file, train_out);
+  train_out := prefix + 'output' + C_MMOD6L_Ext;
+  Result := Init_MMOD6L_DNN_TrainParam(fn, train_sync_file, train_out);
   Result^.control := @TrainingControl;
   Result^.TempFiles := tmpFileList;
 end;
 
-function TAI.MMOD_DNN_Train(param: PMMOD_Train_Parameter): Integer;
+function TAI.MMOD6L_DNN_Train(param: PMMOD_Train_Parameter): Integer;
 begin
   Result := -1;
-  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.MMOD_DNN_Train) then
+  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.MMOD6L_DNN_Train) then
     begin
       TrainingControl.pause := 0;
       TrainingControl.stop := 0;
       FAI_EntryAPI^.RasterSerialized := nil;
       FAI_EntryAPI^.SerializedTime := GetTimeTick();
-      Result := FAI_EntryAPI^.MMOD_DNN_Train(param);
+      param^.saveMemory := 0; // normal MMOD trainer.
+      Result := FAI_EntryAPI^.MMOD6L_DNN_Train(param);
       Last_training_average_loss := param^.training_average_loss;
       Last_training_learning_rate := param^.training_learning_rate;
       if Result > 0 then
@@ -7571,13 +8422,13 @@ begin
     end;
 end;
 
-function TAI.MMOD_DNN_Train_Stream(param: PMMOD_Train_Parameter): TMemoryStream64;
+function TAI.MMOD6L_DNN_Train_Stream(param: PMMOD_Train_Parameter): TMemoryStream64;
 var
   fn: U_String;
 begin
   Result := nil;
   fn := Get_P_Bytes_String(param^.train_output);
-  if (MMOD_DNN_Train(param) > 0) and (umlFileExists(fn)) then
+  if (MMOD6L_DNN_Train(param) > 0) and (umlFileExists(fn)) then
     begin
       Result := TMemoryStream64.Create;
       Result.LoadFromFile(fn);
@@ -7585,7 +8436,7 @@ begin
     end;
 end;
 
-procedure TAI.MMOD_DNN_FreeTrain(param: PMMOD_Train_Parameter);
+procedure TAI.MMOD6L_DNN_FreeTrain(param: PMMOD_Train_Parameter);
 var
   i: Integer;
 begin
@@ -7596,16 +8447,16 @@ begin
       DisposeObject(param^.TempFiles);
       param^.TempFiles := nil;
     end;
-  Free_MMOD_DNN_TrainParam(param);
+  Free_MMOD6L_DNN_TrainParam(param);
 end;
 
-function TAI.LargeScale_MMOD_DNN_PrepareTrain(train_sync_file, train_output: U_String): PMMOD_Train_Parameter;
+function TAI.LargeScale_MMOD6L_DNN_PrepareTrain(train_sync_file, train_output: U_String): PMMOD_Train_Parameter;
 begin
-  Result := Init_MMOD_DNN_TrainParam('', train_sync_file, train_output);
+  Result := Init_MMOD6L_DNN_TrainParam('', train_sync_file, train_output);
   Result^.control := @TrainingControl;
 end;
 
-function TAI.LargeScale_MMOD_DNN_Train(param: PMMOD_Train_Parameter; imgList: TAI_ImageList): Integer;
+function TAI.LargeScale_MMOD6L_DNN_Train(param: PMMOD_Train_Parameter; imgList: TAI_ImageList): Integer;
 var
   imgArry: array of TImage_Handle;
   imgArry_P: array of PImage_Handle;
@@ -7618,13 +8469,22 @@ begin
   for i := 0 to imgList.Count - 1 do
     begin
       imgArry[i].image := imgList[i];
+      imgArry[i].AccessImage := 0;
+      imgArry[i].AccessDetectorImage := 0;
+      imgArry[i].AccessDetectorRect := 0;
+      imgArry[i].AccessMask := 0;
       imgArry_P[i] := @imgArry[i];
     end;
 
-  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.LargeScale_MMOD_Train) then
+  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.LargeScale_MMOD6L_Train) then
     begin
       param^.control := @TrainingControl;
-      Result := FAI_EntryAPI^.LargeScale_MMOD_Train(param, @imgArry_P[0], imgList.Count);
+      param^.saveMemory := 0; // normal MMOD trainer.
+      try
+          Result := FAI_EntryAPI^.LargeScale_MMOD6L_Train(param, @imgArry_P[0], imgList.Count);
+      except
+          Result := -1;
+      end;
       Last_training_average_loss := param^.training_average_loss;
       Last_training_learning_rate := param^.training_learning_rate;
     end;
@@ -7633,7 +8493,7 @@ begin
   SetLength(imgArry_P, 0);
 end;
 
-function TAI.LargeScale_MMOD_DNN_Train(param: PMMOD_Train_Parameter; imgMat: TAI_ImageMatrix): Integer;
+function TAI.LargeScale_MMOD6L_DNN_Train(param: PMMOD_Train_Parameter; imgMat: TAI_ImageMatrix): Integer;
 var
   imgL: TImageList_Decl;
   imgArry: array of TImage_Handle;
@@ -7649,13 +8509,22 @@ begin
   for i := 0 to imgL.Count - 1 do
     begin
       imgArry[i].image := imgL[i];
+      imgArry[i].AccessImage := 0;
+      imgArry[i].AccessDetectorImage := 0;
+      imgArry[i].AccessDetectorRect := 0;
+      imgArry[i].AccessMask := 0;
       imgArry_P[i] := @imgArry[i];
     end;
 
-  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.LargeScale_MMOD_Train) then
+  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.LargeScale_MMOD6L_Train) then
     begin
       param^.control := @TrainingControl;
-      Result := FAI_EntryAPI^.LargeScale_MMOD_Train(param, @imgArry_P[0], imgL.Count);
+      param^.saveMemory := 0; // normal MMOD trainer.
+      try
+          Result := FAI_EntryAPI^.LargeScale_MMOD6L_Train(param, @imgArry_P[0], imgL.Count);
+      except
+          Result := -1;
+      end;
       Last_training_average_loss := param^.training_average_loss;
       Last_training_learning_rate := param^.training_learning_rate;
     end;
@@ -7665,13 +8534,113 @@ begin
   DisposeObject(imgL);
 end;
 
-function TAI.LargeScale_MMOD_DNN_Train_Stream(param: PMMOD_Train_Parameter; imgList: TAI_ImageList): TMemoryStream64;
+function TAI.LargeScale_MMOD6L_DNN_Train(param: PMMOD_Train_Parameter; RSeri: TRasterSerialized; imgList: TAI_ImageList): Integer;
+var
+  imgArry: array of TImage_Handle;
+  imgArry_P: array of PImage_Handle;
+  i: Integer;
+begin
+  Result := -1;
+  SetLength(imgArry, imgList.Count);
+  SetLength(imgArry_P, imgList.Count);
+
+  for i := 0 to imgList.Count - 1 do
+    begin
+      imgArry[i].image := imgList[i];
+      imgArry[i].AccessImage := 0;
+      imgArry[i].AccessDetectorImage := 0;
+      imgArry[i].AccessDetectorRect := 0;
+      imgArry[i].AccessMask := 0;
+      imgArry_P[i] := @imgArry[i];
+    end;
+
+  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.LargeScale_MMOD6L_Train) then
+    begin
+      param^.control := @TrainingControl;
+
+      param^.saveMemory := 1; // large-scale MMOD trainer.
+      RSeri.WriteList.Clear;
+      RSeri.ReadList.Clear;
+      FAI_EntryAPI^.RasterSerialized := RSeri;
+      imgList.SerializedAndRecycleMemory(RSeri);
+
+      try
+          Result := FAI_EntryAPI^.LargeScale_MMOD6L_Train(param, @imgArry_P[0], imgList.Count);
+      except
+          Result := -1;
+      end;
+
+      RSeri.WriteList.Clear;
+      RSeri.ReadList.Clear;
+      FAI_EntryAPI^.RasterSerialized := nil;
+
+      Last_training_average_loss := param^.training_average_loss;
+      Last_training_learning_rate := param^.training_learning_rate;
+    end;
+
+  SetLength(imgArry, 0);
+  SetLength(imgArry_P, 0);
+end;
+
+function TAI.LargeScale_MMOD6L_DNN_Train(param: PMMOD_Train_Parameter; RSeri: TRasterSerialized; imgMat: TAI_ImageMatrix): Integer;
+var
+  imgL: TImageList_Decl;
+  imgArry: array of TImage_Handle;
+  imgArry_P: array of PImage_Handle;
+  i: Integer;
+begin
+  Result := -1;
+  imgL := imgMat.ImageList();
+
+  SetLength(imgArry, imgL.Count);
+  SetLength(imgArry_P, imgL.Count);
+
+  for i := 0 to imgL.Count - 1 do
+    begin
+      imgArry[i].image := imgL[i];
+      imgArry[i].AccessImage := 0;
+      imgArry[i].AccessDetectorImage := 0;
+      imgArry[i].AccessDetectorRect := 0;
+      imgArry[i].AccessMask := 0;
+      imgArry_P[i] := @imgArry[i];
+    end;
+
+  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.LargeScale_MMOD6L_Train) then
+    begin
+      param^.control := @TrainingControl;
+
+      param^.saveMemory := 1; // large-scale MMOD trainer.
+      RSeri.WriteList.Clear;
+      RSeri.ReadList.Clear;
+      FAI_EntryAPI^.RasterSerialized := RSeri;
+      imgMat.SerializedAndRecycleMemory(RSeri);
+
+      try
+          Result := FAI_EntryAPI^.LargeScale_MMOD6L_Train(param, @imgArry_P[0], imgL.Count);
+      except
+          Result := -1;
+      end;
+
+      RSeri.WriteList.Clear;
+      RSeri.ReadList.Clear;
+      FAI_EntryAPI^.RasterSerialized := nil;
+
+      Last_training_average_loss := param^.training_average_loss;
+      Last_training_learning_rate := param^.training_learning_rate;
+    end;
+
+  SetLength(imgArry, 0);
+  SetLength(imgArry_P, 0);
+  DisposeObject(imgL);
+end;
+
+function TAI.LargeScale_MMOD6L_DNN_Train_Stream(param: PMMOD_Train_Parameter; imgList: TAI_ImageList): TMemoryStream64;
 var
   fn: U_String;
 begin
   Result := nil;
   fn := Get_P_Bytes_String(param^.train_output);
-  if (LargeScale_MMOD_DNN_Train(param, imgList) > 0) and (umlFileExists(fn)) then
+  if (LargeScale_MMOD6L_DNN_Train(param, imgList) > 0) and (umlFileExists(fn)) then
     begin
       Result := TMemoryStream64.Create;
       Result.LoadFromFile(fn);
@@ -7679,13 +8648,13 @@ begin
     end;
 end;
 
-function TAI.LargeScale_MMOD_DNN_Train_Stream(param: PMMOD_Train_Parameter; imgMat: TAI_ImageMatrix): TMemoryStream64;
+function TAI.LargeScale_MMOD6L_DNN_Train_Stream(param: PMMOD_Train_Parameter; imgMat: TAI_ImageMatrix): TMemoryStream64;
 var
   fn: U_String;
 begin
   Result := nil;
   fn := Get_P_Bytes_String(param^.train_output);
-  if (LargeScale_MMOD_DNN_Train(param, imgMat) > 0) and (umlFileExists(fn)) then
+  if (LargeScale_MMOD6L_DNN_Train(param, imgMat) > 0) and (umlFileExists(fn)) then
     begin
       Result := TMemoryStream64.Create;
       Result.LoadFromFile(fn);
@@ -7693,19 +8662,47 @@ begin
     end;
 end;
 
-procedure TAI.LargeScale_MMOD_DNN_FreeTrain(param: PMMOD_Train_Parameter);
+function TAI.LargeScale_MMOD6L_DNN_Train_Stream(param: PMMOD_Train_Parameter; RSeri: TRasterSerialized; imgList: TAI_ImageList): TMemoryStream64;
+var
+  fn: U_String;
 begin
-  Free_MMOD_DNN_TrainParam(param);
+  Result := nil;
+  fn := Get_P_Bytes_String(param^.train_output);
+  if (LargeScale_MMOD6L_DNN_Train(param, RSeri, imgList) > 0) and (umlFileExists(fn)) then
+    begin
+      Result := TMemoryStream64.Create;
+      Result.LoadFromFile(fn);
+      Result.Position := 0;
+    end;
 end;
 
-function TAI.MMOD_DNN_Open(train_file: U_String): TMMOD_Handle;
+function TAI.LargeScale_MMOD6L_DNN_Train_Stream(param: PMMOD_Train_Parameter; RSeri: TRasterSerialized; imgMat: TAI_ImageMatrix): TMemoryStream64;
+var
+  fn: U_String;
+begin
+  Result := nil;
+  fn := Get_P_Bytes_String(param^.train_output);
+  if (LargeScale_MMOD6L_DNN_Train(param, RSeri, imgMat) > 0) and (umlFileExists(fn)) then
+    begin
+      Result := TMemoryStream64.Create;
+      Result.LoadFromFile(fn);
+      Result.Position := 0;
+    end;
+end;
+
+procedure TAI.LargeScale_MMOD6L_DNN_FreeTrain(param: PMMOD_Train_Parameter);
+begin
+  Free_MMOD6L_DNN_TrainParam(param);
+end;
+
+function TAI.MMOD6L_DNN_Open(train_file: U_String): TMMOD6L_Handle;
 var
   train_file_buff: P_Bytes;
 begin
-  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.MMOD_DNN_Init) then
+  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.MMOD6L_DNN_Init) then
     begin
       train_file_buff := Alloc_P_Bytes(train_file);
-      Result := FAI_EntryAPI^.MMOD_DNN_Init(train_file_buff);
+      Result := FAI_EntryAPI^.MMOD6L_DNN_Init(train_file_buff);
       Free_P_Bytes(train_file_buff);
       if Result <> nil then
           DoStatus('MMOD-DNN(DNN+SVM:max-margin object detector) open: %s', [train_file.Text]);
@@ -7714,22 +8711,22 @@ begin
       Result := nil;
 end;
 
-function TAI.MMOD_DNN_Open_Face(): TMMOD_Handle;
+function TAI.MMOD6L_DNN_Open_Face(): TMMOD6L_Handle;
 var
   m64: TMemoryStream64;
 begin
   Wait_AI_Init;
   m64 := TMemoryStream64.Create;
   m64.SetPointerWithProtectedMode(build_in_face_detector_memory, build_in_face_detector_memory_siz);
-  Result := MMOD_DNN_Open_Stream(m64);
+  Result := MMOD6L_DNN_Open_Stream(m64);
   DisposeObject(m64);
 end;
 
-function TAI.MMOD_DNN_Open_Stream(stream: TMemoryStream64): TMMOD_Handle;
+function TAI.MMOD6L_DNN_Open_Stream(stream: TMemoryStream64): TMMOD6L_Handle;
 begin
-  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.MMOD_DNN_Init_Memory) then
+  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.MMOD6L_DNN_Init_Memory) then
     begin
-      Result := FAI_EntryAPI^.MMOD_DNN_Init_Memory(stream.memory, stream.Size);
+      Result := FAI_EntryAPI^.MMOD6L_DNN_Init_Memory(stream.memory, stream.Size);
       if Result <> nil then
           DoStatus('MMOD-DNN(DNN+SVM:max-margin object detector) open memory %s size:%s', [umlPointerToStr(stream.memory).Text, umlSizeToStr(stream.Size).Text]);
     end
@@ -7737,23 +8734,23 @@ begin
       Result := nil;
 end;
 
-function TAI.MMOD_DNN_Open_Stream(train_file: U_String): TMMOD_Handle;
+function TAI.MMOD6L_DNN_Open_Stream(train_file: U_String): TMMOD6L_Handle;
 var
   m64: TMemoryStream64;
 begin
   m64 := TMemoryStream64.Create;
   m64.LoadFromFile(train_file);
-  Result := MMOD_DNN_Open_Stream(m64);
+  Result := MMOD6L_DNN_Open_Stream(m64);
   DisposeObject(m64);
   if Result <> nil then
       DoStatus('MMOD-DNN(DNN+SVM:max-margin object detector) open: %s', [train_file.Text]);
 end;
 
-function TAI.MMOD_DNN_Close(var hnd: TMMOD_Handle): Boolean;
+function TAI.MMOD6L_DNN_Close(var hnd: TMMOD6L_Handle): Boolean;
 begin
-  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.MMOD_DNN_Free) and (hnd <> nil) then
+  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.MMOD6L_DNN_Free) and (hnd <> nil) then
     begin
-      Result := FAI_EntryAPI^.MMOD_DNN_Free(hnd) = 0;
+      Result := FAI_EntryAPI^.MMOD6L_DNN_Free(hnd) = 0;
       DoStatus('MMOD-DNN(DNN+SVM:max-margin object detector) close.', []);
     end
   else
@@ -7762,7 +8759,7 @@ begin
   hnd := nil;
 end;
 
-function TAI.MMOD_DNN_Process(hnd: TMMOD_Handle; Raster: TMemoryRaster): TMMOD_Desc;
+function TAI.MMOD6L_DNN_Process(hnd: TMMOD6L_Handle; Raster: TMemoryRaster): TMMOD_Desc;
 var
   rect_num: Integer;
   buff: TAI_MMOD_Desc;
@@ -7773,11 +8770,11 @@ begin
       exit;
   if FAI_EntryAPI = nil then
       exit;
-  if not Assigned(FAI_EntryAPI^.MMOD_DNN_Process) then
+  if not Assigned(FAI_EntryAPI^.MMOD6L_DNN_Process) then
       exit;
-  SetLength(buff, 1024);
+  SetLength(buff, 8192);
 
-  rect_num := FAI_EntryAPI^.MMOD_DNN_Process(hnd, Raster.Bits, Raster.Width, Raster.Height, @buff[0], 1024);
+  rect_num := FAI_EntryAPI^.MMOD6L_DNN_Process(hnd, Raster.Bits, Raster.Width, Raster.Height, @buff[0], Length(buff));
 
   if rect_num >= 0 then
     begin
@@ -7793,7 +8790,7 @@ begin
   SetLength(buff, 0);
 end;
 
-function TAI.MMOD_DNN_Process_Matrix(hnd: TMMOD_Handle; matrix_img: TMatrix_Image_Handle): TMMOD_Desc;
+function TAI.MMOD6L_DNN_Process_Matrix(hnd: TMMOD6L_Handle; matrix_img: TMatrix_Image_Handle): TMMOD_Desc;
 var
   rect_num: Integer;
   buff: TAI_MMOD_Desc;
@@ -7804,11 +8801,11 @@ begin
       exit;
   if FAI_EntryAPI = nil then
       exit;
-  if not Assigned(FAI_EntryAPI^.MMOD_DNN_Process) then
+  if not Assigned(FAI_EntryAPI^.MMOD6L_DNN_Process) then
       exit;
-  SetLength(buff, 1024);
+  SetLength(buff, 8192);
 
-  rect_num := FAI_EntryAPI^.MMOD_DNN_Process_Image(hnd, matrix_img, @buff[0], 1024);
+  rect_num := FAI_EntryAPI^.MMOD6L_DNN_Process_Image(hnd, matrix_img, @buff[0], Length(buff));
   if rect_num >= 0 then
     begin
       SetLength(Result, rect_num);
@@ -7823,14 +8820,525 @@ begin
   SetLength(buff, 0);
 end;
 
-function TAI.MMOD_DNN_DebugInfo(hnd: TMMOD_Handle): U_String;
+function TAI.MMOD6L_DNN_DebugInfo(hnd: TMMOD6L_Handle): U_String;
 var
   p: PPascalString;
 begin
   Result := '';
-  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.MMOD_DebugInfo) and (hnd <> nil) then
+  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.MMOD6L_DebugInfo) and (hnd <> nil) then
     begin
-      FAI_EntryAPI^.MMOD_DebugInfo(hnd, p);
+      FAI_EntryAPI^.MMOD6L_DebugInfo(hnd, p);
+      Result := p^;
+      Dispose(p);
+    end;
+end;
+
+class function TAI.Init_MMOD3L_DNN_TrainParam(train_cfg, train_sync_file, train_output: U_String): PMMOD_Train_Parameter;
+begin
+  new(Result);
+  FillPtrByte(Result, SizeOf(TMMOD_Train_Parameter), 0);
+
+  Result^.train_cfg := Alloc_P_Bytes(train_cfg);
+  Result^.train_sync_file := Alloc_P_Bytes(train_sync_file);
+  Result^.train_output := Alloc_P_Bytes(train_output);
+
+  Result^.timeout := C_Tick_Hour;
+  Result^.weight_decay := 0.0005;
+  Result^.momentum := 0.9;
+  Result^.target_size := 80;
+  Result^.min_target_size := 30;
+  Result^.min_detector_window_overlap_iou := 0.75;
+  Result^.iterations_without_progress_threshold := 800;
+  Result^.learning_rate := 0.1;
+  Result^.completed_learning_rate := 0.0001;
+  Result^.saveMemory := 0;
+  Result^.overlap_NMS_iou_thresh := 0.4;
+  Result^.overlap_NMS_percent_covered_thresh := 1.0;
+  Result^.overlap_ignore_iou_thresh := 0.5;
+  Result^.overlap_ignore_percent_covered_thresh := 0.95;
+  Result^.prepare_crops_img_num := 5;
+  Result^.num_crops := 20;
+  Result^.chip_dims_x := 300;
+  Result^.chip_dims_y := 300;
+  Result^.min_object_size_x := 75;
+  Result^.min_object_size_y := 25;
+  Result^.max_rotation_degrees := 10.0;
+  Result^.max_object_size := 0.7;
+
+  Result^.control := nil;
+  Result^.training_average_loss := 0;
+  Result^.training_learning_rate := 0;
+
+  // internal
+  Result^.TempFiles := nil;
+end;
+
+class procedure TAI.Free_MMOD3L_DNN_TrainParam(param: PMMOD_Train_Parameter);
+begin
+  Free_P_Bytes(param^.train_cfg);
+  Free_P_Bytes(param^.train_sync_file);
+  Free_P_Bytes(param^.train_output);
+  Dispose(param);
+end;
+
+function TAI.MMOD3L_DNN_PrepareTrain(imgList: TAI_ImageList; train_sync_file: U_String): PMMOD_Train_Parameter;
+var
+  ph, fn, prefix, train_out: U_String;
+  tmpFileList: TPascalStringList;
+begin
+  ph := rootPath;
+  tmpFileList := TPascalStringList.Create;
+  TCoreClassThread.Sleep(1);
+  prefix := 'MMOD3L_DNN_' + umlMakeRanName + '_';
+  fn := umlCombineFileName(ph, prefix + 'temp.xml');
+  imgList.Build_XML(True, False, 'ZAI dataset', 'dnn resnet max-margin dataset', fn, prefix, tmpFileList);
+  train_out := prefix + 'output' + C_MMOD3L_Ext;
+  Result := Init_MMOD3L_DNN_TrainParam(fn, train_sync_file, train_out);
+  Result^.control := @TrainingControl;
+  Result^.TempFiles := tmpFileList;
+end;
+
+function TAI.MMOD3L_DNN_PrepareTrain(imgMat: TAI_ImageMatrix; train_sync_file: U_String): PMMOD_Train_Parameter;
+var
+  ph, fn, prefix, train_out: U_String;
+  tmpFileList: TPascalStringList;
+begin
+  ph := rootPath;
+  tmpFileList := TPascalStringList.Create;
+  TCoreClassThread.Sleep(1);
+  prefix := 'MMOD3L_DNN_' + umlMakeRanName + '_';
+  fn := umlCombineFileName(ph, prefix + 'temp.xml');
+  imgMat.Build_XML(True, False, 'ZAI dataset', 'build-in', fn, prefix, tmpFileList);
+  train_out := prefix + 'output' + C_MMOD3L_Ext;
+  Result := Init_MMOD3L_DNN_TrainParam(fn, train_sync_file, train_out);
+  Result^.control := @TrainingControl;
+  Result^.TempFiles := tmpFileList;
+end;
+
+function TAI.MMOD3L_DNN_Train(param: PMMOD_Train_Parameter): Integer;
+begin
+  Result := -1;
+  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.MMOD3L_DNN_Train) then
+    begin
+      TrainingControl.pause := 0;
+      TrainingControl.stop := 0;
+      FAI_EntryAPI^.RasterSerialized := nil;
+      FAI_EntryAPI^.SerializedTime := GetTimeTick();
+      param^.saveMemory := 0; // normal MMOD trainer.
+      Result := FAI_EntryAPI^.MMOD3L_DNN_Train(param);
+      Last_training_average_loss := param^.training_average_loss;
+      Last_training_learning_rate := param^.training_learning_rate;
+      if Result > 0 then
+          param^.TempFiles.Add(Get_P_Bytes_String(param^.train_output));
+    end;
+end;
+
+function TAI.MMOD3L_DNN_Train_Stream(param: PMMOD_Train_Parameter): TMemoryStream64;
+var
+  fn: U_String;
+begin
+  Result := nil;
+  fn := Get_P_Bytes_String(param^.train_output);
+  if (MMOD3L_DNN_Train(param) > 0) and (umlFileExists(fn)) then
+    begin
+      Result := TMemoryStream64.Create;
+      Result.LoadFromFile(fn);
+      Result.Position := 0;
+    end;
+end;
+
+procedure TAI.MMOD3L_DNN_FreeTrain(param: PMMOD_Train_Parameter);
+var
+  i: Integer;
+begin
+  if param^.TempFiles <> nil then
+    begin
+      for i := 0 to param^.TempFiles.Count - 1 do
+          umlDeleteFile(param^.TempFiles[i]);
+      DisposeObject(param^.TempFiles);
+      param^.TempFiles := nil;
+    end;
+  Free_MMOD3L_DNN_TrainParam(param);
+end;
+
+function TAI.LargeScale_MMOD3L_DNN_PrepareTrain(train_sync_file, train_output: U_String): PMMOD_Train_Parameter;
+begin
+  Result := Init_MMOD3L_DNN_TrainParam('', train_sync_file, train_output);
+  Result^.control := @TrainingControl;
+end;
+
+function TAI.LargeScale_MMOD3L_DNN_Train(param: PMMOD_Train_Parameter; imgList: TAI_ImageList): Integer;
+var
+  imgArry: array of TImage_Handle;
+  imgArry_P: array of PImage_Handle;
+  i: Integer;
+begin
+  Result := -1;
+  SetLength(imgArry, imgList.Count);
+  SetLength(imgArry_P, imgList.Count);
+
+  for i := 0 to imgList.Count - 1 do
+    begin
+      imgArry[i].image := imgList[i];
+      imgArry[i].AccessImage := 0;
+      imgArry[i].AccessDetectorImage := 0;
+      imgArry[i].AccessDetectorRect := 0;
+      imgArry[i].AccessMask := 0;
+      imgArry_P[i] := @imgArry[i];
+    end;
+
+  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.LargeScale_MMOD3L_Train) then
+    begin
+      param^.control := @TrainingControl;
+      param^.saveMemory := 0; // normal MMOD trainer.
+      try
+          Result := FAI_EntryAPI^.LargeScale_MMOD3L_Train(param, @imgArry_P[0], imgList.Count);
+      except
+          Result := -1;
+      end;
+      Last_training_average_loss := param^.training_average_loss;
+      Last_training_learning_rate := param^.training_learning_rate;
+    end;
+
+  SetLength(imgArry, 0);
+  SetLength(imgArry_P, 0);
+end;
+
+function TAI.LargeScale_MMOD3L_DNN_Train(param: PMMOD_Train_Parameter; imgMat: TAI_ImageMatrix): Integer;
+var
+  imgL: TImageList_Decl;
+  imgArry: array of TImage_Handle;
+  imgArry_P: array of PImage_Handle;
+  i: Integer;
+begin
+  Result := -1;
+  imgL := imgMat.ImageList();
+
+  SetLength(imgArry, imgL.Count);
+  SetLength(imgArry_P, imgL.Count);
+
+  for i := 0 to imgL.Count - 1 do
+    begin
+      imgArry[i].image := imgL[i];
+      imgArry[i].AccessImage := 0;
+      imgArry[i].AccessDetectorImage := 0;
+      imgArry[i].AccessDetectorRect := 0;
+      imgArry[i].AccessMask := 0;
+      imgArry_P[i] := @imgArry[i];
+    end;
+
+  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.LargeScale_MMOD3L_Train) then
+    begin
+      param^.control := @TrainingControl;
+      param^.saveMemory := 0; // normal MMOD trainer.
+      try
+          Result := FAI_EntryAPI^.LargeScale_MMOD3L_Train(param, @imgArry_P[0], imgL.Count);
+      except
+          Result := -1;
+      end;
+      Last_training_average_loss := param^.training_average_loss;
+      Last_training_learning_rate := param^.training_learning_rate;
+    end;
+
+  SetLength(imgArry, 0);
+  SetLength(imgArry_P, 0);
+  DisposeObject(imgL);
+end;
+
+function TAI.LargeScale_MMOD3L_DNN_Train(param: PMMOD_Train_Parameter; RSeri: TRasterSerialized; imgList: TAI_ImageList): Integer;
+var
+  imgArry: array of TImage_Handle;
+  imgArry_P: array of PImage_Handle;
+  i: Integer;
+begin
+  Result := -1;
+  SetLength(imgArry, imgList.Count);
+  SetLength(imgArry_P, imgList.Count);
+
+  for i := 0 to imgList.Count - 1 do
+    begin
+      imgArry[i].image := imgList[i];
+      imgArry[i].AccessImage := 0;
+      imgArry[i].AccessDetectorImage := 0;
+      imgArry[i].AccessDetectorRect := 0;
+      imgArry[i].AccessMask := 0;
+      imgArry_P[i] := @imgArry[i];
+    end;
+
+  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.LargeScale_MMOD3L_Train) then
+    begin
+      param^.control := @TrainingControl;
+
+      param^.saveMemory := 1; // large-scale MMOD trainer.
+      RSeri.WriteList.Clear;
+      RSeri.ReadList.Clear;
+      FAI_EntryAPI^.RasterSerialized := RSeri;
+      imgList.SerializedAndRecycleMemory(RSeri);
+
+      try
+          Result := FAI_EntryAPI^.LargeScale_MMOD3L_Train(param, @imgArry_P[0], imgList.Count);
+      except
+          Result := -1;
+      end;
+
+      RSeri.WriteList.Clear;
+      RSeri.ReadList.Clear;
+      FAI_EntryAPI^.RasterSerialized := nil;
+
+      Last_training_average_loss := param^.training_average_loss;
+      Last_training_learning_rate := param^.training_learning_rate;
+    end;
+
+  SetLength(imgArry, 0);
+  SetLength(imgArry_P, 0);
+end;
+
+function TAI.LargeScale_MMOD3L_DNN_Train(param: PMMOD_Train_Parameter; RSeri: TRasterSerialized; imgMat: TAI_ImageMatrix): Integer;
+var
+  imgL: TImageList_Decl;
+  imgArry: array of TImage_Handle;
+  imgArry_P: array of PImage_Handle;
+  i: Integer;
+begin
+  Result := -1;
+  imgL := imgMat.ImageList();
+
+  SetLength(imgArry, imgL.Count);
+  SetLength(imgArry_P, imgL.Count);
+
+  for i := 0 to imgL.Count - 1 do
+    begin
+      imgArry[i].image := imgL[i];
+      imgArry[i].AccessImage := 0;
+      imgArry[i].AccessDetectorImage := 0;
+      imgArry[i].AccessDetectorRect := 0;
+      imgArry[i].AccessMask := 0;
+      imgArry_P[i] := @imgArry[i];
+    end;
+
+  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.LargeScale_MMOD3L_Train) then
+    begin
+      param^.control := @TrainingControl;
+
+      param^.saveMemory := 1; // large-scale MMOD trainer.
+      RSeri.WriteList.Clear;
+      RSeri.ReadList.Clear;
+      FAI_EntryAPI^.RasterSerialized := RSeri;
+      imgMat.SerializedAndRecycleMemory(RSeri);
+
+      try
+          Result := FAI_EntryAPI^.LargeScale_MMOD3L_Train(param, @imgArry_P[0], imgL.Count);
+      except
+          Result := -1;
+      end;
+
+      RSeri.WriteList.Clear;
+      RSeri.ReadList.Clear;
+      FAI_EntryAPI^.RasterSerialized := nil;
+
+      Last_training_average_loss := param^.training_average_loss;
+      Last_training_learning_rate := param^.training_learning_rate;
+    end;
+
+  SetLength(imgArry, 0);
+  SetLength(imgArry_P, 0);
+  DisposeObject(imgL);
+end;
+
+function TAI.LargeScale_MMOD3L_DNN_Train_Stream(param: PMMOD_Train_Parameter; imgList: TAI_ImageList): TMemoryStream64;
+var
+  fn: U_String;
+begin
+  Result := nil;
+  fn := Get_P_Bytes_String(param^.train_output);
+  if (LargeScale_MMOD3L_DNN_Train(param, imgList) > 0) and (umlFileExists(fn)) then
+    begin
+      Result := TMemoryStream64.Create;
+      Result.LoadFromFile(fn);
+      Result.Position := 0;
+    end;
+end;
+
+function TAI.LargeScale_MMOD3L_DNN_Train_Stream(param: PMMOD_Train_Parameter; imgMat: TAI_ImageMatrix): TMemoryStream64;
+var
+  fn: U_String;
+begin
+  Result := nil;
+  fn := Get_P_Bytes_String(param^.train_output);
+  if (LargeScale_MMOD3L_DNN_Train(param, imgMat) > 0) and (umlFileExists(fn)) then
+    begin
+      Result := TMemoryStream64.Create;
+      Result.LoadFromFile(fn);
+      Result.Position := 0;
+    end;
+end;
+
+function TAI.LargeScale_MMOD3L_DNN_Train_Stream(param: PMMOD_Train_Parameter; RSeri: TRasterSerialized; imgList: TAI_ImageList): TMemoryStream64;
+var
+  fn: U_String;
+begin
+  Result := nil;
+  fn := Get_P_Bytes_String(param^.train_output);
+  if (LargeScale_MMOD3L_DNN_Train(param, RSeri, imgList) > 0) and (umlFileExists(fn)) then
+    begin
+      Result := TMemoryStream64.Create;
+      Result.LoadFromFile(fn);
+      Result.Position := 0;
+    end;
+end;
+
+function TAI.LargeScale_MMOD3L_DNN_Train_Stream(param: PMMOD_Train_Parameter; RSeri: TRasterSerialized; imgMat: TAI_ImageMatrix): TMemoryStream64;
+var
+  fn: U_String;
+begin
+  Result := nil;
+  fn := Get_P_Bytes_String(param^.train_output);
+  if (LargeScale_MMOD3L_DNN_Train(param, RSeri, imgMat) > 0) and (umlFileExists(fn)) then
+    begin
+      Result := TMemoryStream64.Create;
+      Result.LoadFromFile(fn);
+      Result.Position := 0;
+    end;
+end;
+
+procedure TAI.LargeScale_MMOD3L_DNN_FreeTrain(param: PMMOD_Train_Parameter);
+begin
+  Free_MMOD3L_DNN_TrainParam(param);
+end;
+
+function TAI.MMOD3L_DNN_Open(train_file: U_String): TMMOD3L_Handle;
+var
+  train_file_buff: P_Bytes;
+begin
+  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.MMOD3L_DNN_Init) then
+    begin
+      train_file_buff := Alloc_P_Bytes(train_file);
+      Result := FAI_EntryAPI^.MMOD3L_DNN_Init(train_file_buff);
+      Free_P_Bytes(train_file_buff);
+      if Result <> nil then
+          DoStatus('MMOD-DNN(DNN+SVM:max-margin object detector) open: %s', [train_file.Text]);
+    end
+  else
+      Result := nil;
+end;
+
+function TAI.MMOD3L_DNN_Open_Face(): TMMOD3L_Handle;
+var
+  m64: TMemoryStream64;
+begin
+  Wait_AI_Init;
+  m64 := TMemoryStream64.Create;
+  m64.SetPointerWithProtectedMode(build_in_face_detector_memory, build_in_face_detector_memory_siz);
+  Result := MMOD3L_DNN_Open_Stream(m64);
+  DisposeObject(m64);
+end;
+
+function TAI.MMOD3L_DNN_Open_Stream(stream: TMemoryStream64): TMMOD3L_Handle;
+begin
+  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.MMOD3L_DNN_Init_Memory) then
+    begin
+      Result := FAI_EntryAPI^.MMOD3L_DNN_Init_Memory(stream.memory, stream.Size);
+      if Result <> nil then
+          DoStatus('MMOD-DNN(DNN+SVM:max-margin object detector) open memory %s size:%s', [umlPointerToStr(stream.memory).Text, umlSizeToStr(stream.Size).Text]);
+    end
+  else
+      Result := nil;
+end;
+
+function TAI.MMOD3L_DNN_Open_Stream(train_file: U_String): TMMOD3L_Handle;
+var
+  m64: TMemoryStream64;
+begin
+  m64 := TMemoryStream64.Create;
+  m64.LoadFromFile(train_file);
+  Result := MMOD3L_DNN_Open_Stream(m64);
+  DisposeObject(m64);
+  if Result <> nil then
+      DoStatus('MMOD-DNN(DNN+SVM:max-margin object detector) open: %s', [train_file.Text]);
+end;
+
+function TAI.MMOD3L_DNN_Close(var hnd: TMMOD3L_Handle): Boolean;
+begin
+  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.MMOD3L_DNN_Free) and (hnd <> nil) then
+    begin
+      Result := FAI_EntryAPI^.MMOD3L_DNN_Free(hnd) = 0;
+      DoStatus('MMOD-DNN(DNN+SVM:max-margin object detector) close.', []);
+    end
+  else
+      Result := False;
+
+  hnd := nil;
+end;
+
+function TAI.MMOD3L_DNN_Process(hnd: TMMOD3L_Handle; Raster: TMemoryRaster): TMMOD_Desc;
+var
+  rect_num: Integer;
+  buff: TAI_MMOD_Desc;
+  i: Integer;
+begin
+  SetLength(Result, 0);
+  if hnd = nil then
+      exit;
+  if FAI_EntryAPI = nil then
+      exit;
+  if not Assigned(FAI_EntryAPI^.MMOD3L_DNN_Process) then
+      exit;
+  SetLength(buff, 8192);
+
+  rect_num := FAI_EntryAPI^.MMOD3L_DNN_Process(hnd, Raster.Bits, Raster.Width, Raster.Height, @buff[0], Length(buff));
+
+  if rect_num >= 0 then
+    begin
+      SetLength(Result, rect_num);
+      for i := 0 to rect_num - 1 do
+        begin
+          Result[i].R := RectV2(buff[i]);
+          Result[i].confidence := buff[i].confidence;
+          Result[i].Token := buff[i].Token^;
+          API_FreeString(buff[i].Token);
+        end;
+    end;
+  SetLength(buff, 0);
+end;
+
+function TAI.MMOD3L_DNN_Process_Matrix(hnd: TMMOD3L_Handle; matrix_img: TMatrix_Image_Handle): TMMOD_Desc;
+var
+  rect_num: Integer;
+  buff: TAI_MMOD_Desc;
+  i: Integer;
+begin
+  SetLength(Result, 0);
+  if hnd = nil then
+      exit;
+  if FAI_EntryAPI = nil then
+      exit;
+  if not Assigned(FAI_EntryAPI^.MMOD3L_DNN_Process) then
+      exit;
+  SetLength(buff, 8192);
+
+  rect_num := FAI_EntryAPI^.MMOD3L_DNN_Process_Image(hnd, matrix_img, @buff[0], Length(buff));
+  if rect_num >= 0 then
+    begin
+      SetLength(Result, rect_num);
+      for i := 0 to rect_num - 1 do
+        begin
+          Result[i].R := RectV2(buff[i]);
+          Result[i].confidence := buff[i].confidence;
+          Result[i].Token := buff[i].Token^;
+          API_FreeString(buff[i].Token);
+        end;
+    end;
+  SetLength(buff, 0);
+end;
+
+function TAI.MMOD3L_DNN_DebugInfo(hnd: TMMOD3L_Handle): U_String;
+var
+  p: PPascalString;
+begin
+  Result := '';
+  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.MMOD3L_DebugInfo) and (hnd <> nil) then
+    begin
+      FAI_EntryAPI^.MMOD3L_DebugInfo(hnd, p);
       Result := p^;
       Dispose(p);
     end;
@@ -7880,25 +9388,25 @@ begin
   if not Assigned(FAI_EntryAPI^.RNIC_Train) then
       exit;
 
-  if length(imgList) > C_RNIC_Dim then
+  if Length(imgList) > C_RNIC_Dim then
     begin
-      DoStatus('RNIC classifier out the max limit. %d > %d', [length(imgList), C_RNIC_Dim]);
+      DoStatus('RNIC classifier out the max limit. %d > %d', [Length(imgList), C_RNIC_Dim]);
       exit;
     end;
 
   imgSum := 0;
-  for i := 0 to length(imgList) - 1 do
-      inc(imgSum, length(imgList[i]));
+  for i := 0 to Length(imgList) - 1 do
+      inc(imgSum, Length(imgList[i]));
 
   if Train_OutputIndex <> nil then
       Train_OutputIndex.Clear;
   SetLength(imgInfo_arry, imgSum);
   ri := 0;
 
-  for i := 0 to length(imgList) - 1 do
+  for i := 0 to Length(imgList) - 1 do
     begin
       imgArry := imgList[i];
-      for j := 0 to length(imgArry) - 1 do
+      for j := 0 to Length(imgArry) - 1 do
         begin
           new(imgInfo_arry[ri].raster_Hnd);
           imgInfo_arry[ri].raster_Hnd^.Raster := imgArry[j];
@@ -7925,7 +9433,7 @@ begin
   TrainingControl.stop := 0;
 
   param^.imgArry_ptr := @imgInfo_arry[0];
-  param^.img_num := length(imgInfo_arry);
+  param^.img_num := Length(imgInfo_arry);
   param^.control := @TrainingControl;
 
   if LargeScale_ then
@@ -7960,7 +9468,7 @@ begin
   param^.control := nil;
 
   // free res
-  for i := 0 to length(imgInfo_arry) - 1 do
+  for i := 0 to Length(imgInfo_arry) - 1 do
       Dispose(imgInfo_arry[i].raster_Hnd);
   SetLength(imgInfo_arry, 0);
 end;
@@ -7987,8 +9495,8 @@ begin
           Train_OutputIndex.Add(out_index[i].UserToken);
   DisposeObject(out_index);
 
-  for i := 0 to length(imgBuff) - 1 do
-    for j := 0 to length(imgBuff[i]) - 1 do
+  for i := 0 to Length(imgBuff) - 1 do
+    for j := 0 to Length(imgBuff[i]) - 1 do
         DisposeObject(imgBuff[i, j]);
   SetLength(imgBuff, 0, 0);
 end;
@@ -8061,8 +9569,8 @@ begin
           Train_OutputIndex.Add(out_index[i].UserToken);
   DisposeObject(out_index);
 
-  for i := 0 to length(imgBuff) - 1 do
-    for j := 0 to length(imgBuff[i]) - 1 do
+  for i := 0 to Length(imgBuff) - 1 do
+    for j := 0 to Length(imgBuff[i]) - 1 do
         DisposeObject(imgBuff[i, j]);
   SetLength(imgBuff, 0, 0);
 end;
@@ -8142,8 +9650,8 @@ begin
 
   DisposeObject(out_index);
 
-  for i := 0 to length(imgBuff) - 1 do
-    for j := 0 to length(imgBuff[i]) - 1 do
+  for i := 0 to Length(imgBuff) - 1 do
+    for j := 0 to Length(imgBuff[i]) - 1 do
         DisposeObject(imgBuff[i, j]);
   SetLength(imgBuff, 0, 0);
 end;
@@ -8329,25 +9837,25 @@ begin
   if not Assigned(FAI_EntryAPI^.LRNIC_Train) then
       exit;
 
-  if length(imgList) > C_LRNIC_Dim then
+  if Length(imgList) > C_LRNIC_Dim then
     begin
-      DoStatus('LRNIC classifier out the max limit. %d > %d', [length(imgList), C_LRNIC_Dim]);
+      DoStatus('LRNIC classifier out the max limit. %d > %d', [Length(imgList), C_LRNIC_Dim]);
       exit;
     end;
 
   imgSum := 0;
-  for i := 0 to length(imgList) - 1 do
-      inc(imgSum, length(imgList[i]));
+  for i := 0 to Length(imgList) - 1 do
+      inc(imgSum, Length(imgList[i]));
 
   if Train_OutputIndex <> nil then
       Train_OutputIndex.Clear;
   SetLength(imgInfo_arry, imgSum);
   ri := 0;
 
-  for i := 0 to length(imgList) - 1 do
+  for i := 0 to Length(imgList) - 1 do
     begin
       imgArry := imgList[i];
-      for j := 0 to length(imgArry) - 1 do
+      for j := 0 to Length(imgArry) - 1 do
         begin
           new(imgInfo_arry[ri].raster_Hnd);
           imgInfo_arry[ri].raster_Hnd^.Raster := imgArry[j];
@@ -8374,7 +9882,7 @@ begin
   TrainingControl.stop := 0;
 
   param^.imgArry_ptr := @imgInfo_arry[0];
-  param^.img_num := length(imgInfo_arry);
+  param^.img_num := Length(imgInfo_arry);
   param^.control := @TrainingControl;
 
   if LargeScale_ then
@@ -8408,7 +9916,7 @@ begin
   param^.img_num := 0;
   param^.control := nil;
 
-  for i := 0 to length(imgInfo_arry) - 1 do
+  for i := 0 to Length(imgInfo_arry) - 1 do
       Dispose(imgInfo_arry[i].raster_Hnd);
   SetLength(imgInfo_arry, 0);
 end;
@@ -8435,8 +9943,8 @@ begin
           Train_OutputIndex.Add(out_index[i].UserToken);
   DisposeObject(out_index);
 
-  for i := 0 to length(imgBuff) - 1 do
-    for j := 0 to length(imgBuff[i]) - 1 do
+  for i := 0 to Length(imgBuff) - 1 do
+    for j := 0 to Length(imgBuff[i]) - 1 do
         DisposeObject(imgBuff[i, j]);
   SetLength(imgBuff, 0, 0);
 end;
@@ -8509,8 +10017,8 @@ begin
           Train_OutputIndex.Add(out_index[i].UserToken);
   DisposeObject(out_index);
 
-  for i := 0 to length(imgBuff) - 1 do
-    for j := 0 to length(imgBuff[i]) - 1 do
+  for i := 0 to Length(imgBuff) - 1 do
+    for j := 0 to Length(imgBuff[i]) - 1 do
         DisposeObject(imgBuff[i, j]);
   SetLength(imgBuff, 0, 0);
 end;
@@ -8590,8 +10098,8 @@ begin
 
   DisposeObject(out_index);
 
-  for i := 0 to length(imgBuff) - 1 do
-    for j := 0 to length(imgBuff[i]) - 1 do
+  for i := 0 to Length(imgBuff) - 1 do
+    for j := 0 to Length(imgBuff[i]) - 1 do
         DisposeObject(imgBuff[i, j]);
   SetLength(imgBuff, 0, 0);
 end;
@@ -8774,25 +10282,25 @@ begin
   if not Assigned(FAI_EntryAPI^.GDCNIC_Train) then
       exit;
 
-  if length(imgList) > C_GDCNIC_Dim then
+  if Length(imgList) > C_GDCNIC_Dim then
     begin
-      DoStatus('GDCNIC classifier out the max limit. %d > %d', [length(imgList), C_GDCNIC_Dim]);
+      DoStatus('GDCNIC classifier out the max limit. %d > %d', [Length(imgList), C_GDCNIC_Dim]);
       exit;
     end;
 
   imgSum := 0;
-  for i := 0 to length(imgList) - 1 do
-      inc(imgSum, length(imgList[i]));
+  for i := 0 to Length(imgList) - 1 do
+      inc(imgSum, Length(imgList[i]));
 
   if Train_OutputIndex <> nil then
       Train_OutputIndex.Clear;
   SetLength(imgInfo_arry, imgSum);
   ri := 0;
 
-  for i := 0 to length(imgList) - 1 do
+  for i := 0 to Length(imgList) - 1 do
     begin
       imgArry := imgList[i];
-      for j := 0 to length(imgArry) - 1 do
+      for j := 0 to Length(imgArry) - 1 do
         begin
           new(imgInfo_arry[ri].raster_Hnd);
           imgInfo_arry[ri].raster_Hnd^.Raster := imgArry[j];
@@ -8819,7 +10327,7 @@ begin
   TrainingControl.stop := 0;
 
   param^.imgArry_ptr := @imgInfo_arry[0];
-  param^.img_num := length(imgInfo_arry);
+  param^.img_num := Length(imgInfo_arry);
   param^.control := @TrainingControl;
 
   if LargeScale_ then
@@ -8854,7 +10362,7 @@ begin
   param^.control := nil;
 
   // free res
-  for i := 0 to length(imgInfo_arry) - 1 do
+  for i := 0 to Length(imgInfo_arry) - 1 do
       Dispose(imgInfo_arry[i].raster_Hnd);
   SetLength(imgInfo_arry, 0);
 end;
@@ -8881,8 +10389,8 @@ begin
           Train_OutputIndex.Add(out_index[i].UserToken);
   DisposeObject(out_index);
 
-  for i := 0 to length(imgBuff) - 1 do
-    for j := 0 to length(imgBuff[i]) - 1 do
+  for i := 0 to Length(imgBuff) - 1 do
+    for j := 0 to Length(imgBuff[i]) - 1 do
         DisposeObject(imgBuff[i, j]);
   SetLength(imgBuff, 0, 0);
 end;
@@ -8955,8 +10463,8 @@ begin
           Train_OutputIndex.Add(out_index[i].UserToken);
   DisposeObject(out_index);
 
-  for i := 0 to length(imgBuff) - 1 do
-    for j := 0 to length(imgBuff[i]) - 1 do
+  for i := 0 to Length(imgBuff) - 1 do
+    for j := 0 to Length(imgBuff[i]) - 1 do
         DisposeObject(imgBuff[i, j]);
   SetLength(imgBuff, 0, 0);
 end;
@@ -9036,8 +10544,8 @@ begin
 
   DisposeObject(out_index);
 
-  for i := 0 to length(imgBuff) - 1 do
-    for j := 0 to length(imgBuff[i]) - 1 do
+  for i := 0 to Length(imgBuff) - 1 do
+    for j := 0 to Length(imgBuff[i]) - 1 do
         DisposeObject(imgBuff[i, j]);
   SetLength(imgBuff, 0, 0);
 end;
@@ -9212,25 +10720,25 @@ begin
   if not Assigned(FAI_EntryAPI^.GNIC_Train) then
       exit;
 
-  if length(imgList) > C_GNIC_Dim then
+  if Length(imgList) > C_GNIC_Dim then
     begin
-      DoStatus('GNIC classifier out the max limit. %d > %d', [length(imgList), C_GNIC_Dim]);
+      DoStatus('GNIC classifier out the max limit. %d > %d', [Length(imgList), C_GNIC_Dim]);
       exit;
     end;
 
   imgSum := 0;
-  for i := 0 to length(imgList) - 1 do
-      inc(imgSum, length(imgList[i]));
+  for i := 0 to Length(imgList) - 1 do
+      inc(imgSum, Length(imgList[i]));
 
   if Train_OutputIndex <> nil then
       Train_OutputIndex.Clear;
   SetLength(imgInfo_arry, imgSum);
   ri := 0;
 
-  for i := 0 to length(imgList) - 1 do
+  for i := 0 to Length(imgList) - 1 do
     begin
       imgArry := imgList[i];
-      for j := 0 to length(imgArry) - 1 do
+      for j := 0 to Length(imgArry) - 1 do
         begin
           new(imgInfo_arry[ri].raster_Hnd);
           imgInfo_arry[ri].raster_Hnd^.Raster := imgArry[j];
@@ -9257,7 +10765,7 @@ begin
   TrainingControl.stop := 0;
 
   param^.imgArry_ptr := @imgInfo_arry[0];
-  param^.img_num := length(imgInfo_arry);
+  param^.img_num := Length(imgInfo_arry);
   param^.control := @TrainingControl;
 
   if LargeScale_ then
@@ -9292,7 +10800,7 @@ begin
   param^.control := nil;
 
   // free res
-  for i := 0 to length(imgInfo_arry) - 1 do
+  for i := 0 to Length(imgInfo_arry) - 1 do
       Dispose(imgInfo_arry[i].raster_Hnd);
   SetLength(imgInfo_arry, 0);
 end;
@@ -9319,8 +10827,8 @@ begin
           Train_OutputIndex.Add(out_index[i].UserToken);
   DisposeObject(out_index);
 
-  for i := 0 to length(imgBuff) - 1 do
-    for j := 0 to length(imgBuff[i]) - 1 do
+  for i := 0 to Length(imgBuff) - 1 do
+    for j := 0 to Length(imgBuff[i]) - 1 do
         DisposeObject(imgBuff[i, j]);
   SetLength(imgBuff, 0, 0);
 end;
@@ -9393,8 +10901,8 @@ begin
           Train_OutputIndex.Add(out_index[i].UserToken);
   DisposeObject(out_index);
 
-  for i := 0 to length(imgBuff) - 1 do
-    for j := 0 to length(imgBuff[i]) - 1 do
+  for i := 0 to Length(imgBuff) - 1 do
+    for j := 0 to Length(imgBuff[i]) - 1 do
         DisposeObject(imgBuff[i, j]);
   SetLength(imgBuff, 0, 0);
 end;
@@ -9474,8 +10982,8 @@ begin
 
   DisposeObject(out_index);
 
-  for i := 0 to length(imgBuff) - 1 do
-    for j := 0 to length(imgBuff[i]) - 1 do
+  for i := 0 to Length(imgBuff) - 1 do
+    for j := 0 to Length(imgBuff[i]) - 1 do
         DisposeObject(imgBuff[i, j]);
   SetLength(imgBuff, 0, 0);
 end;
@@ -9667,6 +11175,10 @@ begin
   for i := 0 to list.Count - 1 do
     begin
       imgBuff[i].image := list[i];
+      imgBuff[i].AccessImage := 0;
+      imgBuff[i].AccessDetectorImage := 0;
+      imgBuff[i].AccessDetectorRect := 0;
+      imgBuff[i].AccessMask := 0;
       imgBuff_p[i] := @imgBuff[i];
     end;
 
@@ -9680,7 +11192,7 @@ begin
   TrainingControl.stop := 0;
 
   param^.imgHnd_ptr := @imgBuff_p[0];
-  param^.imgHnd_num := length(imgBuff_p);
+  param^.imgHnd_num := Length(imgBuff_p);
   param^.color := @colorPool;
   param^.control := @TrainingControl;
 
@@ -9749,6 +11261,10 @@ begin
   for i := 0 to list.Count - 1 do
     begin
       imgBuff[i].image := list[i];
+      imgBuff[i].AccessImage := 0;
+      imgBuff[i].AccessDetectorImage := 0;
+      imgBuff[i].AccessDetectorRect := 0;
+      imgBuff[i].AccessMask := 0;
       imgBuff_p[i] := @imgBuff[i];
     end;
 
@@ -9767,7 +11283,7 @@ begin
   TrainingControl.stop := 0;
 
   param^.imgHnd_ptr := @imgBuff_p[0];
-  param^.imgHnd_num := length(imgBuff_p);
+  param^.imgHnd_num := Length(imgBuff_p);
   param^.color := @colorPool;
   param^.control := @TrainingControl;
 
@@ -11059,13 +12575,13 @@ begin
   end;
 end;
 
-procedure TAI_Parallel.Prepare_OD(stream: TMemoryStream64);
+procedure TAI_Parallel.Prepare_OD6L(stream: TMemoryStream64);
 {$IFDEF Parallel}
 {$IFDEF FPC}
   procedure Do_ParallelFor(pass: Integer);
   begin
     with Items[pass] do
-        Parallel_OD_Hnd := OD_Open_Stream(stream);
+        Parallel_OD6L_Hnd := OD6L_Open_Stream(stream);
   end;
 {$ENDIF FPC}
 {$ELSE Parallel}
@@ -11075,7 +12591,7 @@ procedure TAI_Parallel.Prepare_OD(stream: TMemoryStream64);
   begin
     for pass := 0 to Count - 1 do
       with Items[pass] do
-          Parallel_OD_Hnd := OD_Open_Stream(stream);
+          Parallel_OD6L_Hnd := OD6L_Open_Stream(stream);
   end;
 {$ENDIF Parallel}
 
@@ -11090,7 +12606,7 @@ begin
     DelphiParallelFor(0, Count - 1, procedure(pass: Integer)
       begin
         with Items[pass] do
-            Parallel_OD_Hnd := OD_Open_Stream(stream);
+            Parallel_OD6L_Hnd := OD6L_Open_Stream(stream);
       end);
 {$ENDIF FPC}
 {$ELSE Parallel}
@@ -11101,13 +12617,13 @@ begin
   end;
 end;
 
-procedure TAI_Parallel.Prepare_OD_Marshal(stream: TMemoryStream64);
+procedure TAI_Parallel.Prepare_OD3L(stream: TMemoryStream64);
 {$IFDEF Parallel}
 {$IFDEF FPC}
   procedure Do_ParallelFor(pass: Integer);
   begin
     with Items[pass] do
-        Parallel_OD_Marshal_Hnd := OD_Marshal_Open_Stream(stream);
+        Parallel_OD3L_Hnd := OD3L_Open_Stream(stream);
   end;
 {$ENDIF FPC}
 {$ELSE Parallel}
@@ -11117,7 +12633,7 @@ procedure TAI_Parallel.Prepare_OD_Marshal(stream: TMemoryStream64);
   begin
     for pass := 0 to Count - 1 do
       with Items[pass] do
-          Parallel_OD_Marshal_Hnd := OD_Marshal_Open_Stream(stream);
+          Parallel_OD3L_Hnd := OD3L_Open_Stream(stream);
   end;
 {$ENDIF Parallel}
 
@@ -11132,7 +12648,49 @@ begin
     DelphiParallelFor(0, Count - 1, procedure(pass: Integer)
       begin
         with Items[pass] do
-            Parallel_OD_Marshal_Hnd := OD_Marshal_Open_Stream(stream);
+            Parallel_OD3L_Hnd := OD3L_Open_Stream(stream);
+      end);
+{$ENDIF FPC}
+{$ELSE Parallel}
+    Do_For;
+{$ENDIF Parallel}
+  finally
+      Critical.Release;
+  end;
+end;
+
+procedure TAI_Parallel.Prepare_OD6L_Marshal(stream: TMemoryStream64);
+{$IFDEF Parallel}
+{$IFDEF FPC}
+  procedure Do_ParallelFor(pass: Integer);
+  begin
+    with Items[pass] do
+        Parallel_OD_Marshal_Hnd := OD6L_Marshal_Open_Stream(stream);
+  end;
+{$ENDIF FPC}
+{$ELSE Parallel}
+  procedure Do_For;
+  var
+    pass: Integer;
+  begin
+    for pass := 0 to Count - 1 do
+      with Items[pass] do
+          Parallel_OD_Marshal_Hnd := OD6L_Marshal_Open_Stream(stream);
+  end;
+{$ENDIF Parallel}
+
+
+begin
+  Critical.Acquire;
+  try
+{$IFDEF Parallel}
+{$IFDEF FPC}
+    FPCParallelFor(@Do_ParallelFor, 0, Count - 1);
+{$ELSE FPC}
+    DelphiParallelFor(0, Count - 1, procedure(pass: Integer)
+      begin
+        with Items[pass] do
+            Parallel_OD_Marshal_Hnd := OD6L_Marshal_Open_Stream(stream);
       end);
 {$ENDIF FPC}
 {$ELSE Parallel}

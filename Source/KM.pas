@@ -29,17 +29,14 @@ type
   TKMInt = Integer;
   PKMInt = ^TKMInt;
 
-  TDynamicIndexArray = array of TKMInt;
-  PDynamicIndexArray = ^TDynamicIndexArray;
-
   TKMBoolArray = array of Boolean;
   PKMBoolArray = ^TKMBoolArray;
 
   TKMFloat = Double;
   PKMFloat = ^TKMFloat;
 
-  TKMIntegerArray = TDynamicIndexArray;
-  PKMIntegerArray = PDynamicIndexArray;
+  TKMIntegerArray = array of TKMInt;
+  PKMIntegerArray = ^TKMIntegerArray;
 
   TKMFloatArray = array of TKMFloat;
   PKMFloatArray = ^TKMFloatArray;

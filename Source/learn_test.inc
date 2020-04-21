@@ -9061,7 +9061,7 @@ const
 
   RegressionLearnType: set of TLearnType = [
     ltKDT, ltKM,
-    ltForest, ltLogit,
+    ltForest,
     ltLM, ltLM_MT, ltLBFGS, ltLBFGS_MT, ltLBFGS_MT_Mod, ltMonteCarlo,
     ltLM_Ensemble, ltLM_Ensemble_MT, ltLBFGS_Ensemble, ltLBFGS_Ensemble_MT];
 
@@ -9131,8 +9131,13 @@ begin
           begin
             SetLength(f_out_list, lr.Count);
             for i := 0 to lr.Count - 1 do
-              if not lr.process(@lr[i]^.m_in, @f_out_list[i]) then
-                  DoStatusNoLn('...error');
+              begin
+                try
+                  if not lr.process(@lr[i]^.m_in, @f_out_list[i]) then
+                      DoStatusNoLn('...error');
+                except
+                end;
+              end;
 
             for i := 0 to lr.Count - 1 do
               begin

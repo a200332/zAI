@@ -210,6 +210,8 @@ type
 
   TMemoryRaster = class(TCoreClassObject)
   private
+    FDrawEngineMap: TCoreClassObject;
+
     FSerializedEngine: TRasterSerialized;
     FMemorySerializedPosition: Int64;
     FActivted: Boolean;
@@ -351,6 +353,7 @@ type
 
     { general }
     procedure NoUsage; virtual;
+    procedure Update;
     procedure DiscardMemory;
     procedure SwapInstance(dest: TMemoryRaster);
     function BitsSame(sour: TMemoryRaster): Boolean;
@@ -513,8 +516,19 @@ type
 
     { rasterization text support }
     function TextSize(Text: SystemString; siz: TGeoFloat): TVec2;
-    procedure DrawText(Text: SystemString; X, Y: Integer; RotateVec: TVec2; Angle, alpha, siz: TGeoFloat; TextColor: TRColor); overload;
-    procedure DrawText(Text: SystemString; X, Y: Integer; siz: TGeoFloat; TextColor: TRColor); overload;
+    procedure DrawText(Text: SystemString; X, Y: TGeoFloat; RotateVec: TVec2; Angle, alpha, siz: TGeoFloat; TextColor: TRColor); overload;
+    procedure DrawText(Text: SystemString; X, Y: TGeoFloat; siz: TGeoFloat; TextColor: TRColor); overload;
+    procedure DrawText(Text: SystemString; X, Y: TGeoFloat; RotateVec: TVec2; Angle, alpha, siz: TGeoFloat; TextColor: TRColor; var DrawCoordinate: TArrayV2R4); overload;
+    procedure DrawText(Text: SystemString; X, Y: TGeoFloat; siz: TGeoFloat; TextColor: TRColor; var DrawCoordinate: TArrayV2R4); overload;
+    function ComputeDrawTextCoordinate(Text: SystemString; X, Y: TGeoFloat; RotateVec: TVec2; Angle, siz: TGeoFloat; var DrawCoordinate, BoundBoxCoordinate: TArrayV2R4): TVec2;
+    // compute text bounds size
+    function ComputeTextSize(Text: SystemString; RotateVec: TVec2; Angle, siz: TGeoFloat): TVec2;
+    // compute text ConvexHull
+    function ComputeTextConvexHull(Text: SystemString; X, Y: TGeoFloat; RotateVec: TVec2; Angle, siz: TGeoFloat): TArrayVec2;
+
+    { zDrawEngine support }
+    function GetDrawEngineMap: TCoreClassObject;
+    property DrawEngineMap: TCoreClassObject read GetDrawEngineMap;
 
     { Projection: usage hardware simulator }
     procedure ProjectionTo(Dst: TMemoryRaster; const sourRect, DestRect: TV2Rect4; const bilinear_sampling: Boolean; const alpha: TGeoFloat); overload;
@@ -656,9 +670,13 @@ type
   TMemoryRaster2DArray = array of TMemoryRasterArray;
 
   TMemoryRasterList_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TMemoryRaster>;
-  TByteRasterList_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TByteRaster>;
 
-  TMemoryRasterList = TMemoryRasterList_Decl;
+  TMemoryRasterList = class(TMemoryRasterList_Decl)
+  end;
+
+  TRasterList = TMemoryRasterList;
+
+  TByteRasterList_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TByteRaster>;
 
   TByteRasterList = class(TByteRasterList_Decl)
   public
@@ -879,8 +897,10 @@ type
 {$ENDREGION 'Rasterization Vertex'}
 {$REGION 'TFontRaster'}
 
+  TFontRasterList = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TFontRaster>;
+
   TFontRaster = class(TCoreClassObject)
-  private type
+  public type
     PFontCharDefine = ^TFontCharDefine;
 
     TFontCharDefine = packed record
@@ -895,62 +915,94 @@ type
     TFontBitRaster = array [0 .. MaxInt - 1] of Byte;
     PFontBitRaster = ^TFontBitRaster;
 
-{$IFDEF FPC}
-    TFontRasterString = TUPascalString;
-    TFontRasterChar = USystemChar;
-{$ELSE FPC}
-    TFontRasterString = TPascalString;
-    TFontRasterChar = SystemChar;
-{$ENDIF FPC}
-
     TFontDrawState = record
       Owner: TFontRaster;
       DestColor: TRColor;
     end;
 
     PFontDrawState = ^TFontDrawState;
+
+    TCharacterBoundBox = record
+      Cache: Boolean;
+      Box: TRect;
+    end;
+
+    TCharacterBoundBoxCache = array [0 .. MaxInt div SizeOf(TCharacterBoundBox) - 1] of TCharacterBoundBox;
+    PCharacterBoundBoxCache = ^TCharacterBoundBoxCache;
+
+{$IFDEF FPC}
+    TFontRasterString = TUPascalString;
+    TFontRasterChar = USystemChar;
+    TFontRasterArrayString = TUArrayPascalString;
+{$ELSE FPC}
+    TFontRasterString = TPascalString;
+    TFontRasterChar = SystemChar;
+    TFontRasterArrayString = TArrayPascalString;
+{$ENDIF FPC}
+
+    TFontTextInfo = record
+      Font: TFontRaster;
+      Text: TFontRasterString;
+      Box, PhysicsBox: TArrayV2R4;
+    end;
+
+    TFontTextInfos = array of TFontTextInfo;
   public const
     C_WordDefine: TFontCharDefine = (Activted: False; X: 0; Y: 0; W: 0; H: 0);
     C_MAXWORD = $FFFF;
   protected
     FOnlyInstance: Boolean;
     FFontTable: PFontTable;
+    FCritical: TCritical;
+    FCharacterBoundBoxCache: PCharacterBoundBoxCache;
     FFragRaster: TMemoryRasterArray;
     FBitRaster: PFontBitRaster;
     FFontSize: Integer;
     FActivtedWord: Integer;
     FWidth: Integer;
     FHeight: Integer;
+    FFontInfo: TFontRasterString;
   public
+    X_Spacing, Y_Spacing: Integer;
+    property FontInfo: TFontRasterString read FFontInfo;
+
     constructor Create; overload;
     constructor Create(ShareFont: TFontRaster); overload;
     destructor Destroy; override;
 
-    // generate word
+    // generate font
     function FragRasterIsNull(C: TFontRasterChar): Boolean;
     procedure Add(C: TFontRasterChar; raster: TMemoryRaster);
     procedure Remove(C: TFontRasterChar);
     procedure Clear;
     procedure ClearFragRaster;
-    procedure Build(fontSiz: Integer);
 
+    // build font
+    procedure Build(fontInfo_: TFontRasterString; fontSiz: Integer; Status_: Boolean);
+
+    // compute font
     function ValidChar(C: TFontRasterChar): Boolean;
     function GetBox(C: TFontRasterChar): TRect;
+    function ComputeBoundBox(C: TFontRasterChar): TRect;
+    function IsVisibled(C: TFontRasterChar): Boolean;
     property FontSize: Integer read FFontSize;
     property ActivtedWord: Integer read FActivtedWord;
     property Width: Integer read FWidth;
     property Height: Integer read FHeight;
+    property BitRaster: PFontBitRaster read FBitRaster;
 
     // store
+    procedure Assign(Source: TFontRaster);
     procedure LoadFromStream(stream: TCoreClassStream);
     procedure SaveToStream(stream: TCoreClassStream);
     procedure LoadFromFile(filename: TPascalString);
     procedure SaveToFile(filename: TPascalString);
 
+    // build font
     function BuildRaster(partitionLine: Boolean): TMemoryRaster;
     function BuildMorphomatics(): TMorphomatics;
     procedure ExportRaster(stream: TCoreClassStream; partitionLine: Boolean); overload;
-    procedure ExportRaster(filename: U_String; partitionLine: Boolean); overload;
+    procedure ExportRaster(filename: TPascalString; partitionLine: Boolean); overload;
 
     // draw font
     function CharSize(const C: TFontRasterChar): TPoint;
@@ -959,10 +1011,42 @@ type
     function TextWidth(const S: TFontRasterString): Word;
     function TextHeight(const S: TFontRasterString): Word;
 
-    function Draw(Text: TFontRasterString; Dst: TMemoryRaster; dstVec: TVec2; dstColor: TRColor;
-      const bilinear_sampling: Boolean; const alpha: TGeoFloat; const Axis: TVec2; const Angle, Scale: TGeoFloat): TVec2; overload;
+    // compute coordinate
+    function ComputeDrawBoundBox(Text: TFontRasterString; dstVec, Axis: TVec2; Angle, Scale: TGeoFloat; var DrawCoordinate, BoundBoxCoordinate: TArrayV2R4): TVec2; overload;
+    function ComputeDrawBoundBox(Text: TFontRasterString; dstVec, Axis: TVec2; Angle, Scale: TGeoFloat; var DrawCoordinate: TArrayV2R4): TVec2; overload;
+    function ComputeDrawCoordinate(Text: TFontRasterString; X, Y: TGeoFloat; RotateVec: TVec2; Angle, siz: TGeoFloat; var DrawCoordinate, BoundBoxCoordinate: TArrayV2R4): TVec2; overload;
+    function ComputeDrawCoordinate(Text: TFontRasterString; X, Y: TGeoFloat; RotateVec: TVec2; Angle, siz: TGeoFloat; var DrawCoordinate: TArrayV2R4): TVec2; overload;
+
+    // draw
+    procedure DrawBit(fontRect: TRect; Dst: TMemoryRaster; DstRect: TV2Rect4; dstColor: TRColor; bilinear_sampling: Boolean; alpha: TGeoFloat);
+    function Draw(Text: TFontRasterString; Dst: TMemoryRaster; dstVec: TVec2; dstColor: TRColor; bilinear_sampling: Boolean; alpha: TGeoFloat; Axis: TVec2; Angle, Scale: TGeoFloat; var DrawCoordinate: TArrayV2R4): TVec2; overload;
+    function Draw(Text: TFontRasterString; Dst: TMemoryRaster; dstVec: TVec2; dstColor: TRColor; bilinear_sampling: Boolean; alpha: TGeoFloat; Axis: TVec2; Angle, Scale: TGeoFloat): TVec2; overload;
     procedure Draw(Text: TFontRasterString; Dst: TMemoryRaster; dstVec: TVec2; dstColor: TRColor); overload;
+
+    // build text raster
+    function BuildText(Text: TFontRasterString; RotateVec: TVec2; Angle, alpha, siz: TGeoFloat; TextColor: TRColor; var DrawCoordinate, BoundBoxCoordinate: TArrayV2R4): TMemoryRaster; overload;
+    function BuildText(Edge: Integer; Text: TFontRasterString; RotateVec: TVec2; Angle, alpha, siz: TGeoFloat; TextColor: TRColor; var DrawCoordinate, BoundBoxCoordinate: TArrayV2R4): TMemoryRaster; overload;
+
+    // build text from random font
+    class function BuildTextRaster(Random_: TRandom; PhysicsBox_: Boolean; X_Spacing_, Y_Spacing_: Integer; Margin_: TGeoFloat;
+      Fonts: TFontRasterList; FontSize_, Angle_: TGeoFloat; Text_: TFontRasterArrayString; var OutputInfo: TFontTextInfos): TMemoryRaster; overload;
+    class function BuildTextRaster(Random_: TRandom; PhysicsBox_: Boolean; X_Spacing_, Y_Spacing_: Integer; Margin_: TGeoFloat;
+      Fonts: TFontRasterList; FontSize_, Angle_: TGeoFloat; Text_: TFontRasterString; var OutputInfo: TFontTextInfos): TMemoryRaster; overload;
+    class function BuildTextRaster(PhysicsBox_: Boolean; X_Spacing_, Y_Spacing_: Integer; Margin_: TGeoFloat;
+      Fonts: TFontRasterList; FontSize_, Angle_: TGeoFloat; Text_: TFontRasterString; color_: TRColor; var OutputInfo: TFontTextInfos): TMemoryRaster; overload;
+
+    // compute text bounds size
+    function ComputeTextSize(Text: TFontRasterString; RotateVec: TVec2; Angle, siz: TGeoFloat): TVec2;
+    // compute text ConvexHull
+    function ComputeTextConvexHull(Text: TFontRasterString; X, Y: TGeoFloat; RotateVec: TVec2; Angle, siz: TGeoFloat): TArrayVec2;
+
+    // advance draw
+    procedure DrawText(Text: TFontRasterString; Dst: TMemoryRaster; X, Y: TGeoFloat; RotateVec: TVec2; Angle, alpha, siz: TGeoFloat; TextColor: TRColor); overload;
+    procedure DrawText(Text: TFontRasterString; Dst: TMemoryRaster; X, Y: TGeoFloat; siz: TGeoFloat; TextColor: TRColor); overload;
+    procedure DrawText(Text: TFontRasterString; Dst: TMemoryRaster; X, Y: TGeoFloat; RotateVec: TVec2; Angle, alpha, siz: TGeoFloat; TextColor: TRColor; var DrawCoordinate: TArrayV2R4); overload;
+    procedure DrawText(Text: TFontRasterString; Dst: TMemoryRaster; X, Y: TGeoFloat; siz: TGeoFloat; TextColor: TRColor; var DrawCoordinate: TArrayV2R4); overload;
   end;
+
 {$ENDREGION 'TFontRaster'}
 {$REGION 'Morphomatics'}
 
@@ -1233,7 +1317,9 @@ type
     procedure BuildViewerFile(filename_: SystemString); overload;
     procedure BuildViewerFile(MorphPix_: TMorphologyPixel; filename_: SystemString); overload;
     function ConvexHull(): TVec2List;
+    function BoundsRectV2(const Value: TBinaryzationValue; var Sum_:Integer): TRectV2; overload;
     function BoundsRectV2(const Value: TBinaryzationValue): TRectV2; overload;
+    function BoundsRect(const Value: TBinaryzationValue; var Sum_:Integer): TRect; overload;
     function BoundsRect(const Value: TBinaryzationValue): TRect; overload;
     function Width0: Integer;
     function Height0: Integer;
@@ -1356,7 +1442,7 @@ type
     constructor Create;
     procedure AddSeg(const buff: array of PMorphologySegData);
     procedure SortY;
-    function BoundsRectV2(cache: Boolean): TRectV2; overload;
+    function BoundsRectV2(Cache: Boolean): TRectV2; overload;
     function BoundsRectV2: TRectV2; overload;
     function BoundsRect: TRect;
     function Centre: TVec2;
@@ -1579,7 +1665,7 @@ type
 {$REGION 'RasterAPI'}
 
 
-procedure Wait_SystemFont_Init;
+function Wait_SystemFont_Init: TFontRaster;
 
 function ClampInt(const Value, IMin, IMax: Integer): Integer; inline;
 function ClampByte3(const Value, IMin, IMax: Byte): Byte; inline;
@@ -1592,12 +1678,13 @@ function RoundAsByte(const Value: Double): Byte;
 
 procedure DisposeRasterArray(var arry: TMemoryRasterArray);
 
-procedure BlendBlock(Dst: TMemoryRaster; dstRect: TRect; Src: TMemoryRaster; Srcx, Srcy: Integer; CombineOp: TDrawMode);
+procedure BlendBlock(Dst: TMemoryRaster; DstRect: TRect; Src: TMemoryRaster; Srcx, Srcy: Integer; CombineOp: TDrawMode);
 procedure BlockTransfer(Dst: TMemoryRaster; Dstx: Integer; Dsty: Integer; DstClip: TRect; Src: TMemoryRaster; SrcRect: TRect; CombineOp: TDrawMode);
 
 procedure FillRasterColor(BitPtr: Pointer; Count: Cardinal; Value: TRasterColor);
 procedure CopyRasterColor(const Source; var dest; Count: Cardinal);
-function RandomRasterColor(const A: Byte = $FF): TRasterColor; {$IFDEF INLINE_ASM} inline; {$ENDIF}
+function RandomRasterColor(const A: Byte = $FF): TRasterColor; overload; {$IFDEF INLINE_ASM} inline; {$ENDIF}
+function RandomRasterColor(rand: TRandom; minR, maxR, minG, maxG, minB, maxB, minA, maxA: TGeoFloat): TRColor; overload; {$IFDEF INLINE_ASM} inline; {$ENDIF}
 function RasterColor(const v: TVec4): TRColor; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
 function RasterColor(const R, G, B, A: Byte): TRasterColor; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
 function RasterColor(const R, G, B: Byte): TRasterColor; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
@@ -1619,7 +1706,9 @@ function SetRasterColorAlpha(const C: TRasterColor; const A: Byte): TRColor; {$I
 
 procedure FillRColor(BitPtr: Pointer; Count: Cardinal; Value: TRColor);
 procedure CopyRColor(const Source; var dest; Count: Cardinal);
-function RandomRColor(const A: Byte = $FF): TRColor; {$IFDEF INLINE_ASM} inline; {$ENDIF}
+function RandomRColor(const A: Byte = $FF): TRColor; overload; {$IFDEF INLINE_ASM} inline; {$ENDIF}
+function RandomRColorF(const minR, maxR, minG, maxG, minB, maxB, minA, maxA: TGeoFloat): TRColor; overload; {$IFDEF INLINE_ASM} inline; {$ENDIF}
+function RandomRColorF(rand: TRandom; minR, maxR, minG, maxG, minB, maxB, minA, maxA: TGeoFloat): TRColor; overload; {$IFDEF INLINE_ASM} inline; {$ENDIF}
 function RColor(const S: U_String): TRColor; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
 function RColor(const v: TVec4): TRColor; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
 function RColor(const R, G, B, A: Byte): TRColor; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
@@ -1856,7 +1945,7 @@ var
 
 implementation
 
-uses h264Common, CoreCompress, DoStatusIO, DataFrameEngine, Raster_JPEG, Raster_PNG, zExpression, OpCode;
+uses h264Common, CoreCompress, DoStatusIO, DataFrameEngine, Raster_JPEG, Raster_PNG, zExpression, OpCode, zDrawEngine;
 
 {$REGION 'InternalDefines'}
 

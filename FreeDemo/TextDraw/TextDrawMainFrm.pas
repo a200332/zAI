@@ -57,8 +57,8 @@ begin
   // |s:11|，表示使用11号size，color会自动使用调用drawText的常量
   // |color(1,1,1,1)|,表示画成白色的文字，由于脚本内没有给出而文字的字号，使用调用drawText的常量
   // || 空脚本表示使用默认文本size+color画
-  n := '|size:24|24字号的大字 |s:16|16字号的小字' + #13#10 +
-    '|color(1,0,0,1),size:24| 24字号的红色字 || 默认文字 |color(0,1,0,1),size:32| 特大字体';
+  n := '|size:24|24字号的大字|| |s:16|16字号的小字' + #13#10 +
+    '|color(1,0,0,1),size:24|24字号的红色字|| 默认文字 |color(0,1,0,1),size:50|特大字体';
 
   // 归一处理:防止angle系数在动画计算时变得过大丢失精度
   angle := NormalizeDegAngle(angle + 30 * d.LastDeltaTime);

@@ -488,6 +488,30 @@ begin
     end;
 end;
 
+function TMorphologyBinaryzation.BoundsRectV2(const Value: TBinaryzationValue; var Sum_: Integer): TRectV2;
+var
+  color_inited_: Boolean;
+  i, j: Integer;
+begin
+  color_inited_ := False;
+  Result := NullRectV2;
+  Sum_ := 0;
+  for j := 0 to Height - 1 do
+    for i := 0 to Width - 1 do
+      if Pixel[i, j] = Value then
+        begin
+          Inc(Sum_);
+          if not color_inited_ then
+            begin
+              color_inited_ := True;
+              Result[0] := Vec2(i, j);
+              Result[1] := Result[0];
+            end
+          else
+              Result := BoundRect(Result[0], Result[1], Vec2(i, j));
+        end;
+end;
+
 function TMorphologyBinaryzation.BoundsRectV2(const Value: TBinaryzationValue): TRectV2;
 var
   color_inited_: Boolean;
@@ -507,6 +531,30 @@ begin
             end
           else
               Result := BoundRect(Result[0], Result[1], Vec2(i, j));
+        end;
+end;
+
+function TMorphologyBinaryzation.BoundsRect(const Value: TBinaryzationValue; var Sum_: Integer): TRect;
+var
+  color_inited_: Boolean;
+  i, j: Integer;
+begin
+  color_inited_ := False;
+  Result := Rect(0, 0, 0, 0);
+  Sum_ := 0;
+  for j := 0 to Height - 1 do
+    for i := 0 to Width - 1 do
+      if Pixel[i, j] = Value then
+        begin
+          Inc(Sum_);
+          if not color_inited_ then
+            begin
+              color_inited_ := True;
+              Result.TopLeft := Point(i, j);
+              Result.Bottomright := Result.TopLeft;
+            end
+          else
+              Result := BoundRect(Result.TopLeft, Result.Bottomright, Point(i, j));
         end;
 end;
 

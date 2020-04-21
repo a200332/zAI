@@ -24,7 +24,7 @@ type
   TRealTime_MMOD_VideoServer = class(TCommunicationFramework_DoubleTunnelService_NoAuth)
   private
     AI: TAI;
-    MMOD_Hnd: TMMOD_Handle;
+    MMOD_Hnd: TMMOD6L_Handle;
 
     procedure cmd_VideoBuffer(Sender: TPeerIO; InData: PByte; DataSize: NativeInt);
 
@@ -138,7 +138,7 @@ begin
   TThread.Synchronize(ThSender, procedure
     begin
       // process mmod
-      MMOD_desc := AI.MMOD_DNN_Process(MMOD_Hnd, mr);
+      MMOD_desc := AI.MMOD6L_DNN_Process(MMOD_Hnd, mr);
     end);
 
   // draw output
@@ -215,7 +215,7 @@ begin
 
   AI := TAI.OpenEngine();
   MMOD_Hnd := nil;
-  fn := umlCombineFileName(TPath.GetLibraryPath, 'RealTime_MMOD' + C_MMOD_Ext);
+  fn := umlCombineFileName(TPath.GetLibraryPath, 'RealTime_MMOD' + C_MMOD6L_Ext);
   if umlFileExists(fn) then
     begin
       DoStatus('load MMOD file: %s', [fn.Text]);
@@ -279,8 +279,8 @@ end;
 
 procedure TRealTime_MMOD_VideoServer.LoadSystem(m64: TMemoryStream64);
 begin
-  AI.MMOD_DNN_Close(MMOD_Hnd);
-  MMOD_Hnd := AI.MMOD_DNN_Open_Stream(m64);
+  AI.MMOD6L_DNN_Close(MMOD_Hnd);
+  MMOD_Hnd := AI.MMOD6L_DNN_Open_Stream(m64);
 end;
 
 end.

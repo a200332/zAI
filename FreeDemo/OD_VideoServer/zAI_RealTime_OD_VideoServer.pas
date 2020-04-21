@@ -134,7 +134,7 @@ begin
   DisposeObject(m64);
 
   ai := OD_Parallel.GetAndLockAI;
-  OD_desc := ai.OD_Process(ai.Parallel_OD_Hnd, mr, 1024);
+  OD_desc := ai.OD6L_Process(ai.Parallel_OD6L_Hnd, mr, 1024);
   ai.DrawOD(OD_desc, mr, DEColor(1, 0, 0, 1));
   OD_Parallel.UnLockAI(ai);
 
@@ -197,7 +197,7 @@ begin
   OD_Parallel := TAI_Parallel.Create;
   OD_Parallel.Prepare_Parallel();
 
-  fn := umlCombineFileName(TPath.GetLibraryPath, 'RealTime_OD' + C_OD_Ext);
+  fn := umlCombineFileName(TPath.GetLibraryPath, 'RealTime_OD' + C_OD6L_Ext);
   if umlFileExists(fn) then
     begin
       DoStatus('load OD file: %s', [fn.Text]);
@@ -269,7 +269,7 @@ begin
 
   OD_Parallel := TAI_Parallel.Create;
   OD_Parallel.Prepare_Parallel();
-  OD_Parallel.Prepare_OD(m64);
+  OD_Parallel.Prepare_OD6L(m64);
 end;
 
 end.

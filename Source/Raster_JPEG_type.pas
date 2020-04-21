@@ -824,20 +824,20 @@ type
   end;
 
   // Some basic compare routines
-function CompareCardinal(C1, C2: cardinal): Integer;
-function CompareInteger(Int1, Int2: Integer): Integer;
-function CompareLongWord(LW1, LW2: longword): Integer;
-function CompareInt64(const Int1, Int2: int64): Integer;
-function ComparePointer(Item1, Item2: pointer): Integer;
-function CompareBool(Bool1, Bool2: boolean): Integer;
-function CompareSingle(const Single1, Single2: single): Integer;
-function CompareDouble(const Double1, Double2: double): Integer;
+function CompareCardinal(C1, C2: cardinal): Integer; {$IFDEF INLINE_ASM} inline; {$ENDIF}
+function CompareInteger(Int1, Int2: Integer): Integer; {$IFDEF INLINE_ASM} inline; {$ENDIF}
+function CompareLongWord(LW1, LW2: longword): Integer; {$IFDEF INLINE_ASM} inline; {$ENDIF}
+function CompareInt64(const Int1, Int2: int64): Integer; {$IFDEF INLINE_ASM} inline; {$ENDIF}
+function ComparePointer(Item1, Item2: pointer): Integer; {$IFDEF INLINE_ASM} inline; {$ENDIF}
+function CompareBool(Bool1, Bool2: boolean): Integer; {$IFDEF INLINE_ASM} inline; {$ENDIF}
+function CompareSingle(const Single1, Single2: single): Integer; {$IFDEF INLINE_ASM} inline; {$ENDIF}
+function CompareDouble(const Double1, Double2: double): Integer; {$IFDEF INLINE_ASM} inline; {$ENDIF}
 // Compare globally unique ID (TGUID, defined in SysUtils)
-function CompareGuid(const Guid1, Guid2: TGuid): Integer;
+function CompareGuid(const Guid1, Guid2: TGuid): Integer; {$IFDEF INLINE_ASM} inline; {$ENDIF}
 
 // GUID methods
-function IsEqualGuid(const Guid1, Guid2: TGuid): boolean;
-function IsEmptyGuid(const GUID_: TGuid): boolean;
+function IsEqualGuid(const Guid1, Guid2: TGuid): boolean; {$IFDEF INLINE_ASM} inline; {$ENDIF}
+function IsEmptyGuid(const GUID_: TGuid): boolean; {$IFDEF INLINE_ASM} inline; {$ENDIF}
 function NewGuid: TGuid;
 // streaming of TGuid can be found in sdStreamableData.pas
 
