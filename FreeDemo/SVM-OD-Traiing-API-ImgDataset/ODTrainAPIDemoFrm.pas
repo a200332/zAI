@@ -67,7 +67,7 @@ begin
     var
       fn: U_String;
       // 训练引擎
-      tt: TTrainingTask;
+      tt: TAI_TrainingTask;
       // 训练参数
       param: THashVariantList;
       // AI引擎
@@ -80,7 +80,7 @@ begin
         begin
           fn := umlCombineFileName(TPath.GetLibraryPath, FileEdit.Text);
         end);
-      tt := TTrainingTask.CreateTask;
+      tt := TAI_TrainingTask.CreateMemoryTask;
 
       // 将文件写入训练任务
       tt.WriteFile(umlGetFileName(fn), fn);

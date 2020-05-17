@@ -70,7 +70,7 @@ begin
       fn, L_fn: U_String;
       param: PMetric_ResNet_Train_Parameter;
       training_successed: Boolean;
-      mdnn_hnd: TMDNN_Handle;
+      mdnn_hnd: TMetric_Handle;
       mmod_hnd: TMMOD6L_Handle;
       face_hnd: TFACE_Handle;
       mmod_desc: TMMOD_Desc;

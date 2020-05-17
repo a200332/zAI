@@ -58,7 +58,7 @@ begin
       rasterList: TMemoryRasterList;
 
       output_fn, matrix_learn_fn: U_String;
-      hnd: TMDNN_Handle;
+      hnd: TLMetric_Handle;
       vec: TKDTree_Vec;
       KD: TKDTree;
       wrong: Integer;
@@ -143,7 +143,7 @@ begin
     var
       param: PMetric_ResNet_Train_Parameter;
       sync_fn, output_fn, matrix_learn_fn: U_String;
-      hnd: TMDNN_Handle;
+      hnd: TLMetric_Handle;
       kdDataList: TKDTreeDataList;
       KD: TKDTree;
     begin

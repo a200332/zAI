@@ -49,7 +49,7 @@ type
     viewIntf: TPictureViewerInterface;
     AI: TAI;
     OD_Hnd: TMMOD6L_Handle;
-    Metric_Hnd: TMDNN_Handle;
+    Metric_Hnd: TMetric_Handle;
     Metric_Learn: TLearn;
     imgList: TAI_ImageList;
     procedure DoStatusMethod(Text_: SystemString; const ID: Integer);
@@ -91,7 +91,7 @@ begin
       det: TAI_DetectorDefine;
     begin
       // 使用TTrainingTask打开模型训练后的输出数据
-      with TTrainingTask.OpenTask(WhereFileFromConfigure('dog_train_output_detector.OX')) do
+      with TAI_TrainingTask.OpenMemoryTask(WhereFileFromConfigure('dog_train_output_detector.OX')) do
         begin
           stream := TMemoryStream64.Create;
           // 从训练输出结果读取小狗检测器模型
@@ -106,7 +106,7 @@ begin
         end;
 
       // 使用TTrainingTask打开模型训练后的输出数据
-      with TTrainingTask.OpenTask(WhereFileFromConfigure('dog_train_output_metric.OX')) do
+      with TAI_TrainingTask.OpenMemoryTask(WhereFileFromConfigure('dog_train_output_metric.OX')) do
         begin
           stream := TMemoryStream64.Create;
           // 从训练输出结果读取小狗度量化模型

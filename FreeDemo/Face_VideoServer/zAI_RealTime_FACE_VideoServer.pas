@@ -27,7 +27,7 @@ type
     face_det_para: TAI_Parallel;
     // work on gpu
     Face_Metric: TAI;
-    Face_MDNN_Hnd: TMDNN_Handle;
+    Face_MDNN_Hnd: TMetric_Handle;
     Face_LearnEng: TLearn;
 
     procedure cmd_VideoBuffer(Sender: TPeerIO; InData: PByte; DataSize: NativeInt);

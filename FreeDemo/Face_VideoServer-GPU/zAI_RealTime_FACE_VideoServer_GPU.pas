@@ -28,7 +28,7 @@ type
     // work on gpu
     Face_Metric: TAI;
     Face_MMOD_Hnd: TMMOD6L_Handle;
-    Face_MDNN_Hnd: TMDNN_Handle;
+    Face_MDNN_Hnd: TMetric_Handle;
     Face_LearnEng: TLearn;
 
     procedure cmd_VideoBuffer(Sender: TPeerIO; InData: PByte; DataSize: NativeInt);

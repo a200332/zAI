@@ -342,7 +342,7 @@ type
     FLibList: TCoreClassStrings;
     FUseWildcard: Boolean;
     function GetItems(aIndex: Integer): TObjectDataManager;
-    function GetNames(AName: SystemString): TObjectDataManager;
+    function GetNames(Name_: SystemString): TObjectDataManager;
     procedure SetItems(aIndex: Integer; const Value: TObjectDataManager);
   public
     constructor Create(dbItemID: Byte);
@@ -355,14 +355,14 @@ type
     procedure Clear;
     function Count: Integer;
     procedure Delete(aIndex: Integer);
-    procedure DeleteFromName(AName: SystemString);
+    procedure DeleteFromName(Name_: SystemString);
     procedure UpdateAll;
     procedure Disable;
     procedure Enabled;
 
     property LibList: TCoreClassStrings read FLibList;
     property Items[aIndex: Integer]: TObjectDataManager read GetItems write SetItems;
-    property Names[AName: SystemString]: TObjectDataManager read GetNames; default;
+    property Names[Name_: SystemString]: TObjectDataManager read GetNames; default;
     property UseWildcard: Boolean read FUseWildcard write FUseWildcard;
     property ID: Byte read FID write FID;
   end;
@@ -2467,13 +2467,13 @@ begin
   Result := TObjectDataManager(FLibList.Objects[aIndex]);
 end;
 
-function TObjectDataMarshal.GetNames(AName: SystemString): TObjectDataManager;
+function TObjectDataMarshal.GetNames(Name_: SystemString): TObjectDataManager;
 var
   i: Integer;
   aUName: SystemString;
 begin
   Result := nil;
-  aUName := GetAbsoluteFileName(AName);
+  aUName := GetAbsoluteFileName(Name_);
   if FLibList.Count > 0 then
     begin
       if FUseWildcard then
@@ -2652,12 +2652,12 @@ begin
   FLibList.Delete(aIndex);
 end;
 
-procedure TObjectDataMarshal.DeleteFromName(AName: SystemString);
+procedure TObjectDataMarshal.DeleteFromName(Name_: SystemString);
 var
   i: Integer;
   aUName: SystemString;
 begin
-  aUName := GetAbsoluteFileName(AName);
+  aUName := GetAbsoluteFileName(Name_);
   if FLibList.Count > 0 then
     begin
       if FUseWildcard then

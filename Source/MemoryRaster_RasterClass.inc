@@ -767,6 +767,8 @@ var
   bak_SerializedEngine: TRasterSerialized;
   bak_MemorySerializedPosition: Int64;
 begin
+  if Self = dest then
+      exit;
   ReadyBits;
   CloseVertex;
   FreeAgg;

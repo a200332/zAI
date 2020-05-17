@@ -45,7 +45,7 @@ type
   TReponse_FaceServer = class(TPhysicsServer)
   private
     Metric: TAI;
-    Metric_Resnet_Hnd: TMDNN_Handle;
+    Metric_Resnet_Hnd: TMetric_Handle;
     FaceDetParallel: TAI_Parallel;
     Face_Learn: TLearn;
     FaceDB: TAI_ImageMatrix;
@@ -411,7 +411,7 @@ end;
 function TReponse_FaceServer.RunFaceTraining(var report: SystemString): Boolean;
 var
   tokens: TArrayPascalString;
-  tt: TTrainingTask;
+  tt: TAI_TrainingTask;
   Param: THashVariantList;
 
   d: TDateTime;
@@ -464,7 +464,7 @@ begin
     这里是训练人脸识别的参数
     因为人脸识别已经有相关demo就不对这些参数作过多的介绍了
   }
-  tt := TTrainingTask.CreateTask;
+  tt := TAI_TrainingTask.CreateMemoryTask;
   Param := THashVariantList.Create;
   Param.SetDefaultValue('ComputeFunc', 'TrainMRN');
   Param.SetDefaultValue('source', 'input' + zAI_Common.C_ImageMatrix_Ext);
@@ -525,11 +525,11 @@ end;
 
 procedure TReponse_FaceServer.FaceTrainingRunDone(th: TTrainingProcessThread);
 var
-  tt: TTrainingTask;
+  tt: TAI_TrainingTask;
   report: SystemString;
   check_result_successed: Boolean;
   m64: TMemoryStream64;
-  n_metric: TMDNN_Handle;
+  n_metric: TMetric_Handle;
   fn: U_String;
 
   tokens: TArrayPascalString;
@@ -539,8 +539,8 @@ begin
   DoStatus('Training done: "%s"', [th.cmd.Text]);
   if th.ExecCode = 1 then
     begin
-      // 使用 TTrainingTask 打开 TrainingTool.exe 生成的输出文件
-      tt := TTrainingTask.OpenTask(th.train_out);
+      // 使用 TAI_TrainingTask 打开 TrainingTool.exe 生成的输出文件
+      tt := TAI_TrainingTask.OpenMemoryTask(th.train_out);
 
       // 分析训练结果，是否成功了
       DoStatus('check training result.');

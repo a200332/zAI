@@ -49,7 +49,7 @@ type
     FDataStoreCipherSecurity: TCipherSecurity;
     FDataStoreCipherKey: TCipherKeyBuffer;
   public
-    constructor Create(AOwner: TPeerIO); override;
+    constructor Create(Owner_: TPeerIO); override;
     destructor Destroy; override;
 
     procedure Progress; override;
@@ -63,7 +63,7 @@ type
 
   TDataStoreService_PeerClientSendTunnel = class(TPeerClientUserDefineForSendTunnel)
   public
-    constructor Create(AOwner: TPeerIO); override;
+    constructor Create(Owner_: TPeerIO); override;
     destructor Destroy; override;
 
     function RecvTunnelDefine: TDataStoreService_PeerClientRecvTunnel;
@@ -140,7 +140,7 @@ type
     procedure Send_CompletedFastDownloadAssemble(ASendCli: TPeerIO; dbN: SystemString; dStorePos: Int64; BackcallPtr: UInt64);
     procedure Send_CompletedStorePosTransform(ASendCli: TPeerIO; const BackcallPtr: UInt64; const TransformBuff: PZDBStorePosTransformArray);
   public
-    constructor Create(ARecvTunnel, ASendTunnel: TCommunicationFrameworkServer);
+    constructor Create(RecvTunnel_, SendTunnel_: TCommunicationFrameworkServer);
     destructor Destroy; override;
 
     procedure RegisterCommand; override;
@@ -175,7 +175,7 @@ type
     procedure Command_CompletedFastDownloadAssemble(Sender: TPeerIO; InData: TDataFrameEngine); virtual;
     procedure Command_CompletedStorePosTransform(Sender: TPeerIO; InData: TDataFrameEngine); virtual;
   public
-    constructor Create(ARecvTunnel, ASendTunnel: TCommunicationFrameworkClient);
+    constructor Create(RecvTunnel_, SendTunnel_: TCommunicationFrameworkClient);
     destructor Destroy; override;
 
     procedure RegisterCommand; override;
@@ -401,7 +401,7 @@ const
   C_QueryPause = '__@QueryPause';
   C_QueryPlay = '__@QueryPlay';
 
-constructor TDataStoreService_PeerClientRecvTunnel.Create(AOwner: TPeerIO);
+constructor TDataStoreService_PeerClientRecvTunnel.Create(Owner_: TPeerIO);
 type
   TCipherDef = array [0 .. 4] of TCipherSecurity;
 const
@@ -409,7 +409,7 @@ const
 var
   kref: TInt64;
 begin
-  inherited Create(AOwner);
+  inherited Create(Owner_);
   FPostPerformaceCounter := 0;
   FLastPostPerformaceTime := GetTimeTick;
   FPostCounterOfPerSec := 0;
@@ -459,9 +459,9 @@ begin
   SequEncryptCBC(FDataStoreCipherSecurity, sour, Size, FDataStoreCipherKey, Encrypt, True);
 end;
 
-constructor TDataStoreService_PeerClientSendTunnel.Create(AOwner: TPeerIO);
+constructor TDataStoreService_PeerClientSendTunnel.Create(Owner_: TPeerIO);
 begin
-  inherited Create(AOwner);
+  inherited Create(Owner_);
 end;
 
 destructor TDataStoreService_PeerClientSendTunnel.Destroy;
@@ -1273,9 +1273,9 @@ begin
   DisposeObject(de);
 end;
 
-constructor TDataStoreService.Create(ARecvTunnel, ASendTunnel: TCommunicationFrameworkServer);
+constructor TDataStoreService.Create(RecvTunnel_, SendTunnel_: TCommunicationFrameworkServer);
 begin
-  inherited Create(ARecvTunnel, ASendTunnel);
+  inherited Create(RecvTunnel_, SendTunnel_);
   FRecvTunnel.PeerClientUserDefineClass := TDataStoreService_PeerClientRecvTunnel;
   FSendTunnel.PeerClientUserDefineClass := TDataStoreService_PeerClientSendTunnel;
 
@@ -1686,9 +1686,9 @@ begin
   Dispose(BackcallPtr);
 end;
 
-constructor TDataStoreClient.Create(ARecvTunnel, ASendTunnel: TCommunicationFrameworkClient);
+constructor TDataStoreClient.Create(RecvTunnel_, SendTunnel_: TCommunicationFrameworkClient);
 begin
-  inherited Create(ARecvTunnel, ASendTunnel);
+  inherited Create(RecvTunnel_, SendTunnel_);
   FDataStoreCipherSecurity := TCipherSecurity.csNone;
   SetLength(FDataStoreCipherKey, 0);
 end;

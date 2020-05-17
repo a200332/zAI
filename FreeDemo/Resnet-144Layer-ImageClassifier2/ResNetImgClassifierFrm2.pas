@@ -168,7 +168,7 @@ begin
     var
       param: PRNIC_Train_Parameter;
       sync_fn, output_fn, index_fn, carHub_fn: U_String;
-      m_task: TTrainingTask;
+      m_task: TAI_TrainingTask;
     begin
       TThread.Synchronize(Sender, procedure
         begin
@@ -184,7 +184,7 @@ begin
         if (not umlFileExists(carHub_fn)) then
           begin
             // Ö´ÐÐÂÖì±ÑµÁ·ÈÎÎñ
-            m_task := TTrainingTask.OpenTask(umlCombineFileName(TPath.GetLibraryPath, 'carhub_mmod_training.OX'));
+            m_task := TAI_TrainingTask.OpenMemoryTask(umlCombineFileName(TPath.GetLibraryPath, 'carhub_mmod_training.OX'));
             if zAI.RunTrainingTask(m_task, ai, 'param.txt') then
               begin
                 m_task.ReadToFile('Æû³µÂÖì±.svm_dnn_od', carHub_fn);

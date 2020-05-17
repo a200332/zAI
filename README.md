@@ -12,7 +12,7 @@ zChinese是正在完善中的NLP项目 https://github.com/PassByYou888/zChinese
 
 [白皮书](https://zpascal.net/AI%E7%99%BD%E7%9A%AE%E4%B9%A6.pdf)
 
-[1.31大更新日志](http://zpascal.net/1.31%E6%9B%B4%E6%96%B0%E6%97%A5%E5%BF%97.pdf)
+[1.32大更新日志](https://zpascal.net/1.32%E6%9B%B4%E6%96%B0%E6%97%A5%E5%BF%97.pdf)
 
 ZAI目前是大数据类型的开源项目,git非常不适合分发大数据,请大家尽量使用 https://zpascal.net 提供的安装包来安装zAI
 
@@ -22,9 +22,9 @@ ZAI目前是大数据类型的开源项目,git非常不适合分发大数据,请
 
 首先下载两个大包
 
-下载 [主引擎 4GB](https://zpascal.net/download/github/Engine.zip) 下载完成后,解压engine.7z到任意目录,运行 **ZAIToolChain.exe** 任意选择MKL64 or CUDA作为计算引擎即可使用 计算引擎Key **TAAAAAAAAABAALTGhAbqkeFdQpzxP0+yT/0MLgzMjGpsTNmvS1OPM14WU7EbovD9J0UfCBrHz4LA3v12pK1YeI2ACM61+e1YYmg=**
+下载 [主引擎 3.92GB](https://zpascal.net/download/github/Engine.zip) 下载完成后,解压engine.7z到任意目录,运行 **ZAIToolChain.exe** 任意选择MKL64 or CUDA作为计算引擎即可使用 计算引擎Key **TAAAAAAAAABAALTGhAbqkeFdQpzxP0+yT/0MLgzMjGpsTNmvS1OPM14WU7EbovD9J0UfCBrHz4LA3v12pK1YeI2ACM61+e1YYmg=**
 
-下载 [freedemo运行时资源包 3GB](https://zpascal.net/download/github/FreeDemoBinary.zip) 完成后,解压到 **FreeDemo\Binary** 目录
+下载 [freedemo运行时资源包 1.83GB](https://zpascal.net/download/github/FreeDemoBinary.zip) 完成后,解压到 **FreeDemo\Binary** 目录
 
 如果要使用gpu 参考 [cuda 10.2安装指南](https://zpascal.net/ZAI-CUDA%E5%AE%89%E8%A3%85%E6%8C%87%E5%8D%97.pdf)
 

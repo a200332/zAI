@@ -227,8 +227,10 @@ type
     function GetDetectorTokenCount(Token: U_String): Integer;
 
     // Serialized And Recycle Memory
-    procedure SerializedAndRecycleMemory(Serializ: TRasterSerialized);
-    procedure UnserializedMemory(Serializ: TRasterSerialized);
+    procedure SerializedAndRecycleMemory(Serializ: TRasterSerialized); overload;
+    procedure SerializedAndRecycleMemory(); overload;
+    procedure UnserializedMemory(Serializ: TRasterSerialized); overload;
+    procedure UnserializedMemory(); overload;
     function RecycleMemory: Int64;
   end;
 {$ENDREGION 'image'}
@@ -474,7 +476,6 @@ const
   // ext define
   C_ImageMatrix_Ext: SystemString = '.imgMat';
   C_ImageList_Ext: SystemString = '.imgDataset';
-  C_Image_Ext: SystemString = '.img';
   C_OD6L_Ext: SystemString = '.svm_od';
   C_OD3L_Ext: SystemString = '.svm_OD3L';
   C_OD6L_Marshal_Ext: SystemString = '.svm_od_marshal';
@@ -522,8 +523,7 @@ var
   AI_TIFConverTool: U_String;
   AI_ImgMatTool: U_String;
   AI_LImgMatTool: U_String;
-  // Integrate training server
-  AI_TrainingServer: U_String;
+  AI_TrainingClient: U_String;
   // toolchain Search directory.
   AI_SearchDirectory: U_String;
   // AI configure ready ok
@@ -590,9 +590,7 @@ begin
   AI_TIFConverTool := umlCombineFileName(AI_Work_Path, 'ImgFmtConver2TIF.exe');
   AI_ImgMatTool := umlCombineFileName(AI_Work_Path, 'ZAI_IMGMatrix_Tool.exe');
   AI_LImgMatTool := umlCombineFileName(AI_Work_Path, 'L_ZAI_IMGMatrix_Tool.exe');
-
-  // Integrate training server
-  AI_TrainingServer := '127.0.0.1';
+  AI_TrainingClient := umlCombineFileName(AI_Work_Path, 'TrainingClient.exe');
 
   // toolchain Root directory.
   AI_SearchDirectory := AI_Work_Path;
@@ -676,9 +674,9 @@ begin
   AI_TIFConverTool := r_ai('TIFConverTool', AI_TIFConverTool);
   AI_ImgMatTool := r_ai('ImgMatTool', AI_ImgMatTool);
   AI_LImgMatTool := r_ai('LImgMatTool', AI_LImgMatTool);
+  AI_TrainingClient := r_ai('TrainingClient', AI_TrainingClient);
 
   AI_Parallel_Count := ini.GetDefaultValue('AI', 'Parallel', AI_Parallel_Count);
-  AI_TrainingServer := ini.GetDefaultValue('AI', 'TrainingServer', AI_TrainingServer);
 
   AI_Configure_ReadyDone := True;
 end;
@@ -713,9 +711,9 @@ begin
   w_ai('TIFConverTool', AI_TIFConverTool);
   w_ai('ImgMatTool', AI_ImgMatTool);
   w_ai('LImgMatTool', AI_LImgMatTool);
+  w_ai('TrainingClient', AI_TrainingClient);
 
   ini.SetDefaultValue('AI', 'Parallel', AI_Parallel_Count);
-  ini.SetDefaultValue('AI', 'TrainingServer', AI_TrainingServer);
 end;
 
 procedure WriteAIConfig(config_file: U_String);
@@ -2455,6 +2453,21 @@ begin
   Raster.SerializedAndRecycleMemory(Serializ);
 end;
 
+procedure TAI_Image.SerializedAndRecycleMemory();
+var
+  i: Integer;
+begin
+  for i := 0 to DetectorDefineList.Count - 1 do
+      DetectorDefineList[i].PrepareRaster.SerializedAndRecycleMemory();
+
+  for i := 0 to SegmentationMaskList.Count - 1 do
+      SegmentationMaskList[i]^.Raster.SerializedAndRecycleMemory();
+
+  SegmentationMaskList.MaskMergeRaster.SerializedAndRecycleMemory();
+
+  Raster.SerializedAndRecycleMemory();
+end;
+
 procedure TAI_Image.UnserializedMemory(Serializ: TRasterSerialized);
 var
   i: Integer;
@@ -2472,6 +2485,25 @@ begin
 
   if Raster.Empty then
       Raster.UnserializedMemory(Serializ);
+end;
+
+procedure TAI_Image.UnserializedMemory();
+var
+  i: Integer;
+begin
+  for i := 0 to DetectorDefineList.Count - 1 do
+    if DetectorDefineList[i].PrepareRaster.Empty then
+        DetectorDefineList[i].PrepareRaster.UnserializedMemory();
+
+  for i := 0 to SegmentationMaskList.Count - 1 do
+    if SegmentationMaskList[i]^.Raster.Empty then
+        SegmentationMaskList[i]^.Raster.UnserializedMemory();
+
+  if SegmentationMaskList.MaskMergeRaster.Empty then
+      SegmentationMaskList.MaskMergeRaster.UnserializedMemory();
+
+  if Raster.Empty then
+      Raster.UnserializedMemory();
 end;
 
 function TAI_Image.RecycleMemory: Int64;
@@ -4373,6 +4405,7 @@ procedure TAI_ImageMatrix.BuildSnapshotProjection_HashList(SS_width, SS_height: 
     imgData := imgList[pass];
     if imgData.DetectorDefineList.Count > 0 then
       begin
+        imgData.UnserializedMemory();
         for j := 0 to imgData.DetectorDefineList.Count - 1 do
           begin
             DetDef := imgData.DetectorDefineList[j];
@@ -4404,7 +4437,7 @@ procedure TAI_ImageMatrix.BuildSnapshotProjection_HashList(SS_width, SS_height: 
               end;
           end;
       end;
-    imgData.Raster.RecycleMemory;
+    imgData.RecycleMemory;
   end;
 {$ENDIF FPC}
 {$ELSE Parallel}
@@ -4421,6 +4454,7 @@ procedure TAI_ImageMatrix.BuildSnapshotProjection_HashList(SS_width, SS_height: 
         imgData := imgList[pass];
         if imgData.DetectorDefineList.Count > 0 then
           begin
+            imgData.UnserializedMemory();
             for j := 0 to imgData.DetectorDefineList.Count - 1 do
               begin
                 DetDef := imgData.DetectorDefineList[j];
@@ -4452,7 +4486,7 @@ procedure TAI_ImageMatrix.BuildSnapshotProjection_HashList(SS_width, SS_height: 
                   end;
               end;
           end;
-        imgData.Raster.RecycleMemory;
+        imgData.RecycleMemory;
       end;
   end;
 {$ENDIF Parallel}
@@ -4473,6 +4507,7 @@ begin
       imgData := imgList[pass];
       if imgData.DetectorDefineList.Count > 0 then
         begin
+          imgData.UnserializedMemory();
           for j := 0 to imgData.DetectorDefineList.Count - 1 do
             begin
               DetDef := imgData.DetectorDefineList[j];
@@ -4504,7 +4539,7 @@ begin
                 end;
             end;
         end;
-      imgData.Raster.RecycleMemory;
+      imgData.RecycleMemory;
     end);
 {$ENDIF FPC}
 {$ELSE Parallel}
@@ -4523,6 +4558,7 @@ procedure TAI_ImageMatrix.BuildSnapshot_HashList(imgList: TAI_ImageList; RSeri: 
     mr: TMemoryRaster;
   begin
     imgData := imgList[pass];
+    imgData.UnserializedMemory();
     if imgData.DetectorDefineList.Count > 0 then
       begin
         for j := 0 to imgData.DetectorDefineList.Count - 1 do
@@ -4545,7 +4581,7 @@ procedure TAI_ImageMatrix.BuildSnapshot_HashList(imgList: TAI_ImageList; RSeri: 
               end;
           end;
       end;
-    imgData.Raster.RecycleMemory;
+    imgData.RecycleMemory;
   end;
 {$ENDIF FPC}
 {$ELSE Parallel}
@@ -4560,6 +4596,7 @@ procedure TAI_ImageMatrix.BuildSnapshot_HashList(imgList: TAI_ImageList; RSeri: 
     for pass := 0 to imgList.Count - 1 do
       begin
         imgData := imgList[pass];
+        imgData.UnserializedMemory();
         if imgData.DetectorDefineList.Count > 0 then
           begin
             for j := 0 to imgData.DetectorDefineList.Count - 1 do
@@ -4582,7 +4619,7 @@ procedure TAI_ImageMatrix.BuildSnapshot_HashList(imgList: TAI_ImageList; RSeri: 
                   end;
               end;
           end;
-        imgData.Raster.RecycleMemory;
+        imgData.RecycleMemory;
       end;
   end;
 {$ENDIF Parallel}
@@ -4601,6 +4638,7 @@ begin
       mr: TMemoryRaster;
     begin
       imgData := imgList[pass];
+      imgData.UnserializedMemory();
       if imgData.DetectorDefineList.Count > 0 then
         begin
           for j := 0 to imgData.DetectorDefineList.Count - 1 do
@@ -4623,7 +4661,7 @@ begin
                 end;
             end;
         end;
-      imgData.Raster.RecycleMemory;
+      imgData.RecycleMemory;
     end);
 {$ENDIF FPC}
 {$ELSE Parallel}
@@ -4642,13 +4680,12 @@ procedure TAI_ImageMatrix.BuildDefinePrepareRaster_HashList(SS_width, SS_height:
     mr: TMemoryRaster;
   begin
     imgData := imgList[pass];
+    imgData.UnserializedMemory();
     for j := 0 to imgData.DetectorDefineList.Count - 1 do
       begin
         DetDef := imgData.DetectorDefineList[j];
         if DetDef.Token <> '' then
           begin
-            DetDef.PrepareRaster.UnserializedMemory();
-
             if DetDef.PrepareRaster.Empty then
               begin
                 mr := DetDef.Owner.Raster.BuildAreaOffsetScaleSpace(DetDef.R, SS_width, SS_height);
@@ -4670,7 +4707,7 @@ procedure TAI_ImageMatrix.BuildDefinePrepareRaster_HashList(SS_width, SS_height:
             UnLockObject(hList);
           end;
       end;
-    imgData.Raster.RecycleMemory;
+    imgData.RecycleMemory;
   end;
 {$ENDIF FPC}
 {$ELSE Parallel}
@@ -4685,13 +4722,12 @@ procedure TAI_ImageMatrix.BuildDefinePrepareRaster_HashList(SS_width, SS_height:
     for pass := 0 to imgList.Count - 1 do
       begin
         imgData := imgList[pass];
+        imgData.UnserializedMemory();
         for j := 0 to imgData.DetectorDefineList.Count - 1 do
           begin
             DetDef := imgData.DetectorDefineList[j];
             if DetDef.Token <> '' then
               begin
-                DetDef.PrepareRaster.UnserializedMemory();
-
                 if DetDef.PrepareRaster.Empty then
                   begin
                     mr := DetDef.Owner.Raster.BuildAreaOffsetScaleSpace(DetDef.R, SS_width, SS_height);
@@ -4713,7 +4749,7 @@ procedure TAI_ImageMatrix.BuildDefinePrepareRaster_HashList(SS_width, SS_height:
                 UnLockObject(hList);
               end;
           end;
-        imgData.Raster.RecycleMemory;
+        imgData.RecycleMemory;
       end;
   end;
 {$ENDIF Parallel}
@@ -4732,13 +4768,12 @@ begin
       mr: TMemoryRaster;
     begin
       imgData := imgList[pass];
+      imgData.UnserializedMemory();
       for j := 0 to imgData.DetectorDefineList.Count - 1 do
         begin
           DetDef := imgData.DetectorDefineList[j];
           if DetDef.Token <> '' then
             begin
-              DetDef.PrepareRaster.UnserializedMemory();
-
               if DetDef.PrepareRaster.Empty then
                 begin
                   mr := DetDef.Owner.Raster.BuildAreaOffsetScaleSpace(DetDef.R, SS_width, SS_height);
@@ -4760,7 +4795,7 @@ begin
               UnLockObject(hList);
             end;
         end;
-      imgData.Raster.RecycleMemory;
+      imgData.RecycleMemory;
     end);
 {$ENDIF FPC}
 {$ELSE Parallel}
@@ -4779,6 +4814,7 @@ procedure TAI_ImageMatrix.BuildScaleSpace_HashList(SS_width, SS_height: Integer;
     mr: TMemoryRaster;
   begin
     imgData := imgList[pass];
+    imgData.UnserializedMemory();
     for j := 0 to imgData.DetectorDefineList.Count - 1 do
       begin
         DetDef := imgData.DetectorDefineList[j];
@@ -4795,7 +4831,7 @@ procedure TAI_ImageMatrix.BuildScaleSpace_HashList(SS_width, SS_height: Integer;
             UnLockObject(hList);
           end;
       end;
-    imgData.Raster.RecycleMemory;
+    imgData.RecycleMemory;
   end;
 {$ENDIF FPC}
 {$ELSE Parallel}
@@ -4810,6 +4846,7 @@ procedure TAI_ImageMatrix.BuildScaleSpace_HashList(SS_width, SS_height: Integer;
     for pass := 0 to imgList.Count - 1 do
       begin
         imgData := imgList[pass];
+        imgData.UnserializedMemory();
         for j := 0 to imgData.DetectorDefineList.Count - 1 do
           begin
             DetDef := imgData.DetectorDefineList[j];
@@ -4826,7 +4863,7 @@ procedure TAI_ImageMatrix.BuildScaleSpace_HashList(SS_width, SS_height: Integer;
                 UnLockObject(hList);
               end;
           end;
-        imgData.Raster.RecycleMemory;
+        imgData.RecycleMemory;
       end;
   end;
 {$ENDIF Parallel}
@@ -4845,6 +4882,7 @@ begin
       mr: TMemoryRaster;
     begin
       imgData := imgList[pass];
+      imgData.UnserializedMemory();
       for j := 0 to imgData.DetectorDefineList.Count - 1 do
         begin
           DetDef := imgData.DetectorDefineList[j];
@@ -4861,7 +4899,7 @@ begin
               UnLockObject(hList);
             end;
         end;
-      imgData.Raster.RecycleMemory;
+      imgData.RecycleMemory;
     end);
 {$ENDIF FPC}
 {$ELSE Parallel}

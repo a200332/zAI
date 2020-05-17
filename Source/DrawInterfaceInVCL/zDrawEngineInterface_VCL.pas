@@ -19,6 +19,8 @@
 { ****************************************************************************** }
 unit zDrawEngineInterface_VCL;
 
+{$INCLUDE ..\zDefine.inc}
+
 interface
 
 uses

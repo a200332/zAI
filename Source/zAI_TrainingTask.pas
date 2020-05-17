@@ -34,20 +34,22 @@ uses Types, SysUtils,
   DoStatusIO, MemoryRaster, ListEngine, zAI_Common;
 
 type
-  TTrainingTask = class(TCoreClassObject)
+  TAI_TrainingTask = class(TCoreClassObject)
   private
-    procedure On_Save_DoStatus(AText: SystemString; const ID: Integer);
+    procedure On_Save_DoStatus(Text_: SystemString; const ID: Integer);
   public
-    DB_Stream: TMemoryStream64;
+    DB_Stream: TCoreClassStream;
     DB_Engine: TObjectDataManager;
     LastWriteFileList: TPascalStringList;
     LastReadMD5, LastWriteMD5: TMD5;
     TaskLogStatus: TPascalStringList;
 
     constructor Create;
-    class function OpenTask(filename: SystemString): TTrainingTask; overload;
-    class function OpenTask(stream: TCoreClassStream): TTrainingTask; overload;
-    class function CreateTask: TTrainingTask;
+    class function OpenFileTask(filename: SystemString; OnlyRead_: Boolean): TAI_TrainingTask; overload;
+    class function CreateFileTask(filename: SystemString): TAI_TrainingTask; overload;
+    class function OpenMemoryTask(filename: SystemString): TAI_TrainingTask; overload;
+    class function OpenMemoryTask(stream: TCoreClassStream): TAI_TrainingTask; overload;
+    class function CreateMemoryTask: TAI_TrainingTask;
     destructor Destroy; override;
 
     procedure SaveToStream(stream: TCoreClassStream);
@@ -65,6 +67,7 @@ type
     procedure Write(name: SystemString; RSeri: TRasterSerialized; data: TAI_ImageList); overload;
     procedure Write(name: SystemString; RSeri: TRasterSerialized; data: TAI_ImageMatrix); overload;
     procedure WriteFile(name: SystemString; fromfile: SystemString); overload;
+    procedure WriteFile(fromfile: SystemString); overload;
 
     procedure Read(name: SystemString; m64: TMemoryStream64); overload;
     procedure Read(name: SystemString; data: THashVariantList); overload;
@@ -81,16 +84,21 @@ type
 
     function Exists(name: SystemString): Boolean;
     function Delete(name: SystemString): Boolean;
+    procedure GetFileList(L: TPascalStringList);
 
-    procedure CopyTo(LocalName: SystemString; dest: TTrainingTask; destName: SystemString); overload;
+    procedure CopyTo(LocalName: SystemString; dest: TAI_TrainingTask; destName: SystemString); overload;
 
     // check file for training before
     function CheckTrainingBefore(const paramFile: SystemString; var report: SystemString): Boolean;
     // check file for training after
     function CheckTrainingAfter(const paramFile: SystemString; var report: SystemString): Boolean;
+    function IsDepthTraining(const paramFile: SystemString): Boolean;
+    function IsNormalTraining(const paramFile: SystemString): Boolean;
+    function IsLargeScaleTraining(const paramFile: SystemString): Boolean;
+    function GetOutputExt(IsLargeScaleTraining_: Boolean; const paramFile: SystemString; var report, ext: SystemString): Boolean;
 
-    // prepare again training file list
-    function RebuildTrainingData(const paramFile: SystemString; var report: SystemString; dest: TTrainingTask): Boolean;
+    // restore normal training
+    function BuildRestoreTrainingData(const paramFile: SystemString; var report: SystemString; dest: TAI_TrainingTask): Boolean;
 
     // export training result
     procedure ExportLastWriteToStream(stream: TMemoryStream64);
@@ -99,13 +107,13 @@ type
 
 implementation
 
-procedure TTrainingTask.On_Save_DoStatus(AText: SystemString; const ID: Integer);
+procedure TAI_TrainingTask.On_Save_DoStatus(Text_: SystemString; const ID: Integer);
 begin
   if TaskLogStatus <> nil then
-      TaskLogStatus.Add(umlDateTimeToStr(umlNow()) + #9 + AText);
+      TaskLogStatus.Add(umlDateTimeToStr(umlNow()) + #9 + Text_);
 end;
 
-constructor TTrainingTask.Create;
+constructor TAI_TrainingTask.Create;
 begin
   inherited Create;
   DB_Stream := nil;
@@ -117,37 +125,55 @@ begin
   AddDoStatusHook(Self, {$IFDEF FPC}@{$ENDIF FPC}On_Save_DoStatus);
 end;
 
-class function TTrainingTask.OpenTask(filename: SystemString): TTrainingTask;
+class function TAI_TrainingTask.OpenFileTask(filename: SystemString; OnlyRead_: Boolean): TAI_TrainingTask;
 begin
-  Result := TTrainingTask.Create;
+  Result := TAI_TrainingTask.Create;
+  Result.DB_Stream := TCoreClassFileStream.Create(filename, if_(OnlyRead_, fmOpenRead or fmShareDenyNone, fmOpenReadWrite));
+  Result.DB_Engine := TObjectDataManagerOfCache.CreateAsStream(Result.DB_Stream, '', DBMarshal.ID, OnlyRead_, False, False);
+  Result.LastWriteFileList := TPascalStringList.Create;
+  Result.TaskLogStatus := TPascalStringList.Create;
+end;
+
+class function TAI_TrainingTask.CreateFileTask(filename: SystemString): TAI_TrainingTask;
+begin
+  Result := TAI_TrainingTask.Create;
+  Result.DB_Stream := TCoreClassFileStream.Create(filename, fmCreate);
+  Result.DB_Engine := TObjectDataManagerOfCache.CreateAsStream(Result.DB_Stream, '', DBMarshal.ID, False, True, False);
+  Result.LastWriteFileList := TPascalStringList.Create;
+  Result.TaskLogStatus := TPascalStringList.Create;
+end;
+
+class function TAI_TrainingTask.OpenMemoryTask(filename: SystemString): TAI_TrainingTask;
+begin
+  Result := TAI_TrainingTask.Create;
   Result.DB_Stream := TMemoryStream64.CustomCreate($FFFF);
-  Result.DB_Stream.LoadFromFile(filename);
+  TMemoryStream64(Result.DB_Stream).LoadFromFile(filename);
   Result.DB_Engine := TObjectDataManagerOfCache.CreateAsStream(Result.DB_Stream, '', DBMarshal.ID, False, False, False);
   Result.LastWriteFileList := TPascalStringList.Create;
   Result.TaskLogStatus := TPascalStringList.Create;
 end;
 
-class function TTrainingTask.OpenTask(stream: TCoreClassStream): TTrainingTask;
+class function TAI_TrainingTask.OpenMemoryTask(stream: TCoreClassStream): TAI_TrainingTask;
 begin
-  Result := TTrainingTask.Create;
+  Result := TAI_TrainingTask.Create;
   Result.DB_Stream := TMemoryStream64.CustomCreate($FFFF);
-  Result.DB_Stream.LoadFromStream(stream);
+  TMemoryStream64(Result.DB_Stream).LoadFromStream(stream);
   Result.DB_Stream.Position := 0;
   Result.DB_Engine := TObjectDataManagerOfCache.CreateAsStream(Result.DB_Stream, '', DBMarshal.ID, False, False, False);
   Result.LastWriteFileList := TPascalStringList.Create;
   Result.TaskLogStatus := TPascalStringList.Create;
 end;
 
-class function TTrainingTask.CreateTask: TTrainingTask;
+class function TAI_TrainingTask.CreateMemoryTask: TAI_TrainingTask;
 begin
-  Result := TTrainingTask.Create;
+  Result := TAI_TrainingTask.Create;
   Result.DB_Stream := TMemoryStream64.CustomCreate($FFFF);
   Result.DB_Engine := TObjectDataManagerOfCache.CreateAsStream($FF, Result.DB_Stream, '', DBMarshal.ID, False, True, False);
   Result.LastWriteFileList := TPascalStringList.Create;
   Result.TaskLogStatus := TPascalStringList.Create;
 end;
 
-destructor TTrainingTask.Destroy;
+destructor TAI_TrainingTask.Destroy;
 begin
   DeleteDoStatusHook(Self);
   DisposeObject(DB_Engine);
@@ -157,7 +183,7 @@ begin
   inherited Destroy;
 end;
 
-procedure TTrainingTask.SaveToStream(stream: TCoreClassStream);
+procedure TAI_TrainingTask.SaveToStream(stream: TCoreClassStream);
 var
   temp_db: TObjectDataManager;
 begin
@@ -167,7 +193,7 @@ begin
   DisposeObject(temp_db);
 end;
 
-procedure TTrainingTask.SaveToFile(filename: SystemString);
+procedure TAI_TrainingTask.SaveToFile(filename: SystemString);
 var
   fs: TCoreClassFileStream;
 begin
@@ -176,9 +202,8 @@ begin
   DisposeObject(fs);
 end;
 
-procedure TTrainingTask.Write(name: SystemString; m64: TMemoryStream64);
+procedure TAI_TrainingTask.Write(name: SystemString; m64: TMemoryStream64);
 begin
-  DoStatus('Write to "%s"', [name]);
   if not DB_Engine.ItemWriteFromStream('/', Name, m64) then
       RaiseInfo('training task write item %s failed.', [name]);
   LastWriteMD5 := umlStreamMD5(m64);
@@ -186,7 +211,7 @@ begin
       LastWriteFileList.Add(name);
 end;
 
-procedure TTrainingTask.Write(name: SystemString; data: THashVariantList);
+procedure TAI_TrainingTask.Write(name: SystemString; data: THashVariantList);
 var
   m64: TMemoryStream64;
 begin
@@ -196,7 +221,7 @@ begin
   DisposeObject(m64);
 end;
 
-procedure TTrainingTask.Write(name: SystemString; data: THashStringList);
+procedure TAI_TrainingTask.Write(name: SystemString; data: THashStringList);
 var
   m64: TMemoryStream64;
 begin
@@ -206,7 +231,7 @@ begin
   DisposeObject(m64);
 end;
 
-procedure TTrainingTask.Write(name: SystemString; data: TPascalStringList);
+procedure TAI_TrainingTask.Write(name: SystemString; data: TPascalStringList);
 var
   m64: TMemoryStream64;
 begin
@@ -216,7 +241,7 @@ begin
   DisposeObject(m64);
 end;
 
-procedure TTrainingTask.Write(name: SystemString; data: TCoreClassStrings);
+procedure TAI_TrainingTask.Write(name: SystemString; data: TCoreClassStrings);
 var
   m64: TMemoryStream64;
 begin
@@ -230,7 +255,7 @@ begin
   DisposeObject(m64);
 end;
 
-procedure TTrainingTask.Write(name: SystemString; data: TSegmentationColorList);
+procedure TAI_TrainingTask.Write(name: SystemString; data: TSegmentationColorList);
 var
   m64: TMemoryStream64;
 begin
@@ -240,7 +265,7 @@ begin
   DisposeObject(m64);
 end;
 
-procedure TTrainingTask.Write(name: SystemString; data: TMemoryRaster);
+procedure TAI_TrainingTask.Write(name: SystemString; data: TMemoryRaster);
 var
   m64: TMemoryStream64;
 begin
@@ -250,7 +275,7 @@ begin
   DisposeObject(m64);
 end;
 
-procedure TTrainingTask.Write(name: SystemString; data: TAI_ImageList);
+procedure TAI_TrainingTask.Write(name: SystemString; data: TAI_ImageList);
 var
   m64: TMemoryStream64;
 begin
@@ -260,7 +285,7 @@ begin
   DisposeObject(m64);
 end;
 
-procedure TTrainingTask.Write(name: SystemString; data: TAI_ImageMatrix; SaveImg: Boolean);
+procedure TAI_TrainingTask.Write(name: SystemString; data: TAI_ImageMatrix; SaveImg: Boolean);
 var
   m64: TMemoryStream64;
 begin
@@ -270,7 +295,7 @@ begin
   DisposeObject(m64);
 end;
 
-procedure TTrainingTask.Write(name: SystemString; RSeri: TRasterSerialized; data: TAI_ImageList);
+procedure TAI_TrainingTask.Write(name: SystemString; RSeri: TRasterSerialized; data: TAI_ImageList);
 var
   m64: TMemoryStream64;
 begin
@@ -282,7 +307,7 @@ begin
   data.SerializedAndRecycleMemory(RSeri);
 end;
 
-procedure TTrainingTask.Write(name: SystemString; RSeri: TRasterSerialized; data: TAI_ImageMatrix);
+procedure TAI_TrainingTask.Write(name: SystemString; RSeri: TRasterSerialized; data: TAI_ImageMatrix);
 var
   m64: TMemoryStream64;
 begin
@@ -293,7 +318,7 @@ begin
   data.SerializedAndRecycleMemory(RSeri);
 end;
 
-procedure TTrainingTask.WriteFile(name: SystemString; fromfile: SystemString);
+procedure TAI_TrainingTask.WriteFile(name: SystemString; fromfile: SystemString);
 var
   m64: TMemoryStream64;
 begin
@@ -309,7 +334,12 @@ begin
   DisposeObject(m64);
 end;
 
-procedure TTrainingTask.Read(name: SystemString; m64: TMemoryStream64);
+procedure TAI_TrainingTask.WriteFile(fromfile: SystemString);
+begin
+  WriteFile(umlGetFileName(fromfile), fromfile);
+end;
+
+procedure TAI_TrainingTask.Read(name: SystemString; m64: TMemoryStream64);
 begin
   if not DB_Engine.ItemReadToStream('/', name, m64) then
       RaiseInfo('training task read item %s failed.', [name]);
@@ -317,44 +347,52 @@ begin
   m64.Position := 0;
 end;
 
-procedure TTrainingTask.Read(name: SystemString; data: THashVariantList);
+procedure TAI_TrainingTask.Read(name: SystemString; data: THashVariantList);
 var
   m64: TMemoryStream64;
 begin
   data.Clear;
+  if not Exists(name) then
+      exit;
   m64 := TMemoryStream64.Create;
   read(name, m64);
   data.LoadFromStream(m64);
   DisposeObject(m64);
 end;
 
-procedure TTrainingTask.Read(name: SystemString; data: THashStringList);
+procedure TAI_TrainingTask.Read(name: SystemString; data: THashStringList);
 var
   m64: TMemoryStream64;
 begin
   data.Clear;
+  if not Exists(name) then
+      exit;
   m64 := TMemoryStream64.Create;
   read(name, m64);
   data.LoadFromStream(m64);
   DisposeObject(m64);
 end;
 
-procedure TTrainingTask.Read(name: SystemString; data: TPascalStringList);
+procedure TAI_TrainingTask.Read(name: SystemString; data: TPascalStringList);
 var
   m64: TMemoryStream64;
 begin
   data.Clear;
+  if not Exists(name) then
+      exit;
   m64 := TMemoryStream64.Create;
   read(name, m64);
   data.LoadFromStream(m64);
   DisposeObject(m64);
 end;
 
-procedure TTrainingTask.Read(name: SystemString; data: TCoreClassStrings);
+procedure TAI_TrainingTask.Read(name: SystemString; data: TCoreClassStrings);
 var
   m64: TMemoryStream64;
 begin
   data.Clear;
+  if not Exists(name) then
+      exit;
   m64 := TMemoryStream64.Create;
   read(name, m64);
 {$IFDEF FPC}
@@ -365,55 +403,65 @@ begin
   DisposeObject(m64);
 end;
 
-procedure TTrainingTask.Read(name: SystemString; data: TSegmentationColorList);
+procedure TAI_TrainingTask.Read(name: SystemString; data: TSegmentationColorList);
 var
   m64: TMemoryStream64;
 begin
   data.Clear;
+  if not Exists(name) then
+      exit;
   m64 := TMemoryStream64.Create;
   read(name, m64);
   data.LoadFromStream(m64);
   DisposeObject(m64);
 end;
 
-procedure TTrainingTask.Read(name: SystemString; data: TMemoryRaster);
+procedure TAI_TrainingTask.Read(name: SystemString; data: TMemoryRaster);
 var
   m64: TMemoryStream64;
 begin
-  data.Clear;
+  data.Reset;
+  if not Exists(name) then
+      exit;
   m64 := TMemoryStream64.Create;
   read(name, m64);
   data.LoadFromStream(m64);
   DisposeObject(m64);
 end;
 
-procedure TTrainingTask.Read(name: SystemString; data: TAI_ImageList);
+procedure TAI_TrainingTask.Read(name: SystemString; data: TAI_ImageList);
 var
   m64: TMemoryStream64;
 begin
   data.Clear;
+  if not Exists(name) then
+      exit;
   m64 := TMemoryStream64.Create;
   read(name, m64);
   data.LoadFromStream(m64);
   DisposeObject(m64);
 end;
 
-procedure TTrainingTask.Read(name: SystemString; data: TAI_ImageMatrix);
+procedure TAI_TrainingTask.Read(name: SystemString; data: TAI_ImageMatrix);
 var
   m64: TMemoryStream64;
 begin
   data.Clear;
+  if not Exists(name) then
+      exit;
   m64 := TMemoryStream64.Create;
   read(name, m64);
   data.LoadFromStream(m64);
   DisposeObject(m64);
 end;
 
-procedure TTrainingTask.Read(name: SystemString; RSeri: TRasterSerialized; data: TAI_ImageList);
+procedure TAI_TrainingTask.Read(name: SystemString; RSeri: TRasterSerialized; data: TAI_ImageList);
 var
   m64: TMemoryStream64;
 begin
   data.Clear;
+  if not Exists(name) then
+      exit;
   m64 := TMemoryStream64.Create;
   read(name, m64);
   data.LoadFromStream(m64);
@@ -421,21 +469,25 @@ begin
   data.SerializedAndRecycleMemory(RSeri);
 end;
 
-procedure TTrainingTask.Read(name: SystemString; RSeri: TRasterSerialized; data: TAI_ImageMatrix);
+procedure TAI_TrainingTask.Read(name: SystemString; RSeri: TRasterSerialized; data: TAI_ImageMatrix);
 var
   m64: TMemoryStream64;
 begin
   data.Clear;
+  if not Exists(name) then
+      exit;
   m64 := TMemoryStream64.Create;
   read(name, m64);
   data.LargeScale_LoadFromStream(RSeri, m64);
   DisposeObject(m64);
 end;
 
-procedure TTrainingTask.ReadToFile(name: SystemString; destfile: SystemString);
+procedure TAI_TrainingTask.ReadToFile(name: SystemString; destfile: SystemString);
 var
   m64: TMemoryStream64;
 begin
+  if not Exists(name) then
+      exit;
   m64 := TMemoryStream64.Create;
   read(name, m64);
   try
@@ -445,18 +497,31 @@ begin
   DisposeObject(m64);
 end;
 
-function TTrainingTask.Exists(name: SystemString): Boolean;
+function TAI_TrainingTask.Exists(name: SystemString): Boolean;
 begin
   Result := DB_Engine.ItemExists('/', name);
 end;
 
-function TTrainingTask.Delete(name: SystemString): Boolean;
+function TAI_TrainingTask.Delete(name: SystemString): Boolean;
 begin
   Result := DB_Engine.ItemDelete('/', name);
   LastWriteFileList.DeletePascalString(name);
 end;
 
-procedure TTrainingTask.CopyTo(LocalName: SystemString; dest: TTrainingTask; destName: SystemString);
+procedure TAI_TrainingTask.GetFileList(L: TPascalStringList);
+var
+  sr: TItemSearch;
+begin
+  L.Clear;
+  if DB_Engine.ItemFindFirst('/', '*', sr) then
+    begin
+      repeat
+          L.Add(sr.name);
+      until not DB_Engine.ItemFindNext(sr);
+    end;
+end;
+
+procedure TAI_TrainingTask.CopyTo(LocalName: SystemString; dest: TAI_TrainingTask; destName: SystemString);
 var
   m64: TMemoryStream64;
 begin
@@ -467,16 +532,23 @@ begin
   DisposeObject(m64);
 end;
 
-function TTrainingTask.CheckTrainingBefore(const paramFile: SystemString; var report: SystemString): Boolean;
+function TAI_TrainingTask.CheckTrainingBefore(const paramFile: SystemString; var report: SystemString): Boolean;
 var
   Param: THashVariantList;
   ComputeFunc: U_String;
   inputfile1, inputfile2: SystemString;
+  ext: SystemString;
 begin
   Result := False;
   if not Exists(paramFile) then
     begin
       report := PFormat('error param file: %s', [paramFile]);
+      exit;
+    end;
+
+  if not IsNormalTraining(paramFile) then
+    begin
+      Result := GetOutputExt(True, paramFile, report, ext);
       exit;
     end;
 
@@ -603,17 +675,24 @@ begin
       report := 'solve.';
 end;
 
-function TTrainingTask.CheckTrainingAfter(const paramFile: SystemString; var report: SystemString): Boolean;
+function TAI_TrainingTask.CheckTrainingAfter(const paramFile: SystemString; var report: SystemString): Boolean;
 var
   Param: THashVariantList;
   ResultValues: THashVariantList;
   ComputeFunc: U_String;
   outputfile: SystemString;
+  ext: SystemString;
 begin
   Result := False;
   if not Exists(paramFile) then
     begin
       report := PFormat('error param file: %s', [paramFile]);
+      exit;
+    end;
+
+  if not IsNormalTraining(paramFile) then
+    begin
+      Result := GetOutputExt(True, paramFile, report, ext) and Exists('*' + ext);
       exit;
     end;
 
@@ -681,7 +760,7 @@ begin
     end
   else if umlMultipleMatch(['TrainMRN', 'TrainingMRN', 'TrainMetricResNet'], ComputeFunc) then
     begin
-      outputfile := Param.GetDefaultValue('output.sync', 'output' + C_Metric_Ext + '.sync');
+      outputfile := Param.GetDefaultValue('output.sync', 'output' + C_Metric_Ext + C_Sync_Ext);
       if Exists(outputfile) then
         begin
           outputfile := Param.GetDefaultValue('output', 'output' + C_Metric_Ext);
@@ -694,7 +773,7 @@ begin
     end
   else if umlMultipleMatch(['TrainLMRN', 'TrainingLMRN', 'TrainLMetricResNet'], ComputeFunc) then
     begin
-      outputfile := Param.GetDefaultValue('output.sync', 'output' + C_LMetric_Ext + '.sync');
+      outputfile := Param.GetDefaultValue('output.sync', 'output' + C_LMetric_Ext + C_Sync_Ext);
       if Exists(outputfile) then
         begin
           outputfile := Param.GetDefaultValue('output', 'output' + C_LMetric_Ext);
@@ -707,7 +786,7 @@ begin
     end
   else if umlMultipleMatch(['TrainMMOD', 'TrainingMMOD', 'TrainMaxMarginDNNObjectDetector', 'TrainMMOD6L', 'TrainingMMOD6L', 'TrainMaxMarginDNNObjectDetector6L'], ComputeFunc) then
     begin
-      outputfile := Param.GetDefaultValue('output.sync', 'output' + C_MMOD6L_Ext + '.sync');
+      outputfile := Param.GetDefaultValue('output.sync', 'output' + C_MMOD6L_Ext + C_Sync_Ext);
       if Exists(outputfile) then
         begin
           outputfile := Param.GetDefaultValue('output', 'output' + C_MMOD6L_Ext);
@@ -720,7 +799,7 @@ begin
     end
   else if umlMultipleMatch(['TrainMMOD3L', 'TrainingMMOD3L', 'TrainMaxMarginDNNObjectDetector3L'], ComputeFunc) then
     begin
-      outputfile := Param.GetDefaultValue('output.sync', 'output' + C_MMOD3L_Ext + '.sync');
+      outputfile := Param.GetDefaultValue('output.sync', 'output' + C_MMOD3L_Ext + C_Sync_Ext);
       if Exists(outputfile) then
         begin
           outputfile := Param.GetDefaultValue('output', 'output' + C_MMOD3L_Ext);
@@ -733,7 +812,7 @@ begin
     end
   else if umlMultipleMatch(['TrainRNIC', 'TrainingRNIC', 'TrainResNetImageClassifier'], ComputeFunc) then
     begin
-      outputfile := Param.GetDefaultValue('output.sync', 'output' + C_RNIC_Ext + '.sync');
+      outputfile := Param.GetDefaultValue('output.sync', 'output' + C_RNIC_Ext + C_Sync_Ext);
       if Exists(outputfile) then
         begin
           outputfile := Param.GetDefaultValue('output', 'output' + C_RNIC_Ext);
@@ -746,7 +825,7 @@ begin
     end
   else if umlMultipleMatch(['TrainLRNIC', 'TrainingLRNIC', 'TrainLResNetImageClassifier'], ComputeFunc) then
     begin
-      outputfile := Param.GetDefaultValue('output.sync', 'output' + C_LRNIC_Ext + '.sync');
+      outputfile := Param.GetDefaultValue('output.sync', 'output' + C_LRNIC_Ext + C_Sync_Ext);
       if Exists(outputfile) then
         begin
           outputfile := Param.GetDefaultValue('output', 'output' + C_LRNIC_Ext);
@@ -759,7 +838,7 @@ begin
     end
   else if umlMultipleMatch(['TrainGDCNIC', 'TrainingGDCNIC'], ComputeFunc) then
     begin
-      outputfile := Param.GetDefaultValue('output.sync', 'output' + C_GDCNIC_Ext + '.sync');
+      outputfile := Param.GetDefaultValue('output.sync', 'output' + C_GDCNIC_Ext + C_Sync_Ext);
       if Exists(outputfile) then
         begin
           outputfile := Param.GetDefaultValue('output', 'output' + C_GDCNIC_Ext);
@@ -772,7 +851,7 @@ begin
     end
   else if umlMultipleMatch(['TrainGNIC', 'TrainingGNIC'], ComputeFunc) then
     begin
-      outputfile := Param.GetDefaultValue('output.sync', 'output' + C_GNIC_Ext + '.sync');
+      outputfile := Param.GetDefaultValue('output.sync', 'output' + C_GNIC_Ext + C_Sync_Ext);
       if Exists(outputfile) then
         begin
           outputfile := Param.GetDefaultValue('output', 'output' + C_GNIC_Ext);
@@ -785,7 +864,7 @@ begin
     end
   else if umlMultipleMatch(['TrainSS', 'TrainingSS'], ComputeFunc) then
     begin
-      outputfile := Param.GetDefaultValue('output.sync', 'output' + C_SS_Ext + '.sync');
+      outputfile := Param.GetDefaultValue('output.sync', 'output' + C_SS_Ext + C_Sync_Ext);
       if Exists(outputfile) then
         begin
           outputfile := Param.GetDefaultValue('output', 'output' + C_SS_Ext);
@@ -806,29 +885,17 @@ begin
       report := 'solve.';
 end;
 
-function TTrainingTask.RebuildTrainingData(const paramFile: SystemString; var report: SystemString; dest: TTrainingTask): Boolean;
+function TAI_TrainingTask.IsDepthTraining(const paramFile: SystemString): Boolean;
 var
   Param: THashVariantList;
-  ResultValues: THashVariantList;
   ComputeFunc: U_String;
-  inputfile1, inputfile2: SystemString;
-  outputfile1, syncfile: SystemString;
-
-  m1, m2: TMemoryStream64;
 begin
-  Result := CheckTrainingBefore(paramFile, report);
-  if not Result then
-      exit;
-  Result := CheckTrainingAfter(paramFile, report);
-  if not Result then
+  Result := False;
+  if not Exists(paramFile) then
       exit;
 
-  Result := False;
   Param := THashVariantList.Create;
   Read(paramFile, Param);
-  outputfile1 := Param.GetDefaultValue('Result', 'Result.txt');
-  ResultValues := THashVariantList.Create;
-  Read(outputfile1, ResultValues);
 
   if Param.Exists('func') then
       ComputeFunc := Param['func']
@@ -839,145 +906,166 @@ begin
 
   ComputeFunc := ComputeFunc.TrimChar(#32#9);
 
-  if umlMultipleMatch(['surf', 'fastsurf'], ComputeFunc) then
+  if umlMultipleMatch(['TrainMRN', 'TrainingMRN', 'TrainMetricResNet'], ComputeFunc) then
     begin
-      inputfile1 := Param.GetDefaultValue('source', '');
-      inputfile2 := Param.GetDefaultValue('dest', '');
-      outputfile1 := Param.GetDefaultValue('output', 'output.bmp');
-      CopyTo(paramFile, dest, paramFile);
-      CopyTo(inputfile1, dest, inputfile1);
-      CopyTo(inputfile2, dest, inputfile2);
-      Result := True;
-    end
-  else if umlMultipleMatch(['TrainOD', 'TrainingOD', 'TrainObjectDetector', 'TrainOD6L', 'TrainingOD6L', 'TrainObjectDetector6L'], ComputeFunc) then
-    begin
-      inputfile1 := Param.GetDefaultValue('source', '');
-      outputfile1 := Param.GetDefaultValue('output', 'output' + C_OD6L_Ext);
-      CopyTo(paramFile, dest, paramFile);
-      CopyTo(inputfile1, dest, inputfile1);
-      Result := True;
-    end
-  else if umlMultipleMatch(['TrainOD3L', 'TrainingOD3L', 'TrainObjectDetector3L'], ComputeFunc) then
-    begin
-      inputfile1 := Param.GetDefaultValue('source', '');
-      outputfile1 := Param.GetDefaultValue('output', 'output' + C_OD3L_Ext);
-      CopyTo(paramFile, dest, paramFile);
-      CopyTo(inputfile1, dest, inputfile1);
-      Result := True;
-    end
-  else if umlMultipleMatch(['TrainOD_Marshal', 'TrainingOD_Marshal', 'TrainObjectDetectorMarshal', 'TrainOD6L_Marshal', 'TrainingOD6L_Marshal', 'TrainObjectDetector6LMarshal'], ComputeFunc) then
-    begin
-      inputfile1 := Param.GetDefaultValue('source', '');
-      outputfile1 := Param.GetDefaultValue('output', 'output' + C_OD6L_Marshal_Ext);
-      CopyTo(paramFile, dest, paramFile);
-      CopyTo(inputfile1, dest, inputfile1);
-      Result := True;
-    end
-  else if umlMultipleMatch(['TrainSP', 'TrainingSP', 'TrainShapePredictor'], ComputeFunc) then
-    begin
-      inputfile1 := Param.GetDefaultValue('source', '');
-      outputfile1 := Param.GetDefaultValue('output', 'output' + C_SP_Ext);
-      CopyTo(paramFile, dest, paramFile);
-      CopyTo(inputfile1, dest, inputfile1);
-      Result := True;
-    end
-  else if umlMultipleMatch(['TrainMRN', 'TrainingMRN', 'TrainMetricResNet'], ComputeFunc) then
-    begin
-      inputfile1 := Param.GetDefaultValue('source', '');
-      inputfile2 := Param.GetDefaultValue('syncfile', 'output' + C_Metric_Ext + '.sync');
-      syncfile := Param.GetDefaultValue('output.sync', 'output' + C_Metric_Ext + '.sync');
-      outputfile1 := Param.GetDefaultValue('output', 'output' + C_Metric_Ext);
-      CopyTo(paramFile, dest, paramFile);
-      CopyTo(inputfile1, dest, inputfile1);
-      CopyTo(syncfile, dest, inputfile2);
       Result := True;
     end
   else if umlMultipleMatch(['TrainLMRN', 'TrainingLMRN', 'TrainLMetricResNet'], ComputeFunc) then
     begin
-      inputfile1 := Param.GetDefaultValue('source', '');
-      inputfile2 := Param.GetDefaultValue('syncfile', 'output' + C_LMetric_Ext + '.sync');
-      syncfile := Param.GetDefaultValue('output.sync', 'output' + C_LMetric_Ext + '.sync');
-      outputfile1 := Param.GetDefaultValue('output', 'output' + C_LMetric_Ext);
-      CopyTo(paramFile, dest, paramFile);
-      CopyTo(inputfile1, dest, inputfile1);
-      CopyTo(syncfile, dest, inputfile2);
       Result := True;
     end
   else if umlMultipleMatch(['TrainMMOD', 'TrainingMMOD', 'TrainMaxMarginDNNObjectDetector', 'TrainMMOD6L', 'TrainingMMOD6L', 'TrainMaxMarginDNNObjectDetector6L'], ComputeFunc) then
     begin
-      inputfile1 := Param.GetDefaultValue('source', '');
-      inputfile2 := Param.GetDefaultValue('syncfile', 'output' + C_MMOD6L_Ext + '.sync');
-      syncfile := Param.GetDefaultValue('output.sync', 'output' + C_MMOD6L_Ext + '.sync');
-      outputfile1 := Param.GetDefaultValue('output', 'output' + C_MMOD6L_Ext);
-      CopyTo(paramFile, dest, paramFile);
-      CopyTo(inputfile1, dest, inputfile1);
-      CopyTo(syncfile, dest, inputfile2);
       Result := True;
     end
   else if umlMultipleMatch(['TrainMMOD3L', 'TrainingMMOD3L', 'TrainMaxMarginDNNObjectDetector3L'], ComputeFunc) then
     begin
-      inputfile1 := Param.GetDefaultValue('source', '');
-      inputfile2 := Param.GetDefaultValue('syncfile', 'output' + C_MMOD3L_Ext + '.sync');
-      syncfile := Param.GetDefaultValue('output.sync', 'output' + C_MMOD3L_Ext + '.sync');
-      outputfile1 := Param.GetDefaultValue('output', 'output' + C_MMOD3L_Ext);
-      CopyTo(paramFile, dest, paramFile);
-      CopyTo(inputfile1, dest, inputfile1);
-      CopyTo(syncfile, dest, inputfile2);
       Result := True;
     end
   else if umlMultipleMatch(['TrainRNIC', 'TrainingRNIC', 'TrainResNetImageClassifier'], ComputeFunc) then
     begin
-      inputfile1 := Param.GetDefaultValue('source', '');
-      inputfile2 := Param.GetDefaultValue('syncfile', 'output' + C_RNIC_Ext + '.sync');
-      syncfile := Param.GetDefaultValue('output.sync', 'output' + C_RNIC_Ext + '.sync');
-      outputfile1 := Param.GetDefaultValue('output', 'output' + C_RNIC_Ext);
-      CopyTo(paramFile, dest, paramFile);
-      CopyTo(inputfile1, dest, inputfile1);
-      CopyTo(syncfile, dest, inputfile2);
       Result := True;
     end
   else if umlMultipleMatch(['TrainLRNIC', 'TrainingLRNIC', 'TrainLResNetImageClassifier'], ComputeFunc) then
     begin
-      inputfile1 := Param.GetDefaultValue('source', '');
-      inputfile2 := Param.GetDefaultValue('syncfile', 'output' + C_LRNIC_Ext + '.sync');
-      syncfile := Param.GetDefaultValue('output.sync', 'output' + C_LRNIC_Ext + '.sync');
-      outputfile1 := Param.GetDefaultValue('output', 'output' + C_LRNIC_Ext);
-      CopyTo(paramFile, dest, paramFile);
-      CopyTo(inputfile1, dest, inputfile1);
-      CopyTo(syncfile, dest, inputfile2);
       Result := True;
     end
   else if umlMultipleMatch(['TrainGDCNIC', 'TrainingGDCNIC'], ComputeFunc) then
     begin
-      inputfile1 := Param.GetDefaultValue('source', '');
-      inputfile2 := Param.GetDefaultValue('syncfile', 'output' + C_GDCNIC_Ext + '.sync');
-      syncfile := Param.GetDefaultValue('output.sync', 'output' + C_GDCNIC_Ext + '.sync');
-      outputfile1 := Param.GetDefaultValue('output', 'output' + C_GDCNIC_Ext);
-      CopyTo(paramFile, dest, paramFile);
-      CopyTo(inputfile1, dest, inputfile1);
-      CopyTo(syncfile, dest, inputfile2);
       Result := True;
     end
   else if umlMultipleMatch(['TrainGNIC', 'TrainingGNIC'], ComputeFunc) then
     begin
-      inputfile1 := Param.GetDefaultValue('source', '');
-      inputfile2 := Param.GetDefaultValue('syncfile', 'output' + C_GNIC_Ext + '.sync');
-      syncfile := Param.GetDefaultValue('output.sync', 'output' + C_GNIC_Ext + '.sync');
-      outputfile1 := Param.GetDefaultValue('output', 'output' + C_GNIC_Ext);
-      CopyTo(paramFile, dest, paramFile);
-      CopyTo(inputfile1, dest, inputfile1);
-      CopyTo(syncfile, dest, inputfile2);
       Result := True;
     end
   else if umlMultipleMatch(['TrainSS', 'TrainingSS'], ComputeFunc) then
     begin
-      inputfile1 := Param.GetDefaultValue('source', '');
-      inputfile2 := Param.GetDefaultValue('syncfile', 'output' + C_SS_Ext + '.sync');
-      syncfile := Param.GetDefaultValue('output.sync', 'output' + C_SS_Ext + '.sync');
-      outputfile1 := Param.GetDefaultValue('output', 'output' + C_SS_Ext);
-      CopyTo(paramFile, dest, paramFile);
-      CopyTo(inputfile1, dest, inputfile1);
-      CopyTo(syncfile, dest, inputfile2);
+      Result := True;
+    end;
+
+  DisposeObject(Param);
+end;
+
+function TAI_TrainingTask.IsNormalTraining(const paramFile: SystemString): Boolean;
+var
+  Param: THashVariantList;
+  ComputeFunc: U_String;
+  outputfile: SystemString;
+begin
+  Result := False;
+  if not Exists(paramFile) then
+    begin
+      exit;
+    end;
+
+  Param := THashVariantList.Create;
+  Read(paramFile, Param);
+
+  Result := Param.Exists('source');
+
+  DisposeObject(Param);
+end;
+
+function TAI_TrainingTask.IsLargeScaleTraining(const paramFile: SystemString): Boolean;
+var
+  report, ext: SystemString;
+begin
+  Result := (not IsNormalTraining(paramFile)) and GetOutputExt(True, paramFile, report, ext);
+end;
+
+function TAI_TrainingTask.GetOutputExt(IsLargeScaleTraining_: Boolean; const paramFile: SystemString; var report, ext: SystemString): Boolean;
+var
+  Param: THashVariantList;
+  ComputeFunc: U_String;
+  outputfile: SystemString;
+begin
+  Result := False;
+  if not Exists(paramFile) then
+    begin
+      report := PFormat('error param file: %s', [paramFile]);
+      exit;
+    end;
+
+  Param := THashVariantList.Create;
+  Read(paramFile, Param);
+
+  if Param.Exists('func') then
+      ComputeFunc := Param['func']
+  else if Param.Exists('compute') then
+      ComputeFunc := Param['compute']
+  else
+      ComputeFunc := Param.GetDefaultValue('ComputeFunc', '');
+
+  ComputeFunc := ComputeFunc.TrimChar(#32#9);
+
+  if (not IsLargeScaleTraining_) and (umlMultipleMatch(['surf', 'fastsurf'], ComputeFunc)) then
+    begin
+      ext := '.bmp';
+      Result := True;
+    end
+  else if (not IsLargeScaleTraining_) and (umlMultipleMatch(['TrainOD', 'TrainingOD', 'TrainObjectDetector', 'TrainOD6L', 'TrainingOD6L', 'TrainObjectDetector6L'], ComputeFunc)) then
+    begin
+      ext := C_OD6L_Ext;
+      Result := True;
+    end
+  else if (not IsLargeScaleTraining_) and (umlMultipleMatch(['TrainOD3L', 'TrainingOD3L', 'TrainObjectDetector3L'], ComputeFunc)) then
+    begin
+      ext := C_OD3L_Ext;
+      Result := True;
+    end
+  else if (not IsLargeScaleTraining_) and (umlMultipleMatch(['TrainOD_Marshal', 'TrainingOD_Marshal', 'TrainObjectDetectorMarshal', 'TrainOD6L_Marshal', 'TrainingOD6L_Marshal', 'TrainObjectDetector6LMarshal'], ComputeFunc)) then
+    begin
+      ext := C_OD6L_Marshal_Ext;
+      Result := True;
+    end
+  else if (not IsLargeScaleTraining_) and (umlMultipleMatch(['TrainSP', 'TrainingSP', 'TrainShapePredictor'], ComputeFunc)) then
+    begin
+      ext := C_SP_Ext;
+      Result := True;
+    end
+  else if umlMultipleMatch(['TrainMRN', 'TrainingMRN', 'TrainMetricResNet'], ComputeFunc) then
+    begin
+      ext := C_Metric_Ext;
+      Result := True;
+    end
+  else if umlMultipleMatch(['TrainLMRN', 'TrainingLMRN', 'TrainLMetricResNet'], ComputeFunc) then
+    begin
+      ext := C_LMetric_Ext;
+      Result := True;
+    end
+  else if umlMultipleMatch(['TrainMMOD', 'TrainingMMOD', 'TrainMaxMarginDNNObjectDetector', 'TrainMMOD6L', 'TrainingMMOD6L', 'TrainMaxMarginDNNObjectDetector6L'], ComputeFunc) then
+    begin
+      ext := C_MMOD6L_Ext;
+      Result := True;
+    end
+  else if umlMultipleMatch(['TrainMMOD3L', 'TrainingMMOD3L', 'TrainMaxMarginDNNObjectDetector3L'], ComputeFunc) then
+    begin
+      ext := C_MMOD3L_Ext;
+      Result := True;
+    end
+  else if umlMultipleMatch(['TrainRNIC', 'TrainingRNIC', 'TrainResNetImageClassifier'], ComputeFunc) then
+    begin
+      ext := C_RNIC_Ext;
+      Result := True;
+    end
+  else if umlMultipleMatch(['TrainLRNIC', 'TrainingLRNIC', 'TrainLResNetImageClassifier'], ComputeFunc) then
+    begin
+      ext := C_LRNIC_Ext;
+      Result := True;
+    end
+  else if umlMultipleMatch(['TrainGDCNIC', 'TrainingGDCNIC'], ComputeFunc) then
+    begin
+      ext := C_GDCNIC_Ext;
+      Result := True;
+    end
+  else if umlMultipleMatch(['TrainGNIC', 'TrainingGNIC'], ComputeFunc) then
+    begin
+      ext := C_GNIC_Ext;
+      Result := True;
+    end
+  else if umlMultipleMatch(['TrainSS', 'TrainingSS'], ComputeFunc) then
+    begin
+      ext := C_SS_Ext;
       Result := True;
     end
   else
@@ -985,12 +1073,280 @@ begin
       report := 'illegal ComputeFunc.';
     end;
 
-  DisposeObject([Param, ResultValues]);
+  DisposeObject(Param);
+  if Result then
+      report := 'solve.'
+  else
+      report := 'error.';
+end;
+
+function TAI_TrainingTask.BuildRestoreTrainingData(const paramFile: SystemString; var report: SystemString; dest: TAI_TrainingTask): Boolean;
+var
+  Param: THashVariantList;
+  ComputeFunc: U_String;
+  inputfile1, inputfile2, inputSyncFile1, inputSyncFile2: SystemString;
+  outputfile1: SystemString;
+
+  m1, m2: TMemoryStream64;
+begin
+  Result := IsNormalTraining(paramFile);
+  if not Result then
+      exit;
+  Result := CheckTrainingBefore(paramFile, report);
+  if not Result then
+      exit;
+
+  Result := False;
+  Param := THashVariantList.Create;
+  Read(paramFile, Param);
+
+  if Param.Exists('func') then
+      ComputeFunc := Param['func']
+  else if Param.Exists('compute') then
+      ComputeFunc := Param['compute']
+  else
+      ComputeFunc := Param.GetDefaultValue('ComputeFunc', '');
+
+  ComputeFunc := ComputeFunc.TrimChar(#32#9);
+
+  try
+    if umlMultipleMatch(['surf', 'fastsurf'], ComputeFunc) then
+      begin
+        inputfile1 := Param.GetDefaultValue('source', '');
+        inputfile2 := Param.GetDefaultValue('dest', '');
+        outputfile1 := Param.GetDefaultValue('output', 'output.bmp');
+        CopyTo(paramFile, dest, paramFile);
+        CopyTo(inputfile1, dest, inputfile1);
+        CopyTo(inputfile2, dest, inputfile2);
+        Result := True;
+      end
+    else if umlMultipleMatch(['TrainOD', 'TrainingOD', 'TrainObjectDetector', 'TrainOD6L', 'TrainingOD6L', 'TrainObjectDetector6L'], ComputeFunc) then
+      begin
+        inputfile1 := Param.GetDefaultValue('source', '');
+        outputfile1 := Param.GetDefaultValue('output', 'output' + C_OD6L_Ext);
+        CopyTo(paramFile, dest, paramFile);
+        CopyTo(inputfile1, dest, inputfile1);
+        Result := True;
+      end
+    else if umlMultipleMatch(['TrainOD3L', 'TrainingOD3L', 'TrainObjectDetector3L'], ComputeFunc) then
+      begin
+        inputfile1 := Param.GetDefaultValue('source', '');
+        outputfile1 := Param.GetDefaultValue('output', 'output' + C_OD3L_Ext);
+        CopyTo(paramFile, dest, paramFile);
+        CopyTo(inputfile1, dest, inputfile1);
+        Result := True;
+      end
+    else if umlMultipleMatch(['TrainOD_Marshal', 'TrainingOD_Marshal', 'TrainObjectDetectorMarshal', 'TrainOD6L_Marshal', 'TrainingOD6L_Marshal', 'TrainObjectDetector6LMarshal'], ComputeFunc) then
+      begin
+        inputfile1 := Param.GetDefaultValue('source', '');
+        outputfile1 := Param.GetDefaultValue('output', 'output' + C_OD6L_Marshal_Ext);
+        CopyTo(paramFile, dest, paramFile);
+        CopyTo(inputfile1, dest, inputfile1);
+        Result := True;
+      end
+    else if umlMultipleMatch(['TrainSP', 'TrainingSP', 'TrainShapePredictor'], ComputeFunc) then
+      begin
+        inputfile1 := Param.GetDefaultValue('source', '');
+        outputfile1 := Param.GetDefaultValue('output', 'output' + C_SP_Ext);
+        CopyTo(paramFile, dest, paramFile);
+        CopyTo(inputfile1, dest, inputfile1);
+        Result := True;
+      end
+    else if umlMultipleMatch(['TrainMRN', 'TrainingMRN', 'TrainMetricResNet'], ComputeFunc) then
+      begin
+        // paramfile.
+        CopyTo(paramFile, dest, paramFile);
+        // inputfile from on source value
+        inputfile1 := Param.GetDefaultValue('source', '');
+        CopyTo(inputfile1, dest, inputfile1);
+        // outputfile from on output value
+        outputfile1 := Param.GetDefaultValue('output', 'output' + C_Metric_Ext);
+        if Exists(outputfile1) then
+            CopyTo(outputfile1, dest, outputfile1);
+        // syncfile
+        inputSyncFile1 := Param.GetDefaultValue('syncfile', 'output' + C_Sync_Ext);
+        inputSyncFile2 := Param.GetDefaultValue('syncfile2', 'output' + C_Sync_Ext2);
+        if Exists(inputSyncFile1) then
+            CopyTo(inputSyncFile1, dest, inputSyncFile1);
+        if Exists(inputSyncFile2) then
+            CopyTo(inputSyncFile2, dest, inputSyncFile2);
+        Result := True;
+      end
+    else if umlMultipleMatch(['TrainLMRN', 'TrainingLMRN', 'TrainLMetricResNet'], ComputeFunc) then
+      begin
+        // paramfile.
+        CopyTo(paramFile, dest, paramFile);
+        // inputfile from on source value
+        inputfile1 := Param.GetDefaultValue('source', '');
+        CopyTo(inputfile1, dest, inputfile1);
+        // outputfile from on output value
+        outputfile1 := Param.GetDefaultValue('output', 'output' + C_LMetric_Ext);
+        if Exists(outputfile1) then
+            CopyTo(outputfile1, dest, outputfile1);
+        // syncfile
+        inputSyncFile1 := Param.GetDefaultValue('syncfile', 'output' + C_Sync_Ext);
+        inputSyncFile2 := Param.GetDefaultValue('syncfile2', 'output' + C_Sync_Ext2);
+        if Exists(inputSyncFile1) then
+            CopyTo(inputSyncFile1, dest, inputSyncFile1);
+        if Exists(inputSyncFile2) then
+            CopyTo(inputSyncFile2, dest, inputSyncFile2);
+        Result := True;
+      end
+    else if umlMultipleMatch(['TrainMMOD', 'TrainingMMOD', 'TrainMaxMarginDNNObjectDetector', 'TrainMMOD6L', 'TrainingMMOD6L', 'TrainMaxMarginDNNObjectDetector6L'], ComputeFunc) then
+      begin
+        // paramfile.
+        CopyTo(paramFile, dest, paramFile);
+        // inputfile from on source value
+        inputfile1 := Param.GetDefaultValue('source', '');
+        CopyTo(inputfile1, dest, inputfile1);
+        // outputfile from on output value
+        outputfile1 := Param.GetDefaultValue('output', 'output' + C_MMOD6L_Ext);
+        if Exists(outputfile1) then
+            CopyTo(outputfile1, dest, outputfile1);
+        // syncfile
+        inputSyncFile1 := Param.GetDefaultValue('syncfile', 'output' + C_Sync_Ext);
+        inputSyncFile2 := Param.GetDefaultValue('syncfile2', 'output' + C_Sync_Ext2);
+        if Exists(inputSyncFile1) then
+            CopyTo(inputSyncFile1, dest, inputSyncFile1);
+        if Exists(inputSyncFile2) then
+            CopyTo(inputSyncFile2, dest, inputSyncFile2);
+        Result := True;
+      end
+    else if umlMultipleMatch(['TrainMMOD3L', 'TrainingMMOD3L', 'TrainMaxMarginDNNObjectDetector3L'], ComputeFunc) then
+      begin
+        // paramfile.
+        CopyTo(paramFile, dest, paramFile);
+        // inputfile from on source value
+        inputfile1 := Param.GetDefaultValue('source', '');
+        CopyTo(inputfile1, dest, inputfile1);
+        // outputfile from on output value
+        outputfile1 := Param.GetDefaultValue('output', 'output' + C_MMOD3L_Ext);
+        if Exists(outputfile1) then
+            CopyTo(outputfile1, dest, outputfile1);
+        // syncfile
+        inputSyncFile1 := Param.GetDefaultValue('syncfile', 'output' + C_Sync_Ext);
+        inputSyncFile2 := Param.GetDefaultValue('syncfile2', 'output' + C_Sync_Ext2);
+        if Exists(inputSyncFile1) then
+            CopyTo(inputSyncFile1, dest, inputSyncFile1);
+        if Exists(inputSyncFile2) then
+            CopyTo(inputSyncFile2, dest, inputSyncFile2);
+        Result := True;
+      end
+    else if umlMultipleMatch(['TrainRNIC', 'TrainingRNIC', 'TrainResNetImageClassifier'], ComputeFunc) then
+      begin
+        // paramfile.
+        CopyTo(paramFile, dest, paramFile);
+        // inputfile from on source value
+        inputfile1 := Param.GetDefaultValue('source', '');
+        CopyTo(inputfile1, dest, inputfile1);
+        // outputfile from on output value
+        outputfile1 := Param.GetDefaultValue('output', 'output' + C_RNIC_Ext);
+        if Exists(outputfile1) then
+            CopyTo(outputfile1, dest, outputfile1);
+        // syncfile
+        inputSyncFile1 := Param.GetDefaultValue('syncfile', 'output' + C_Sync_Ext);
+        inputSyncFile2 := Param.GetDefaultValue('syncfile2', 'output' + C_Sync_Ext2);
+        if Exists(inputSyncFile1) then
+            CopyTo(inputSyncFile1, dest, inputSyncFile1);
+        if Exists(inputSyncFile2) then
+            CopyTo(inputSyncFile2, dest, inputSyncFile2);
+        Result := True;
+      end
+    else if umlMultipleMatch(['TrainLRNIC', 'TrainingLRNIC', 'TrainLResNetImageClassifier'], ComputeFunc) then
+      begin
+        // paramfile.
+        CopyTo(paramFile, dest, paramFile);
+        // inputfile from on source value
+        inputfile1 := Param.GetDefaultValue('source', '');
+        CopyTo(inputfile1, dest, inputfile1);
+        // outputfile from on output value
+        outputfile1 := Param.GetDefaultValue('output', 'output' + C_LRNIC_Ext);
+        if Exists(outputfile1) then
+            CopyTo(outputfile1, dest, outputfile1);
+        // syncfile
+        inputSyncFile1 := Param.GetDefaultValue('syncfile', 'output' + C_Sync_Ext);
+        inputSyncFile2 := Param.GetDefaultValue('syncfile2', 'output' + C_Sync_Ext2);
+        if Exists(inputSyncFile1) then
+            CopyTo(inputSyncFile1, dest, inputSyncFile1);
+        if Exists(inputSyncFile2) then
+            CopyTo(inputSyncFile2, dest, inputSyncFile2);
+        Result := True;
+      end
+    else if umlMultipleMatch(['TrainGDCNIC', 'TrainingGDCNIC'], ComputeFunc) then
+      begin
+        // paramfile.
+        CopyTo(paramFile, dest, paramFile);
+        // inputfile from on source value
+        inputfile1 := Param.GetDefaultValue('source', '');
+        CopyTo(inputfile1, dest, inputfile1);
+        // outputfile from on output value
+        outputfile1 := Param.GetDefaultValue('output', 'output' + C_GDCNIC_Ext);
+        if Exists(outputfile1) then
+            CopyTo(outputfile1, dest, outputfile1);
+        // syncfile
+        inputSyncFile1 := Param.GetDefaultValue('syncfile', 'output' + C_Sync_Ext);
+        inputSyncFile2 := Param.GetDefaultValue('syncfile2', 'output' + C_Sync_Ext2);
+        if Exists(inputSyncFile1) then
+            CopyTo(inputSyncFile1, dest, inputSyncFile1);
+        if Exists(inputSyncFile2) then
+            CopyTo(inputSyncFile2, dest, inputSyncFile2);
+        Result := True;
+      end
+    else if umlMultipleMatch(['TrainGNIC', 'TrainingGNIC'], ComputeFunc) then
+      begin
+        // paramfile.
+        CopyTo(paramFile, dest, paramFile);
+        // inputfile from on source value
+        inputfile1 := Param.GetDefaultValue('source', '');
+        CopyTo(inputfile1, dest, inputfile1);
+        // outputfile from on output value
+        outputfile1 := Param.GetDefaultValue('output', 'output' + C_GNIC_Ext);
+        if Exists(outputfile1) then
+            CopyTo(outputfile1, dest, outputfile1);
+        // syncfile
+        inputSyncFile1 := Param.GetDefaultValue('syncfile', 'output' + C_Sync_Ext);
+        inputSyncFile2 := Param.GetDefaultValue('syncfile2', 'output' + C_Sync_Ext2);
+        if Exists(inputSyncFile1) then
+            CopyTo(inputSyncFile1, dest, inputSyncFile1);
+        if Exists(inputSyncFile2) then
+            CopyTo(inputSyncFile2, dest, inputSyncFile2);
+        Result := True;
+      end
+    else if umlMultipleMatch(['TrainSS', 'TrainingSS'], ComputeFunc) then
+      begin
+        // paramfile.
+        CopyTo(paramFile, dest, paramFile);
+        // inputfile from on source value
+        inputfile1 := Param.GetDefaultValue('source', '');
+        CopyTo(inputfile1, dest, inputfile1);
+        // outputfile from on output value
+        outputfile1 := Param.GetDefaultValue('output', 'output' + C_SS_Ext);
+        if Exists(outputfile1) then
+            CopyTo(outputfile1, dest, outputfile1);
+        // syncfile
+        inputSyncFile1 := Param.GetDefaultValue('syncfile', 'output' + C_Sync_Ext);
+        inputSyncFile2 := Param.GetDefaultValue('syncfile2', 'output' + C_Sync_Ext2);
+        if Exists(inputSyncFile1) then
+            CopyTo(inputSyncFile1, dest, inputSyncFile1);
+        if Exists(inputSyncFile2) then
+            CopyTo(inputSyncFile2, dest, inputSyncFile2);
+        Result := True;
+      end
+    else
+      begin
+        report := 'illegal ComputeFunc.';
+      end;
+  except
+    Result := False;
+    report := 'error.';
+  end;
+
+  DisposeObject(Param);
   if Result then
       report := 'solve.';
 end;
 
-procedure TTrainingTask.ExportLastWriteToStream(stream: TMemoryStream64);
+procedure TAI_TrainingTask.ExportLastWriteToStream(stream: TMemoryStream64);
 var
   dest_db: TObjectDataManager;
   i: Integer;
@@ -1010,7 +1366,7 @@ begin
   DisposeObject(dest_db);
 end;
 
-procedure TTrainingTask.ExportLastWriteToFile(filename: SystemString);
+procedure TAI_TrainingTask.ExportLastWriteToFile(filename: SystemString);
 var
   m64: TMemoryStream64;
 begin

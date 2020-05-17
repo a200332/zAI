@@ -1,4 +1,4 @@
-program compTestZAI131;
+program compTestZAI132;
 
 {$APPTYPE CONSOLE}
 
