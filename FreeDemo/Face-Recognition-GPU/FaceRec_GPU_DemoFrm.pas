@@ -22,10 +22,12 @@ type
     Timer1: TTimer;
     ResetButton: TButton;
     Image1: TImageViewer;
+    MetricButton: TButton;
     procedure ResetButtonClick(Sender: TObject);
     procedure FaceRecButtonClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure Image1Click(Sender: TObject);
+    procedure MetricButtonClick(Sender: TObject);
     procedure Timer1Timer(Sender: TObject);
   private
     procedure DoStatusMethod(Text_: SystemString; const ID: Integer);
@@ -87,6 +89,7 @@ begin
         begin
           FaceRecButton.Enabled := False;
           ResetButton.Enabled := False;
+          MetricButton.Enabled := False;
         end);
       try
         DoStatus('检查度量化神经网络库:%s', ['lady_face' + C_Metric_Ext]);
@@ -227,6 +230,7 @@ begin
           begin
             FaceRecButton.Enabled := True;
             ResetButton.Enabled := True;
+            MetricButton.Enabled := True;
           end);
       end;
 
@@ -255,6 +259,7 @@ begin
 
   FaceRecButton.Enabled := False;
   ResetButton.Enabled := False;
+  MetricButton.Enabled := False;
 
   TComputeThread.RunP(nil, nil, procedure(Sender: TComputeThread)
     var
@@ -280,6 +285,7 @@ begin
           MemoryBitmapToBitmap(face_tile, Image1.Bitmap);
           FaceRecButton.Enabled := True;
           ResetButton.Enabled := True;
+          MetricButton.Enabled := True;
         end);
 
       DoStatus('初始化Learn引擎分类器');
@@ -291,6 +297,54 @@ end;
 procedure TFaceRecForm.Image1Click(Sender: TObject);
 begin
   MemoryBitmapToBitmap(face_tile, Image1.Bitmap);
+end;
+
+procedure TFaceRecForm.MetricButtonClick(Sender: TObject);
+begin
+  TComputeThread.RunP(nil, nil, procedure(Sender: TComputeThread)
+    var
+      fn: U_String;
+      training_successed: Boolean;
+      mdnn_hnd: TMetric_Handle;
+      tk: TTimeTick;
+      tmpLearn: TLearn;
+    begin
+      TThread.Synchronize(Sender, procedure
+        begin
+          FaceRecButton.Enabled := False;
+          ResetButton.Enabled := False;
+          MetricButton.Enabled := False;
+        end);
+      try
+        DoStatus('检查度量化神经网络库:%s', ['lady_face' + C_Metric_Ext]);
+        fn := umlCombineFileName(TPath.GetLibraryPath, 'lady_face' + C_Metric_Ext);
+        if not umlFileExists(fn) then
+            exit;
+
+        DoStatus('载入度量化神经网络 "%s"', [fn.Text]);
+        mdnn_hnd := AI.Metric_ResNet_Open_Stream(fn);
+
+        // learn学习这一步可以保存成文件，不必每次学习
+        DoStatus('Learn引擎正在学习Face度量', []);
+        tmpLearn := TLearn.CreateClassifier(TLearnType.ltKDT, zAI.C_Metric_Dim);
+        L_Engine.Clear;
+        tk := GetTimeTick();
+        AI.Metric_ResNet_SaveToLearnEngine(mdnn_hnd, False, imgL, tmpLearn);
+        tmpLearn.Training;
+        DoStatus('学习Face度量，Learn记忆了 %d 张面部度量，耗时:%dms', [tmpLearn.Count, GetTimeTick() - tk]);
+        disposeObject(tmpLearn);
+
+        DoStatus('关闭度量化神经网络 "%s"', [fn.Text]);
+        AI.Metric_ResNet_Close(mdnn_hnd);
+      finally
+          TThread.Synchronize(Sender, procedure
+          begin
+            FaceRecButton.Enabled := True;
+            ResetButton.Enabled := True;
+            MetricButton.Enabled := True;
+          end);
+      end;
+    end);
 end;
 
 procedure TFaceRecForm.Timer1Timer(Sender: TObject);

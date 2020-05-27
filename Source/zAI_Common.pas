@@ -28,6 +28,9 @@ uses Types,
   CoreClasses,
 {$IFDEF FPC}
   FPCGenericStructlist,
+{$IFDEF MSWINDOWS}
+  windirs,
+{$ENDIF MSWINDOWS}
 {$ELSE FPC}
   System.IOUtils,
 {$ENDIF FPC}
@@ -336,8 +339,10 @@ type
     procedure ClearMaskMerge;
 
     // Serialized And Recycle Memory
-    procedure SerializedAndRecycleMemory(Serializ: TRasterSerialized);
-    procedure UnserializedMemory(Serializ: TRasterSerialized);
+    procedure SerializedAndRecycleMemory(Serializ: TRasterSerialized); overload;
+    procedure SerializedAndRecycleMemory(); overload;
+    procedure UnserializedMemory(Serializ: TRasterSerialized); overload;
+    procedure UnserializedMemory(); overload;
     function RecycleMemory: Int64;
   end;
 {$ENDREGION 'image list'}
@@ -559,7 +564,12 @@ uses DoStatusIO, Math;
 procedure Init_AI_Common;
 begin
 {$IFDEF FPC}
-  AI_Configure_Path := umlCurrentPath;
+  AI_Configure_Path :=
+{$IFDEF MSWINDOWS}
+    GetWindowsSpecialDir(CSIDL_PERSONAL);
+{$ELSE MSWINDOWS}
+    umlCurrentPath;
+{$ENDIF MSWINDOWS}
   AI_Work_Path := umlCurrentPath;
 {$ELSE FPC}
   AI_Configure_Path := System.IOUtils.TPath.GetDocumentsPath;
@@ -3857,33 +3867,55 @@ begin
 end;
 
 procedure TAI_ImageList.BuildMaskMerge(colors: TSegmentationColorList);
-var
-  i: Integer;
+{$IFDEF Parallel}
+{$IFDEF FPC}
+  procedure Nested_ParallelFor(pass: Integer);
+  begin
+    Items[pass].SegmentationMaskList.BuildMaskMerge(colors);
+  end;
+{$ENDIF FPC}
+{$ELSE Parallel}
+  procedure DoFor;
+  var
+    pass: Integer;
+  begin
+    for pass := 0 to Count - 1 do
+      begin
+        Items[pass].SegmentationMaskList.BuildMaskMerge(colors);
+      end;
+  end;
+{$ENDIF Parallel}
+
+
 begin
-  for i := 0 to Count - 1 do
-      Items[i].SegmentationMaskList.BuildMaskMerge(colors);
+{$IFDEF Parallel}
+{$IFDEF FPC}
+  FPCParallelFor(@Nested_ParallelFor, 0, Count - 1);
+{$ELSE FPC}
+  DelphiParallelFor(0, Count - 1, procedure(pass: Integer)
+    begin
+      Items[pass].SegmentationMaskList.BuildMaskMerge(colors);
+    end);
+{$ENDIF FPC}
+{$ELSE Parallel}
+  DoFor;
+{$ENDIF Parallel}
 end;
 
 procedure TAI_ImageList.BuildMaskMerge;
 var
   cl: TSegmentationColorList;
 begin
-  cl := BuildSegmentationColorBuffer;
+  cl := BuildSegmentationColorBuffer();
   BuildMaskMerge(cl);
   disposeObject(cl);
 end;
 
 procedure TAI_ImageList.LargeScale_BuildMaskMerge(RSeri: TRasterSerialized; colors: TSegmentationColorList);
-var
-  i: Integer;
-  img: TAI_Image;
 begin
-  for i := 0 to Count - 1 do
-    begin
-      img := Items[i];
-      img.SegmentationMaskList.BuildMaskMerge(colors);
-      img.SerializedAndRecycleMemory(RSeri);
-    end;
+  UnserializedMemory();
+  BuildMaskMerge(colors);
+  SerializedAndRecycleMemory(RSeri);
 end;
 
 procedure TAI_ImageList.ClearMaskMerge;
@@ -3902,12 +3934,28 @@ begin
       Items[i].SerializedAndRecycleMemory(Serializ);
 end;
 
+procedure TAI_ImageList.SerializedAndRecycleMemory();
+var
+  i: Integer;
+begin
+  for i := 0 to Count - 1 do
+      Items[i].SerializedAndRecycleMemory();
+end;
+
 procedure TAI_ImageList.UnserializedMemory(Serializ: TRasterSerialized);
 var
   i: Integer;
 begin
   for i := 0 to Count - 1 do
       Items[i].UnserializedMemory(Serializ);
+end;
+
+procedure TAI_ImageList.UnserializedMemory();
+var
+  i: Integer;
+begin
+  for i := 0 to Count - 1 do
+      Items[i].UnserializedMemory();
 end;
 
 function TAI_ImageList.RecycleMemory: Int64;
@@ -5652,11 +5700,39 @@ begin
 end;
 
 procedure TAI_ImageMatrix.BuildMaskMerge(colors: TSegmentationColorList);
-var
-  i: Integer;
+{$IFDEF Parallel}
+{$IFDEF FPC}
+  procedure Nested_ParallelFor(pass: Integer);
+  begin
+    Items[pass].BuildMaskMerge(colors);
+  end;
+{$ENDIF FPC}
+{$ELSE Parallel}
+  procedure DoFor;
+  var
+    pass: Integer;
+  begin
+    for pass := 0 to Count - 1 do
+      begin
+        Items[pass].BuildMaskMerge(colors);
+      end;
+  end;
+{$ENDIF Parallel}
+
+
 begin
-  for i := 0 to Count - 1 do
-      Items[i].BuildMaskMerge(colors);
+{$IFDEF Parallel}
+{$IFDEF FPC}
+  FPCParallelFor(@Nested_ParallelFor, 0, Count - 1);
+{$ELSE FPC}
+  DelphiParallelFor(0, Count - 1, procedure(pass: Integer)
+    begin
+      Items[pass].BuildMaskMerge(colors);
+    end);
+{$ENDIF FPC}
+{$ELSE Parallel}
+  DoFor;
+{$ENDIF Parallel}
 end;
 
 procedure TAI_ImageMatrix.BuildMaskMerge;
@@ -5669,11 +5745,53 @@ begin
 end;
 
 procedure TAI_ImageMatrix.LargeScale_BuildMaskMerge(RSeri: TRasterSerialized; colors: TSegmentationColorList);
-var
-  i: Integer;
+{$IFDEF Parallel}
+{$IFDEF FPC}
+  procedure Nested_ParallelFor(pass: Integer);
+  var
+    imgL: TAI_ImageList;
+  begin
+    imgL := Items[pass];
+    imgL.UnserializedMemory();
+    imgL.BuildMaskMerge(colors);
+    imgL.SerializedAndRecycleMemory(RSeri);
+  end;
+{$ENDIF FPC}
+{$ELSE Parallel}
+  procedure DoFor;
+  var
+    pass: Integer;
+    imgL: TAI_ImageList;
+  begin
+    for pass := 0 to Count - 1 do
+      begin
+        imgL := Items[pass];
+        imgL.UnserializedMemory();
+        imgL.BuildMaskMerge(colors);
+        imgL.SerializedAndRecycleMemory(RSeri);
+      end;
+  end;
+{$ENDIF Parallel}
+
+
 begin
-  for i := 0 to Count - 1 do
-      Items[i].LargeScale_BuildMaskMerge(RSeri, colors);
+{$IFDEF Parallel}
+{$IFDEF FPC}
+  FPCParallelFor(@Nested_ParallelFor, 0, Count - 1);
+{$ELSE FPC}
+  DelphiParallelFor(0, Count - 1, procedure(pass: Integer)
+    var
+      imgL: TAI_ImageList;
+    begin
+      imgL := Items[pass];
+      imgL.UnserializedMemory();
+      imgL.BuildMaskMerge(colors);
+      imgL.SerializedAndRecycleMemory(RSeri);
+    end);
+{$ENDIF FPC}
+{$ELSE Parallel}
+  DoFor;
+{$ENDIF Parallel}
 end;
 
 procedure TAI_ImageMatrix.ClearMaskMerge;

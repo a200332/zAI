@@ -365,6 +365,8 @@ type
     procedure Clear; overload;
     procedure Clear(FillColor: TRColor); overload; virtual;
     function MemorySize: Integer;
+    function GetMD5: TMD5;
+    function GetCRC32: Cardinal;
     procedure SetSize(NewWidth, NewHeight: Integer); overload; virtual;
     procedure SetSize(NewWidth, NewHeight: Integer; const ClearColor: TRColor); overload; virtual;
     procedure SetSizeF(NewWidth, NewHeight: TGeoFloat; const ClearColor: TRColor); overload;
@@ -672,9 +674,19 @@ type
   TMemoryRasterList_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TMemoryRaster>;
 
   TMemoryRasterList = class(TMemoryRasterList_Decl)
+  public
+    function BuildArray: TMemoryRasterArray;
+  end;
+
+  TMemoryRaster2DMatrix_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TMemoryRasterList>;
+
+  TMemoryRaster2DMatrix = class(TMemoryRaster2DMatrix_Decl)
+  public
+    function BuildArray: TMemoryRaster2DArray;
   end;
 
   TRasterList = TMemoryRasterList;
+  TRaster2DMatrix = TMemoryRaster2DMatrix;
 
   TByteRasterList_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TByteRaster>;
 
@@ -695,7 +707,8 @@ type
     FStream: TCoreClassStream;
     FAutoFreeStream: Boolean;
     FCritical: TCritical;
-    FWriteList, FReadList: TMemoryRasterList;
+    FWriteHistory, FReadHistory: TMemoryRasterList;
+    FEnabledWriteHistory, FEnabledReadHistory: Boolean;
   public
     constructor Create(stream_: TCoreClassStream);
     destructor Destroy; override;
@@ -703,14 +716,22 @@ type
     function Write(R: TMemoryRaster): Int64;
     function Read(R: TMemoryRaster): Int64;
     procedure Remove(R: TMemoryRaster);
-    procedure Clear;
+    procedure ClearHistory;
 
     property AutoFreeStream: Boolean read FAutoFreeStream write FAutoFreeStream;
     property stream: TCoreClassStream read FStream;
     property Critical: TCritical read FCritical;
-    property WriteList: TMemoryRasterList read FWriteList;
-    property ReadList: TMemoryRasterList read FReadList;
+    function StreamSize: Int64;
+    function StreamFile: U_String;
+
+    property WriteHistory: TMemoryRasterList read FWriteHistory;
+    property ReadHistory: TMemoryRasterList read FReadHistory;
+    property EnabledWriteHistory: Boolean read FEnabledWriteHistory write FEnabledWriteHistory;
+    property EnabledReadHistory: Boolean read FEnabledReadHistory write FEnabledReadHistory;
   end;
+
+  TRasterSerializedPool_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TRasterSerialized>;
+  TRasterSerializedPool = {$IFDEF FPC}specialize {$ENDIF FPC}TAtomVar<TRasterSerializedPool_Decl>;
 
 {$ENDREGION 'Serialized'}
 {$REGION 'TSequenceMemoryRaster'}
@@ -1317,9 +1338,9 @@ type
     procedure BuildViewerFile(filename_: SystemString); overload;
     procedure BuildViewerFile(MorphPix_: TMorphologyPixel; filename_: SystemString); overload;
     function ConvexHull(): TVec2List;
-    function BoundsRectV2(const Value: TBinaryzationValue; var Sum_:Integer): TRectV2; overload;
+    function BoundsRectV2(const Value: TBinaryzationValue; var Sum_: Integer): TRectV2; overload;
     function BoundsRectV2(const Value: TBinaryzationValue): TRectV2; overload;
-    function BoundsRect(const Value: TBinaryzationValue; var Sum_:Integer): TRect; overload;
+    function BoundsRect(const Value: TBinaryzationValue; var Sum_: Integer): TRect; overload;
     function BoundsRect(const Value: TBinaryzationValue): TRect; overload;
     function Width0: Integer;
     function Height0: Integer;
@@ -1941,6 +1962,12 @@ var
     Morphology Convolution Kernel
   }
   Bin3x3, Bin5x5, Bin7x7, Bin9x9, Bin11x11, Bin13x13, Bin15x15, Bin17x17, Bin19x19, Bin21x21, Bin23x23, Bin25x25, Bin51x51, Bin99x99: TMorphologyBinaryzation;
+
+  {
+    Rastermization Serialized Pool
+  }
+  RasterSerializedPool: TRasterSerializedPool;
+
 {$ENDREGION 'Var'}
 
 implementation
@@ -2080,9 +2107,12 @@ SaveRaster := {$IFDEF FPC}@{$ENDIF FPC}SaveRaster_;
 MakeMergeTables;
 Init_DefaultFont;
 InitBinaryzationPreset;
+RasterSerializedPool := TRasterSerializedPool.Create(TRasterSerializedPool_Decl.Create);
 
 finalization
 
+disposeObject(RasterSerializedPool.v);
+disposeObject(RasterSerializedPool);
 Free_DefaultFont;
 FreeBinaryzationPreset;
 

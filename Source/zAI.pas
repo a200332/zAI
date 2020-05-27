@@ -1193,12 +1193,10 @@ type
     function LMetric_ResNet_Process(hnd: TLMetric_Handle; RasterArray: TMemoryRasterArray; output: PDouble): Integer; overload;
     function LMetric_ResNet_Process(hnd: TLMetric_Handle; RasterArray: TMemoryRasterArray): TLMatrix; overload;
     function LMetric_ResNet_Process(hnd: TLMetric_Handle; Raster: TMemoryRaster): TLVec; overload;
-
     procedure LMetric_ResNet_SaveToLearnEngine(LMetric_hnd: TLMetric_Handle; Snapshot_: Boolean; RSeri: TRasterSerialized; imgList: TAI_ImageList; lr: TLearn); overload;
     procedure LMetric_ResNet_SaveToLearnEngine(LMetric_hnd: TLMetric_Handle; Snapshot_: Boolean; RSeri: TRasterSerialized; imgMat: TAI_ImageMatrix; lr: TLearn); overload;
     procedure LMetric_ResNet_SaveToLearnEngine(LMetric_hnd: TLMetric_Handle; Snapshot_: Boolean; imgList: TAI_ImageList; lr: TLearn); overload;
     procedure LMetric_ResNet_SaveToLearnEngine(LMetric_hnd: TLMetric_Handle; Snapshot_: Boolean; imgMat: TAI_ImageMatrix; lr: TLearn); overload;
-
     procedure LMetric_ResNet_SaveToKDTree(LMetric_hnd: TLMetric_Handle; Snapshot_: Boolean; RSeri: TRasterSerialized; imgList: TAI_ImageList; kd: TKDTreeDataList); overload;
     procedure LMetric_ResNet_SaveToKDTree(LMetric_hnd: TLMetric_Handle; Snapshot_: Boolean; RSeri: TRasterSerialized; imgMat: TAI_ImageMatrix; kd: TKDTreeDataList); overload;
     procedure LMetric_ResNet_SaveToKDTree(LMetric_hnd: TLMetric_Handle; Snapshot_: Boolean; imgList: TAI_ImageList; kd: TKDTreeDataList); overload;
@@ -1805,7 +1803,7 @@ begin
       if GetTimeTick() - Sender^.SerializedTime > 100 then
         begin
           Sender^.RasterSerialized.Critical.Acquire;
-          L := Sender^.RasterSerialized.ReadList;
+          L := Sender^.RasterSerialized.ReadHistory;
           recycle_mem := 0;
           i := 0;
           while i < L.Count do
@@ -4022,7 +4020,7 @@ begin
       SS_param^.learning_rate := param.GetDefaultValue('learning_rate', SS_param^.learning_rate);
       SS_param^.completed_learning_rate := param.GetDefaultValue('completed_learning_rate', SS_param^.completed_learning_rate);
       SS_param^.img_crops_batch := param.GetDefaultValue('img_crops_batch', SS_param^.img_crops_batch);
-      ss_colorPool := TSegmentationColorList.Create;
+      ss_colorPool := ImgMatrix.BuildSegmentationColorBuffer;
       Result := AI.SS_Train(True, Training_RSeri, ImgMatrix, SS_param, ss_colorPool);
       TAI.Free_SS_Train_Parameter(SS_param);
       if Result then
@@ -7966,9 +7964,10 @@ begin
 
   if LargeScale_ then
     begin
-      RSeri.WriteList.Clear;
-      RSeri.ReadList.Clear;
+      RSeri.ClearHistory;
+      RSeri.EnabledReadHistory := True;
       FAI_EntryAPI^.RasterSerialized := RSeri;
+      RSeri.EnabledReadHistory := True;
     end
   else
       FAI_EntryAPI^.RasterSerialized := nil;
@@ -7987,8 +7986,8 @@ begin
 
   if LargeScale_ then
     begin
-      RSeri.WriteList.Clear;
-      RSeri.ReadList.Clear;
+      RSeri.ClearHistory;
+      RSeri.EnabledReadHistory := False;
       FAI_EntryAPI^.RasterSerialized := nil;
     end;
 
@@ -8257,15 +8256,14 @@ begin
           // projection
           if (RasterArray[i].Width <> C_Metric_Input_Size) or (RasterArray[i].Height <> C_Metric_Input_Size) then
             begin
-              nr := NewRaster();
               nr.SetSize(C_Metric_Input_Size, C_Metric_Input_Size);
               RasterArray[i].ProjectionTo(nr,
                 TV2Rect4.Init(RectFit(C_Metric_Input_Size, C_Metric_Input_Size, RasterArray[i].BoundsRectV2), 0),
                 TV2Rect4.Init(nr.BoundsRectV2, 0),
                 True, 1.0);
             end
-          else
-              nr.Assign(RasterArray[i]);
+          else // fast assign
+              nr.SetWorkMemory(RasterArray[i]);
 
           rArry[i].raster_Hnd^.Raster := nr;
 
@@ -8323,62 +8321,147 @@ end;
 
 procedure TAI.Metric_ResNet_SaveToLearnEngine(Metric_hnd: TMetric_Handle; Snapshot_: Boolean; RSeri: TRasterSerialized; imgList: TAI_ImageList; lr: TLearn);
 var
-  i, j: Integer;
+  i: Integer;
   imgData: TAI_Image;
-  detDef: TAI_DetectorDefine;
-  mr: TMemoryRaster;
-  v: TLVec;
-begin
-  if lr.InSize <> C_Metric_Dim then
-      RaiseInfo('Learn Engine Insize illegal');
-  for i := 0 to imgList.Count - 1 do
-    begin
-      imgData := imgList[i];
-      if RSeri <> nil then
-          imgData.UnserializedMemory(RSeri);
-      if Snapshot_ then
-        begin
-          mr := imgData.Raster;
-          v := Metric_ResNet_Process(Metric_hnd, mr);
-          if Length(v) <> C_Metric_Dim then
-              DoStatus('Metric-ResNet vector error!')
-          else
-              lr.AddMemory(v, imgList.FileInfo);
-        end
-      else
-        for j := 0 to imgData.DetectorDefineList.Count - 1 do
+  L: TRasterList;
+
+{$IFDEF Parallel}
+{$IFDEF FPC}
+  procedure Nested_ParallelFor(pass: Integer);
+  var
+    detDef: TAI_DetectorDefine;
+    mr: TRaster;
+  begin
+    detDef := imgData.DetectorDefineList[pass];
+    if detDef.Token.Len > 0 then
+      begin
+        if detDef.PrepareRaster.Empty then
           begin
-            detDef := imgData.DetectorDefineList[j];
-            if detDef.Token.Len > 0 then
-              begin
-                if detDef.PrepareRaster.Empty then
-                  begin
-                    mr := detDef.Owner.Raster.BuildAreaOffsetScaleSpace(detDef.R, C_Metric_Input_Size, C_Metric_Input_Size);
-                    v := Metric_ResNet_Process(Metric_hnd, mr);
-                    DisposeObject(mr);
-                  end
-                else
-                  begin
-                    mr := detDef.PrepareRaster;
-                    v := Metric_ResNet_Process(Metric_hnd, mr);
-                  end;
-                if Length(v) <> C_Metric_Dim then
-                    DoStatus('Metric-ResNet vector error!')
-                else
-                    lr.AddMemory(v, detDef.Token);
-              end;
+            mr := detDef.Owner.Raster.BuildAreaOffsetScaleSpace(detDef.R, C_Metric_Input_Size, C_Metric_Input_Size);
+          end
+        else
+          begin
+            mr := NewRaster();
+            mr.SetWorkMemory(detDef.PrepareRaster);
           end;
-      if RSeri <> nil then
-          imgData.SerializedAndRecycleMemory(RSeri);
+        mr.UserToken := detDef.Token;
+        LockObject(L);
+        L.Add(mr);
+        UnLockObject(L);
+      end;
+  end;
+{$ENDIF FPC}
+{$ELSE Parallel}
+  procedure DoFor;
+  var
+    pass: Integer;
+    detDef: TAI_DetectorDefine;
+    mr: TRaster;
+  begin
+    for pass := 0 to imgData.DetectorDefineList.Count - 1 do
+      begin
+        detDef := imgData.DetectorDefineList[pass];
+        if detDef.Token.Len > 0 then
+          begin
+            if detDef.PrepareRaster.Empty then
+              begin
+                mr := detDef.Owner.Raster.BuildAreaOffsetScaleSpace(detDef.R, C_Metric_Input_Size, C_Metric_Input_Size);
+              end
+            else
+              begin
+                mr := NewRaster();
+                mr.SetWorkMemory(detDef.PrepareRaster);
+              end;
+            mr.UserToken := detDef.Token;
+            L.Add(mr);
+          end;
+      end;
+  end;
+{$ENDIF Parallel}
+  procedure DoProcessMetric_;
+  var
+    j: Integer;
+    InputArry: TMemoryRasterArray;
+    OutputMatrix: TLMatrix;
+  begin
+    SetLength(InputArry, L.Count);
+    for j := 0 to L.Count - 1 do
+        InputArry[j] := L[j];
+    OutputMatrix := Metric_ResNet_Process(Metric_hnd, InputArry);
+    DoStatus('Fill Metric Input to Learn: %d', [L.Count]);
+    for j := 0 to Length(OutputMatrix) - 1 do
+        lr.AddMemory(OutputMatrix[j], L[j].UserToken);
+
+    for j := 0 to L.Count - 1 do
+        DisposeObject(L[j]);
+    DisposeObjectAndNil(L);
+    SetLength(InputArry, 0);
+    SetLength(OutputMatrix, 0);
+  end;
+
+begin
+  if RSeri <> nil then
+      imgList.UnserializedMemory(RSeri);
+
+  if Snapshot_ then
+    begin
+      for i := 0 to imgList.Count - 1 do
+          lr.AddMemory(Metric_ResNet_Process(Metric_hnd, imgList[i].Raster), imgList.FileInfo);
+    end
+  else
+    begin
+      L := TRasterList.Create;
+      for i := 0 to imgList.Count - 1 do
+        begin
+          imgData := imgList[i];
+
+{$IFDEF Parallel}
+{$IFDEF FPC}
+          FPCParallelFor(@Nested_ParallelFor, 0, imgData.DetectorDefineList.Count - 1);
+{$ELSE FPC}
+          DelphiParallelFor(0, imgData.DetectorDefineList.Count - 1, procedure(pass: Integer)
+            var
+              detDef: TAI_DetectorDefine;
+              mr: TRaster;
+            begin
+              detDef := imgData.DetectorDefineList[pass];
+              if detDef.Token.Len > 0 then
+                begin
+                  if detDef.PrepareRaster.Empty then
+                    begin
+                      mr := detDef.Owner.Raster.BuildAreaOffsetScaleSpace(detDef.R, C_Metric_Input_Size, C_Metric_Input_Size);
+                    end
+                  else
+                    begin
+                      mr := NewRaster();
+                      mr.SetWorkMemory(detDef.PrepareRaster);
+                    end;
+                  mr.UserToken := detDef.Token;
+                  LockObject(L);
+                  L.Add(mr);
+                  UnLockObject(L);
+                end;
+            end);
+{$ENDIF FPC}
+{$ELSE Parallel}
+          DoFor;
+{$ENDIF Parallel}
+        end;
+      DoProcessMetric_;
     end;
+
+  if RSeri <> nil then
+      imgList.SerializedAndRecycleMemory(RSeri);
 end;
 
 procedure TAI.Metric_ResNet_SaveToLearnEngine(Metric_hnd: TMetric_Handle; Snapshot_: Boolean; RSeri: TRasterSerialized; imgMat: TAI_ImageMatrix; lr: TLearn);
 var
-  i: Integer;
+  pass: Integer;
 begin
-  for i := 0 to imgMat.Count - 1 do
-      Metric_ResNet_SaveToLearnEngine(Metric_hnd, Snapshot_, RSeri, imgMat[i], lr);
+  for pass := 0 to imgMat.Count - 1 do
+    begin
+      Metric_ResNet_SaveToLearnEngine(Metric_hnd, Snapshot_, RSeri, imgMat[pass], lr);
+    end;
 end;
 
 procedure TAI.Metric_ResNet_SaveToLearnEngine(Metric_hnd: TMetric_Handle; Snapshot_: Boolean; imgList: TAI_ImageList; lr: TLearn);
@@ -8387,72 +8470,152 @@ begin
 end;
 
 procedure TAI.Metric_ResNet_SaveToLearnEngine(Metric_hnd: TMetric_Handle; Snapshot_: Boolean; imgMat: TAI_ImageMatrix; lr: TLearn);
-var
-  i: Integer;
 begin
-  for i := 0 to imgMat.Count - 1 do
-      Metric_ResNet_SaveToLearnEngine(Metric_hnd, Snapshot_, imgMat[i], lr);
+  Metric_ResNet_SaveToLearnEngine(Metric_hnd, Snapshot_, nil, imgMat, lr);
 end;
 
 procedure TAI.Metric_ResNet_SaveToKDTree(Metric_hnd: TMetric_Handle; Snapshot_: Boolean; RSeri: TRasterSerialized; imgList: TAI_ImageList; kd: TKDTreeDataList);
 var
-  i, j: Integer;
+  i: Integer;
   imgData: TAI_Image;
-  detDef: TAI_DetectorDefine;
-  mr: TMemoryRaster;
-  v: TLVec;
-begin
-  for i := 0 to imgList.Count - 1 do
-    begin
-      imgData := imgList[i];
-      if RSeri <> nil then
-          imgData.UnserializedMemory(RSeri);
-      if Snapshot_ then
-        begin
-          mr := imgData.Raster;
-          v := Metric_ResNet_Process(Metric_hnd, mr);
-          if Length(v) <> C_Metric_Dim then
-              DoStatus('Metric-ResNet vector error!')
-          else
-              kd.Add(v, imgList.FileInfo);
-        end
-      else
-        for j := 0 to imgData.DetectorDefineList.Count - 1 do
-          begin
-            detDef := imgData.DetectorDefineList[j];
-            if detDef.Token.Len > 0 then
-              begin
-                if detDef.PrepareRaster.Empty then
-                  begin
-                    mr := detDef.Owner.Raster.BuildAreaOffsetScaleSpace(detDef.R, C_Metric_Input_Size, C_Metric_Input_Size);
-                    v := Metric_ResNet_Process(Metric_hnd, mr);
-                    DisposeObject(mr);
-                  end
-                else
-                  begin
-                    mr := detDef.PrepareRaster;
-                    v := Metric_ResNet_Process(Metric_hnd, mr);
-                  end;
+  L: TRasterList;
 
-                if Length(v) <> C_Metric_Dim then
-                    DoStatus('Metric-ResNet vector error!')
-                else
-                    kd.Add(v, detDef.Token);
-              end;
+{$IFDEF Parallel}
+{$IFDEF FPC}
+  procedure Nested_ParallelFor(pass: Integer);
+  var
+    detDef: TAI_DetectorDefine;
+    mr: TRaster;
+  begin
+    detDef := imgData.DetectorDefineList[pass];
+    if detDef.Token.Len > 0 then
+      begin
+        if detDef.PrepareRaster.Empty then
+          begin
+            mr := detDef.Owner.Raster.BuildAreaOffsetScaleSpace(detDef.R, C_Metric_Input_Size, C_Metric_Input_Size);
+          end
+        else
+          begin
+            mr := NewRaster();
+            mr.SetWorkMemory(detDef.PrepareRaster);
           end;
-      if RSeri <> nil then
-          imgData.SerializedAndRecycleMemory(RSeri);
+        mr.UserToken := detDef.Token;
+        LockObject(L);
+        L.Add(mr);
+        UnLockObject(L);
+      end;
+  end;
+{$ENDIF FPC}
+{$ELSE Parallel}
+  procedure DoFor;
+  var
+    pass: Integer;
+    detDef: TAI_DetectorDefine;
+    mr: TRaster;
+  begin
+    for pass := 0 to imgData.DetectorDefineList.Count - 1 do
+      begin
+        detDef := imgData.DetectorDefineList[pass];
+        if detDef.Token.Len > 0 then
+          begin
+            if detDef.PrepareRaster.Empty then
+              begin
+                mr := detDef.Owner.Raster.BuildAreaOffsetScaleSpace(detDef.R, C_Metric_Input_Size, C_Metric_Input_Size);
+              end
+            else
+              begin
+                mr := NewRaster();
+                mr.SetWorkMemory(detDef.PrepareRaster);
+              end;
+            mr.UserToken := detDef.Token;
+            L.Add(mr);
+          end;
+      end;
+  end;
+{$ENDIF Parallel}
+  procedure DoProcessMetric_;
+  var
+    j: Integer;
+    InputArry: TMemoryRasterArray;
+    OutputMatrix: TLMatrix;
+  begin
+    SetLength(InputArry, L.Count);
+    for j := 0 to L.Count - 1 do
+        InputArry[j] := L[j];
+    OutputMatrix := Metric_ResNet_Process(Metric_hnd, InputArry);
+    DoStatus('Fill Metric Input to KD-Tree: %d', [L.Count]);
+    for j := 0 to Length(OutputMatrix) - 1 do
+        kd.Add(OutputMatrix[j], L[j].UserToken);
+
+    for j := 0 to L.Count - 1 do
+        DisposeObject(L[j]);
+    DisposeObjectAndNil(L);
+    SetLength(InputArry, 0);
+    SetLength(OutputMatrix, 0);
+  end;
+
+begin
+  if RSeri <> nil then
+      imgList.UnserializedMemory(RSeri);
+
+  if Snapshot_ then
+    begin
+      for i := 0 to imgList.Count - 1 do
+          kd.Add(Metric_ResNet_Process(Metric_hnd, imgList[i].Raster), imgList.FileInfo);
+    end
+  else
+    begin
+      L := TRasterList.Create;
+      for i := 0 to imgList.Count - 1 do
+        begin
+          imgData := imgList[i];
+
+{$IFDEF Parallel}
+{$IFDEF FPC}
+          FPCParallelFor(@Nested_ParallelFor, 0, imgData.DetectorDefineList.Count - 1);
+{$ELSE FPC}
+          DelphiParallelFor(0, imgData.DetectorDefineList.Count - 1, procedure(pass: Integer)
+            var
+              detDef: TAI_DetectorDefine;
+              mr: TRaster;
+            begin
+              detDef := imgData.DetectorDefineList[pass];
+              if detDef.Token.Len > 0 then
+                begin
+                  if detDef.PrepareRaster.Empty then
+                    begin
+                      mr := detDef.Owner.Raster.BuildAreaOffsetScaleSpace(detDef.R, C_Metric_Input_Size, C_Metric_Input_Size);
+                    end
+                  else
+                    begin
+                      mr := NewRaster();
+                      mr.SetWorkMemory(detDef.PrepareRaster);
+                    end;
+                  mr.UserToken := detDef.Token;
+                  LockObject(L);
+                  L.Add(mr);
+                  UnLockObject(L);
+                end;
+            end);
+{$ENDIF FPC}
+{$ELSE Parallel}
+          DoFor;
+{$ENDIF Parallel}
+        end;
+      DoProcessMetric_;
     end;
+
+  if RSeri <> nil then
+      imgList.SerializedAndRecycleMemory(RSeri);
 end;
 
 procedure TAI.Metric_ResNet_SaveToKDTree(Metric_hnd: TMetric_Handle; Snapshot_: Boolean; RSeri: TRasterSerialized; imgMat: TAI_ImageMatrix; kd: TKDTreeDataList);
 var
-  i: Integer;
+  pass: Integer;
 begin
-  for i := 0 to imgMat.Count - 1 do
+  for pass := 0 to imgMat.Count - 1 do
     begin
-      DoStatus('fill Matrix %d/%d', [i + 1, imgMat.Count]);
-      Metric_ResNet_SaveToKDTree(Metric_hnd, Snapshot_, RSeri, imgMat[i], kd);
+      Metric_ResNet_SaveToKDTree(Metric_hnd, Snapshot_, RSeri, imgMat[pass], kd);
     end;
 end;
 
@@ -8462,14 +8625,8 @@ begin
 end;
 
 procedure TAI.Metric_ResNet_SaveToKDTree(Metric_hnd: TMetric_Handle; Snapshot_: Boolean; imgMat: TAI_ImageMatrix; kd: TKDTreeDataList);
-var
-  i: Integer;
 begin
-  for i := 0 to imgMat.Count - 1 do
-    begin
-      DoStatus('fill Matrix %d/%d', [i + 1, imgMat.Count]);
-      Metric_ResNet_SaveToKDTree(Metric_hnd, Snapshot_, imgMat[i], kd);
-    end;
+  Metric_ResNet_SaveToKDTree(Metric_hnd, Snapshot_, nil, imgMat, kd);
 end;
 
 function TAI.Metric_ResNet_DebugInfo(hnd: TMetric_Handle): U_String;
@@ -8574,8 +8731,8 @@ begin
 
   if LargeScale_ then
     begin
-      RSeri.WriteList.Clear;
-      RSeri.ReadList.Clear;
+      RSeri.ClearHistory;
+      RSeri.EnabledReadHistory := True;
       FAI_EntryAPI^.RasterSerialized := RSeri;
     end
   else
@@ -8595,8 +8752,8 @@ begin
 
   if LargeScale_ then
     begin
-      RSeri.WriteList.Clear;
-      RSeri.ReadList.Clear;
+      RSeri.ClearHistory;
+      RSeri.EnabledReadHistory := False;
       FAI_EntryAPI^.RasterSerialized := nil;
     end;
 
@@ -8865,15 +9022,14 @@ begin
           // projection
           if (RasterArray[i].Width <> C_LMetric_Input_Size) or (RasterArray[i].Height <> C_LMetric_Input_Size) then
             begin
-              nr := NewRaster();
               nr.SetSize(C_LMetric_Input_Size, C_LMetric_Input_Size);
               RasterArray[i].ProjectionTo(nr,
                 TV2Rect4.Init(RectFit(C_LMetric_Input_Size, C_LMetric_Input_Size, RasterArray[i].BoundsRectV2), 0),
                 TV2Rect4.Init(nr.BoundsRectV2, 0),
                 True, 1.0);
             end
-          else
-              nr.Assign(RasterArray[i]);
+          else // fast assign
+              nr.SetWorkMemory(RasterArray[i]);
 
           rArry[i].raster_Hnd^.Raster := nr;
 
@@ -8928,65 +9084,146 @@ end;
 
 procedure TAI.LMetric_ResNet_SaveToLearnEngine(LMetric_hnd: TLMetric_Handle; Snapshot_: Boolean; RSeri: TRasterSerialized; imgList: TAI_ImageList; lr: TLearn);
 var
-  i, j: Integer;
+  i: Integer;
   imgData: TAI_Image;
-  detDef: TAI_DetectorDefine;
-  mr: TMemoryRaster;
-  v: TLVec;
-begin
-  if lr.InSize <> C_LMetric_Dim then
-      RaiseInfo('Learn Engine Insize illegal');
-  for i := 0 to imgList.Count - 1 do
-    begin
-      imgData := imgList[i];
-      if RSeri <> nil then
-          imgData.UnserializedMemory(RSeri);
-      if Snapshot_ then
-        begin
-          mr := imgData.Raster;
-          v := LMetric_ResNet_Process(LMetric_hnd, mr);
-          if Length(v) <> C_LMetric_Dim then
-              DoStatus('LMetric-ResNet vector error!')
-          else
-              lr.AddMemory(v, imgList.FileInfo);
-        end
-      else
-        for j := 0 to imgData.DetectorDefineList.Count - 1 do
-          begin
-            detDef := imgData.DetectorDefineList[j];
+  L: TRasterList;
 
-            if detDef.Token.Len > 0 then
-              begin
-                if detDef.PrepareRaster.Empty then
-                  begin
-                    mr := detDef.Owner.Raster.BuildAreaOffsetScaleSpace(detDef.R, C_LMetric_Input_Size, C_LMetric_Input_Size);
-                    v := LMetric_ResNet_Process(LMetric_hnd, mr);
-                    DisposeObject(mr);
-                  end
-                else
-                  begin
-                    mr := detDef.PrepareRaster;
-                    v := LMetric_ResNet_Process(LMetric_hnd, mr);
-                  end;
-                if Length(v) <> C_LMetric_Dim then
-                    DoStatus('LMetric-ResNet vector error!')
-                else
-                    lr.AddMemory(v, detDef.Token);
-              end;
+{$IFDEF Parallel}
+{$IFDEF FPC}
+  procedure Nested_ParallelFor(pass: Integer);
+  var
+    detDef: TAI_DetectorDefine;
+    mr: TRaster;
+  begin
+    detDef := imgData.DetectorDefineList[pass];
+    if detDef.Token.Len > 0 then
+      begin
+        if detDef.PrepareRaster.Empty then
+          begin
+            mr := detDef.Owner.Raster.BuildAreaOffsetScaleSpace(detDef.R, C_LMetric_Input_Size, C_LMetric_Input_Size);
+          end
+        else
+          begin
+            mr := NewRaster();
+            mr.SetWorkMemory(detDef.PrepareRaster);
           end;
-      if RSeri <> nil then
-          imgData.SerializedAndRecycleMemory(RSeri);
+        mr.UserToken := detDef.Token;
+        LockObject(L);
+        L.Add(mr);
+        UnLockObject(L);
+      end;
+  end;
+{$ENDIF FPC}
+{$ELSE Parallel}
+  procedure DoFor;
+  var
+    pass: Integer;
+    detDef: TAI_DetectorDefine;
+    mr: TRaster;
+  begin
+    for pass := 0 to imgData.DetectorDefineList.Count - 1 do
+      begin
+        detDef := imgData.DetectorDefineList[pass];
+        if detDef.Token.Len > 0 then
+          begin
+            if detDef.PrepareRaster.Empty then
+              begin
+                mr := detDef.Owner.Raster.BuildAreaOffsetScaleSpace(detDef.R, C_LMetric_Input_Size, C_LMetric_Input_Size);
+              end
+            else
+              begin
+                mr := NewRaster();
+                mr.SetWorkMemory(detDef.PrepareRaster);
+              end;
+            mr.UserToken := detDef.Token;
+            L.Add(mr);
+          end;
+      end;
+  end;
+{$ENDIF Parallel}
+  procedure DoProcessLMetric_;
+  var
+    j: Integer;
+    InputArry: TMemoryRasterArray;
+    OutputMatrix: TLMatrix;
+  begin
+    SetLength(InputArry, L.Count);
+    for j := 0 to L.Count - 1 do
+        InputArry[j] := L[j];
+    OutputMatrix := LMetric_ResNet_Process(LMetric_hnd, InputArry);
+    DoStatus('Fill LMetric Input to Learn: %d', [L.Count]);
+    for j := 0 to Length(OutputMatrix) - 1 do
+        lr.AddMemory(OutputMatrix[j], L[j].UserToken);
+
+    for j := 0 to L.Count - 1 do
+        DisposeObject(L[j]);
+    DisposeObjectAndNil(L);
+    SetLength(InputArry, 0);
+    SetLength(OutputMatrix, 0);
+  end;
+
+begin
+  if RSeri <> nil then
+      imgList.UnserializedMemory(RSeri);
+
+  if Snapshot_ then
+    begin
+      for i := 0 to imgList.Count - 1 do
+          lr.AddMemory(LMetric_ResNet_Process(LMetric_hnd, imgList[i].Raster), imgList.FileInfo);
+    end
+  else
+    begin
+      L := TRasterList.Create;
+      for i := 0 to imgList.Count - 1 do
+        begin
+          imgData := imgList[i];
+
+{$IFDEF Parallel}
+{$IFDEF FPC}
+          FPCParallelFor(@Nested_ParallelFor, 0, imgData.DetectorDefineList.Count - 1);
+{$ELSE FPC}
+          DelphiParallelFor(0, imgData.DetectorDefineList.Count - 1, procedure(pass: Integer)
+            var
+              detDef: TAI_DetectorDefine;
+              mr: TRaster;
+            begin
+              detDef := imgData.DetectorDefineList[pass];
+              if detDef.Token.Len > 0 then
+                begin
+                  if detDef.PrepareRaster.Empty then
+                    begin
+                      mr := detDef.Owner.Raster.BuildAreaOffsetScaleSpace(detDef.R, C_LMetric_Input_Size, C_LMetric_Input_Size);
+                    end
+                  else
+                    begin
+                      mr := NewRaster();
+                      mr.SetWorkMemory(detDef.PrepareRaster);
+                    end;
+                  mr.UserToken := detDef.Token;
+                  LockObject(L);
+                  L.Add(mr);
+                  UnLockObject(L);
+                end;
+            end);
+{$ENDIF FPC}
+{$ELSE Parallel}
+          DoFor;
+{$ENDIF Parallel}
+        end;
+      DoProcessLMetric_;
     end;
+
+  if RSeri <> nil then
+      imgList.SerializedAndRecycleMemory(RSeri);
 end;
 
 procedure TAI.LMetric_ResNet_SaveToLearnEngine(LMetric_hnd: TLMetric_Handle; Snapshot_: Boolean; RSeri: TRasterSerialized; imgMat: TAI_ImageMatrix; lr: TLearn);
 var
-  i: Integer;
+  pass: Integer;
 begin
-  for i := 0 to imgMat.Count - 1 do
+  for pass := 0 to imgMat.Count - 1 do
     begin
-      DoStatus('fill Matrix %d/%d', [i + 1, imgMat.Count]);
-      LMetric_ResNet_SaveToLearnEngine(LMetric_hnd, Snapshot_, RSeri, imgMat[i], lr);
+      LMetric_ResNet_SaveToLearnEngine(LMetric_hnd, Snapshot_, RSeri, imgMat[pass], lr);
     end;
 end;
 
@@ -8996,74 +9233,152 @@ begin
 end;
 
 procedure TAI.LMetric_ResNet_SaveToLearnEngine(LMetric_hnd: TLMetric_Handle; Snapshot_: Boolean; imgMat: TAI_ImageMatrix; lr: TLearn);
-var
-  i: Integer;
 begin
-  for i := 0 to imgMat.Count - 1 do
-    begin
-      DoStatus('fill Matrix %d/%d', [i + 1, imgMat.Count]);
-      LMetric_ResNet_SaveToLearnEngine(LMetric_hnd, Snapshot_, imgMat[i], lr);
-    end;
+  LMetric_ResNet_SaveToLearnEngine(LMetric_hnd, Snapshot_, nil, imgMat, lr);
 end;
 
 procedure TAI.LMetric_ResNet_SaveToKDTree(LMetric_hnd: TLMetric_Handle; Snapshot_: Boolean; RSeri: TRasterSerialized; imgList: TAI_ImageList; kd: TKDTreeDataList);
 var
-  i, j: Integer;
+  i: Integer;
   imgData: TAI_Image;
-  detDef: TAI_DetectorDefine;
-  mr: TMemoryRaster;
-  v: TLVec;
-begin
-  for i := 0 to imgList.Count - 1 do
-    begin
-      imgData := imgList[i];
-      if RSeri <> nil then
-          imgData.UnserializedMemory(RSeri);
-      if Snapshot_ then
-        begin
-          mr := imgData.Raster;
-          v := LMetric_ResNet_Process(LMetric_hnd, mr);
-          if Length(v) <> C_LMetric_Dim then
-              DoStatus('LMetric-ResNet vector error!')
-          else
-              kd.Add(v, imgList.FileInfo);
-        end
-      else
-        for j := 0 to imgData.DetectorDefineList.Count - 1 do
+  L: TRasterList;
+
+{$IFDEF Parallel}
+{$IFDEF FPC}
+  procedure Nested_ParallelFor(pass: Integer);
+  var
+    detDef: TAI_DetectorDefine;
+    mr: TRaster;
+  begin
+    detDef := imgData.DetectorDefineList[pass];
+    if detDef.Token.Len > 0 then
+      begin
+        if detDef.PrepareRaster.Empty then
           begin
-            detDef := imgData.DetectorDefineList[j];
-            if detDef.Token.Len > 0 then
-              begin
-                if detDef.PrepareRaster.Empty then
-                  begin
-                    mr := detDef.Owner.Raster.BuildAreaOffsetScaleSpace(detDef.R, C_LMetric_Input_Size, C_LMetric_Input_Size);
-                    v := LMetric_ResNet_Process(LMetric_hnd, mr);
-                    DisposeObject(mr);
-                  end
-                else
-                  begin
-                    mr := detDef.PrepareRaster;
-                    v := LMetric_ResNet_Process(LMetric_hnd, mr);
-                  end;
-                if Length(v) <> C_LMetric_Dim then
-                    DoStatus('LMetric-ResNet vector error!')
-                else
-                    kd.Add(v, detDef.Token);
-              end;
+            mr := detDef.Owner.Raster.BuildAreaOffsetScaleSpace(detDef.R, C_LMetric_Input_Size, C_LMetric_Input_Size);
+          end
+        else
+          begin
+            mr := NewRaster();
+            mr.SetWorkMemory(detDef.PrepareRaster);
           end;
-      if RSeri <> nil then
-          imgData.SerializedAndRecycleMemory(RSeri);
+        mr.UserToken := detDef.Token;
+        LockObject(L);
+        L.Add(mr);
+        UnLockObject(L);
+      end;
+  end;
+{$ENDIF FPC}
+{$ELSE Parallel}
+  procedure DoFor;
+  var
+    pass: Integer;
+    detDef: TAI_DetectorDefine;
+    mr: TRaster;
+  begin
+    for pass := 0 to imgData.DetectorDefineList.Count - 1 do
+      begin
+        detDef := imgData.DetectorDefineList[pass];
+        if detDef.Token.Len > 0 then
+          begin
+            if detDef.PrepareRaster.Empty then
+              begin
+                mr := detDef.Owner.Raster.BuildAreaOffsetScaleSpace(detDef.R, C_LMetric_Input_Size, C_LMetric_Input_Size);
+              end
+            else
+              begin
+                mr := NewRaster();
+                mr.SetWorkMemory(detDef.PrepareRaster);
+              end;
+            mr.UserToken := detDef.Token;
+            L.Add(mr);
+          end;
+      end;
+  end;
+{$ENDIF Parallel}
+  procedure DoProcessLMetric_;
+  var
+    j: Integer;
+    InputArry: TMemoryRasterArray;
+    OutputMatrix: TLMatrix;
+  begin
+    SetLength(InputArry, L.Count);
+    for j := 0 to L.Count - 1 do
+        InputArry[j] := L[j];
+    OutputMatrix := LMetric_ResNet_Process(LMetric_hnd, InputArry);
+    DoStatus('Fill LMetric Input to KD-Tree: %d', [L.Count]);
+    for j := 0 to Length(OutputMatrix) - 1 do
+        kd.Add(OutputMatrix[j], L[j].UserToken);
+
+    for j := 0 to L.Count - 1 do
+        DisposeObject(L[j]);
+    DisposeObjectAndNil(L);
+    SetLength(InputArry, 0);
+    SetLength(OutputMatrix, 0);
+  end;
+
+begin
+  if RSeri <> nil then
+      imgList.UnserializedMemory(RSeri);
+
+  if Snapshot_ then
+    begin
+      for i := 0 to imgList.Count - 1 do
+          kd.Add(LMetric_ResNet_Process(LMetric_hnd, imgList[i].Raster), imgList.FileInfo);
+    end
+  else
+    begin
+      L := TRasterList.Create;
+      for i := 0 to imgList.Count - 1 do
+        begin
+          imgData := imgList[i];
+
+{$IFDEF Parallel}
+{$IFDEF FPC}
+          FPCParallelFor(@Nested_ParallelFor, 0, imgData.DetectorDefineList.Count - 1);
+{$ELSE FPC}
+          DelphiParallelFor(0, imgData.DetectorDefineList.Count - 1, procedure(pass: Integer)
+            var
+              detDef: TAI_DetectorDefine;
+              mr: TRaster;
+            begin
+              detDef := imgData.DetectorDefineList[pass];
+              if detDef.Token.Len > 0 then
+                begin
+                  if detDef.PrepareRaster.Empty then
+                    begin
+                      mr := detDef.Owner.Raster.BuildAreaOffsetScaleSpace(detDef.R, C_LMetric_Input_Size, C_LMetric_Input_Size);
+                    end
+                  else
+                    begin
+                      mr := NewRaster();
+                      mr.SetWorkMemory(detDef.PrepareRaster);
+                    end;
+                  mr.UserToken := detDef.Token;
+                  LockObject(L);
+                  L.Add(mr);
+                  UnLockObject(L);
+                end;
+            end);
+{$ENDIF FPC}
+{$ELSE Parallel}
+          DoFor;
+{$ENDIF Parallel}
+        end;
+      DoProcessLMetric_;
     end;
+
+  if RSeri <> nil then
+      imgList.SerializedAndRecycleMemory(RSeri);
 end;
 
 procedure TAI.LMetric_ResNet_SaveToKDTree(LMetric_hnd: TLMetric_Handle; Snapshot_: Boolean; RSeri: TRasterSerialized; imgMat: TAI_ImageMatrix; kd: TKDTreeDataList);
 var
-  i: Integer;
+  pass: Integer;
 begin
-  for i := 0 to imgMat.Count - 1 do
+  for pass := 0 to imgMat.Count - 1 do
     begin
-      DoStatus('fill Matrix %d/%d', [i + 1, imgMat.Count]);
-      LMetric_ResNet_SaveToKDTree(LMetric_hnd, Snapshot_, RSeri, imgMat[i], kd);
+      LMetric_ResNet_SaveToKDTree(LMetric_hnd, Snapshot_, RSeri, imgMat[pass], kd);
     end;
 end;
 
@@ -9073,14 +9388,8 @@ begin
 end;
 
 procedure TAI.LMetric_ResNet_SaveToKDTree(LMetric_hnd: TLMetric_Handle; Snapshot_: Boolean; imgMat: TAI_ImageMatrix; kd: TKDTreeDataList);
-var
-  i: Integer;
 begin
-  for i := 0 to imgMat.Count - 1 do
-    begin
-      DoStatus('fill Matrix %d/%d', [i + 1, imgMat.Count]);
-      LMetric_ResNet_SaveToKDTree(LMetric_hnd, Snapshot_, imgMat[i], kd);
-    end;
+  LMetric_ResNet_SaveToKDTree(LMetric_hnd, Snapshot_, nil, imgMat, kd);
 end;
 
 function TAI.LMetric_ResNet_DebugInfo(hnd: TLMetric_Handle): U_String;
@@ -9336,8 +9645,8 @@ begin
       param^.control := @TrainingControl;
 
       param^.saveMemory := 1; // large-scale MMOD trainer.
-      RSeri.WriteList.Clear;
-      RSeri.ReadList.Clear;
+      RSeri.ClearHistory;
+      RSeri.EnabledReadHistory := True;
       FAI_EntryAPI^.RasterSerialized := RSeri;
       imgList.SerializedAndRecycleMemory(RSeri);
 
@@ -9347,8 +9656,8 @@ begin
           Result := -1;
       end;
 
-      RSeri.WriteList.Clear;
-      RSeri.ReadList.Clear;
+      RSeri.ClearHistory;
+      RSeri.EnabledReadHistory := False;
       FAI_EntryAPI^.RasterSerialized := nil;
 
       Last_training_average_loss := param^.training_average_loss;
@@ -9388,8 +9697,8 @@ begin
       param^.control := @TrainingControl;
 
       param^.saveMemory := 1; // large-scale MMOD trainer.
-      RSeri.WriteList.Clear;
-      RSeri.ReadList.Clear;
+      RSeri.ClearHistory;
+      RSeri.EnabledReadHistory := True;
       FAI_EntryAPI^.RasterSerialized := RSeri;
       imgMat.SerializedAndRecycleMemory(RSeri);
 
@@ -9399,8 +9708,8 @@ begin
           Result := -1;
       end;
 
-      RSeri.WriteList.Clear;
-      RSeri.ReadList.Clear;
+      RSeri.ClearHistory;
+      RSeri.EnabledReadHistory := False;
       FAI_EntryAPI^.RasterSerialized := nil;
 
       Last_training_average_loss := param^.training_average_loss;
@@ -9852,8 +10161,8 @@ begin
       param^.control := @TrainingControl;
 
       param^.saveMemory := 1; // large-scale MMOD trainer.
-      RSeri.WriteList.Clear;
-      RSeri.ReadList.Clear;
+      RSeri.ClearHistory;
+      RSeri.EnabledReadHistory := True;
       FAI_EntryAPI^.RasterSerialized := RSeri;
       imgList.SerializedAndRecycleMemory(RSeri);
 
@@ -9863,8 +10172,8 @@ begin
           Result := -1;
       end;
 
-      RSeri.WriteList.Clear;
-      RSeri.ReadList.Clear;
+      RSeri.ClearHistory;
+      RSeri.EnabledReadHistory := False;
       FAI_EntryAPI^.RasterSerialized := nil;
 
       Last_training_average_loss := param^.training_average_loss;
@@ -9904,8 +10213,8 @@ begin
       param^.control := @TrainingControl;
 
       param^.saveMemory := 1; // large-scale MMOD trainer.
-      RSeri.WriteList.Clear;
-      RSeri.ReadList.Clear;
+      RSeri.ClearHistory;
+      RSeri.EnabledReadHistory := True;
       FAI_EntryAPI^.RasterSerialized := RSeri;
       imgMat.SerializedAndRecycleMemory(RSeri);
 
@@ -9915,8 +10224,8 @@ begin
           Result := -1;
       end;
 
-      RSeri.WriteList.Clear;
-      RSeri.ReadList.Clear;
+      RSeri.ClearHistory;
+      RSeri.EnabledReadHistory := False;
       FAI_EntryAPI^.RasterSerialized := nil;
 
       Last_training_average_loss := param^.training_average_loss;
@@ -10222,8 +10531,8 @@ begin
 
   if LargeScale_ then
     begin
-      RSeri.WriteList.Clear;
-      RSeri.ReadList.Clear;
+      RSeri.ClearHistory;
+      RSeri.EnabledReadHistory := True;
       FAI_EntryAPI^.RasterSerialized := RSeri;
     end
   else
@@ -10239,8 +10548,8 @@ begin
 
   if LargeScale_ then
     begin
-      RSeri.WriteList.Clear;
-      RSeri.ReadList.Clear;
+      RSeri.ClearHistory;
+      RSeri.EnabledReadHistory := False;
       FAI_EntryAPI^.RasterSerialized := nil;
     end;
 
@@ -10672,8 +10981,8 @@ begin
 
   if LargeScale_ then
     begin
-      RSeri.WriteList.Clear;
-      RSeri.ReadList.Clear;
+      RSeri.ClearHistory;
+      RSeri.EnabledReadHistory := True;
       FAI_EntryAPI^.RasterSerialized := RSeri;
     end
   else
@@ -10689,8 +10998,8 @@ begin
 
   if LargeScale_ then
     begin
-      RSeri.WriteList.Clear;
-      RSeri.ReadList.Clear;
+      RSeri.ClearHistory;
+      RSeri.EnabledReadHistory := False;
       FAI_EntryAPI^.RasterSerialized := nil;
     end;
 
@@ -11118,8 +11427,8 @@ begin
 
   if LargeScale_ then
     begin
-      RSeri.WriteList.Clear;
-      RSeri.ReadList.Clear;
+      RSeri.ClearHistory;
+      RSeri.EnabledReadHistory := True;
       FAI_EntryAPI^.RasterSerialized := RSeri;
     end
   else
@@ -11135,8 +11444,8 @@ begin
 
   if LargeScale_ then
     begin
-      RSeri.WriteList.Clear;
-      RSeri.ReadList.Clear;
+      RSeri.ClearHistory;
+      RSeri.EnabledReadHistory := False;
       FAI_EntryAPI^.RasterSerialized := nil;
     end;
 
@@ -11557,8 +11866,8 @@ begin
 
   if LargeScale_ then
     begin
-      RSeri.WriteList.Clear;
-      RSeri.ReadList.Clear;
+      RSeri.ClearHistory;
+      RSeri.EnabledReadHistory := True;
       FAI_EntryAPI^.RasterSerialized := RSeri;
     end
   else
@@ -11574,8 +11883,8 @@ begin
 
   if LargeScale_ then
     begin
-      RSeri.WriteList.Clear;
-      RSeri.ReadList.Clear;
+      RSeri.ClearHistory;
+      RSeri.EnabledReadHistory := False;
       FAI_EntryAPI^.RasterSerialized := nil;
     end;
 
@@ -11972,7 +12281,10 @@ begin
 
   DoStatus('build segmentation merge space.');
   tk := GetTimeTick();
-  imgList.BuildMaskMerge(colorPool);
+  if LargeScale_ then
+      imgList.LargeScale_BuildMaskMerge(RSeri, colorPool)
+  else
+      imgList.BuildMaskMerge(colorPool);
   DoStatus('done segmentation merge time %dms', [GetTimeTick - tk]);
   DisposeObject(list);
 
@@ -11986,8 +12298,8 @@ begin
 
   if LargeScale_ then
     begin
-      RSeri.WriteList.Clear;
-      RSeri.ReadList.Clear;
+      RSeri.ClearHistory;
+      RSeri.EnabledReadHistory := True;
       FAI_EntryAPI^.RasterSerialized := RSeri;
       imgList.SerializedAndRecycleMemory(RSeri);
     end
@@ -12004,9 +12316,9 @@ begin
 
   if LargeScale_ then
     begin
+      RSeri.EnabledReadHistory := False;
       imgList.SerializedAndRecycleMemory(RSeri);
-      RSeri.WriteList.Clear;
-      RSeri.ReadList.Clear;
+      RSeri.ClearHistory;
       FAI_EntryAPI^.RasterSerialized := nil;
     end;
 
@@ -12078,8 +12390,8 @@ begin
 
   if LargeScale_ then
     begin
-      RSeri.WriteList.Clear;
-      RSeri.ReadList.Clear;
+      RSeri.ClearHistory;
+      RSeri.EnabledReadHistory := True;
       FAI_EntryAPI^.RasterSerialized := RSeri;
       imgMat.SerializedAndRecycleMemory(RSeri);
     end
@@ -12096,9 +12408,9 @@ begin
 
   if LargeScale_ then
     begin
+      RSeri.EnabledReadHistory := False;
       imgMat.SerializedAndRecycleMemory(RSeri);
-      RSeri.WriteList.Clear;
-      RSeri.ReadList.Clear;
+      RSeri.ClearHistory;
       FAI_EntryAPI^.RasterSerialized := nil;
     end;
 

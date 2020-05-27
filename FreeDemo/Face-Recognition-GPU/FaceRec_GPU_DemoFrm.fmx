@@ -15,7 +15,7 @@ object FaceRecForm: TFaceRecForm
     Size.Width = 217.000000000000000000
     Size.Height = 33.000000000000000000
     Size.PlatformDefault = False
-    TabOrder = 2
+    TabOrder = 3
     Text = #20154#33080#35782#21035#26680#24515#36807#31243
     OnClick = FaceRecButtonClick
   end
@@ -56,12 +56,12 @@ object FaceRecForm: TFaceRecForm
     Size.Width = 697.000000000000000000
     Size.Height = 737.000000000000000000
     Size.PlatformDefault = False
-    TabOrder = 3
+    TabOrder = 4
     Viewport.Width = 693.000000000000000000
     Viewport.Height = 717.000000000000000000
   end
   object ResetButton: TButton
-    Position.X = 240.000000000000000000
+    Position.X = 576.000000000000000000
     Position.Y = 8.000000000000000000
     Size.Width = 185.000000000000000000
     Size.Height = 33.000000000000000000
@@ -83,9 +83,19 @@ object FaceRecForm: TFaceRecForm
     Size.Width = 745.000000000000000000
     Size.Height = 697.000000000000000000
     Size.PlatformDefault = False
-    TabOrder = 6
+    TabOrder = 7
     OnClick = Image1Click
     Viewport.Width = 741.000000000000000000
     Viewport.Height = 693.000000000000000000
+  end
+  object MetricButton: TButton
+    Position.X = 240.000000000000000000
+    Position.Y = 8.000000000000000000
+    Size.Width = 217.000000000000000000
+    Size.Height = 33.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 2
+    Text = #27979#35797#24230#37327#21270#32593#32476
+    OnClick = MetricButtonClick
   end
 end

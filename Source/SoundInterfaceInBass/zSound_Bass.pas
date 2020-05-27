@@ -24,8 +24,7 @@ unit zSound_Bass;
 interface
 
 uses CoreClasses, zSound, UnicodeMixedLib, MediaCenter,
-  ObjectDataManager, ItemStream, ObjectDataHashField, ListEngine, PascalStrings, MemoryStream64,
-  Bass;
+  ObjectDataManager, ItemStream, ObjectDataHashField, ListEngine, PascalStrings, MemoryStream64, Bass;
 
 type
   TSoundEngine_Bass = class(TzSound)
@@ -106,11 +105,11 @@ var
   ms: TMemoryStream64;
 begin
   if SoundList.Exists(FileName) then
-      Exit;
+      exit;
 
   stream := FileIOOpen(FileName);
   if stream = nil then
-      Exit;
+      exit;
 
   ms := TMemoryStream64.Create;
   ms.CopyFrom(stream, stream.Size);
@@ -128,7 +127,7 @@ begin
   if s.Handle <> 0 then
     begin
       SoundList[FileName] := s;
-      Exit;
+      exit;
     end;
   DisposeObject(s);
 end;
@@ -147,12 +146,12 @@ begin
     end;
 
   if s = nil then
-      Exit;
+      exit;
 
-  s.channel := BASS_SampleGetChannel(s.Handle, False);
+  s.channel := BASS_SampleGetChannel(s.Handle, false);
   if s.channel <> 0 then
     begin
-      BASS_ChannelPlay(s.channel, False);
+      BASS_ChannelPlay(s.channel, false);
       FLastPlayChannel := s.channel;
     end;
 end;
@@ -183,11 +182,11 @@ var
   ms: TMemoryStream64;
 begin
   if SoundList.Exists(FileName) then
-      Exit;
+      exit;
 
   stream := FileIOOpen(FileName);
   if stream = nil then
-      Exit;
+      exit;
 
   ms := TMemoryStream64.Create;
   ms.CopyFrom(stream, stream.Size);
@@ -205,7 +204,7 @@ begin
   if s.Handle <> 0 then
     begin
       SoundList[FileName] := s;
-      Exit;
+      exit;
     end;
   DisposeObject(s);
 end;
@@ -215,7 +214,7 @@ var
   s: TSound;
 begin
   if DoIsPlaying(FileName) then
-      Exit;
+      exit;
 
   s := SoundList[FileName] as TSound;
   if s = nil then
@@ -225,12 +224,12 @@ begin
     end;
 
   if s = nil then
-      Exit;
+      exit;
 
-  s.channel := BASS_SampleGetChannel(s.Handle, False);
+  s.channel := BASS_SampleGetChannel(s.Handle, false);
   if s.channel <> 0 then
     begin
-      BASS_ChannelPlay(s.channel, False);
+      BASS_ChannelPlay(s.channel, false);
       FLastPlayChannel := s.channel;
     end;
 end;
@@ -261,11 +260,11 @@ var
   ms: TMemoryStream64;
 begin
   if SoundList.Exists(FileName) then
-      Exit;
+      exit;
 
   stream := FileIOOpen(FileName);
   if stream = nil then
-      Exit;
+      exit;
 
   ms := TMemoryStream64.Create;
   ms.CopyFrom(stream, stream.Size);
@@ -283,7 +282,7 @@ begin
   if s.Handle <> 0 then
     begin
       SoundList[FileName] := s;
-      Exit;
+      exit;
     end
   else
       RaiseInfo('bass error:%d', [BASS_ErrorGetCode]);
@@ -302,7 +301,7 @@ begin
     end;
 
   if s = nil then
-      Exit;
+      exit;
 
   if (s.channel <> 0) and (BASS_ChannelIsActive(s.channel) = BASS_ACTIVE_PLAYING) then
     begin
@@ -311,10 +310,10 @@ begin
     end
   else
     begin
-      s.channel := BASS_SampleGetChannel(s.Handle, False);
+      s.channel := BASS_SampleGetChannel(s.Handle, false);
       if s.channel <> 0 then
         begin
-          BASS_ChannelPlay(s.channel, False);
+          BASS_ChannelPlay(s.channel, false);
           FLastPlayChannel := s.channel;
         end;
     end;
@@ -332,7 +331,7 @@ begin
     end;
 
   if s = nil then
-      Exit;
+      exit;
 
   if s.channel <> 0 then
       BASS_ChannelStop(s.channel);
@@ -359,7 +358,7 @@ function TSoundEngine_Bass.DoIsPlaying(FileName: SystemString): Boolean;
 var
   s: TSound;
 begin
-  Result := False;
+  Result := false;
 
   s := SoundList[FileName] as TSound;
   if s = nil then
@@ -369,7 +368,7 @@ begin
     end;
 
   if s = nil then
-      Exit;
+      exit;
 
   Result := (s.channel <> 0) and (BASS_ChannelIsActive(s.channel) = BASS_ACTIVE_PLAYING);
 end;
@@ -408,7 +407,7 @@ end;
 initialization
 
 if not Bass_Available then
-    Exit;
+    exit;
 try
 {$IFDEF MSWINDOWS}
   if not BASS_Init(-1, 44100, 0, 0, nil) then

@@ -85,6 +85,7 @@ type
     function Exists(name: SystemString): Boolean;
     function Delete(name: SystemString): Boolean;
     procedure GetFileList(L: TPascalStringList);
+    function GetFileSize(name: SystemString): Int64;
 
     procedure CopyTo(LocalName: SystemString; dest: TAI_TrainingTask; destName: SystemString); overload;
 
@@ -519,6 +520,11 @@ begin
           L.Add(sr.name);
       until not DB_Engine.ItemFindNext(sr);
     end;
+end;
+
+function TAI_TrainingTask.GetFileSize(name: SystemString): Int64;
+begin
+  Result := DB_Engine.GetItemSize('/', name);
 end;
 
 procedure TAI_TrainingTask.CopyTo(LocalName: SystemString; dest: TAI_TrainingTask; destName: SystemString);

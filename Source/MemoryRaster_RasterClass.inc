@@ -561,6 +561,12 @@ end;
 
 function TMemoryRaster.SerializedAndRecycleMemory(RSeri: TRasterSerialized): Int64;
 begin
+  if (FSerializedEngine <> nil) and (FSerializedEngine <> RSeri) and empty() then
+      UnserializedMemory();
+
+  if FSerializedEngine <> RSeri then
+      FMemorySerializedPosition := -1;
+
   FSerializedEngine := RSeri;
   Result := SerializedAndRecycleMemory();
 end;
@@ -575,6 +581,8 @@ end;
 
 function TMemoryRaster.UnserializedMemory(RSeri: TRasterSerialized): Int64;
 begin
+  if FSerializedEngine <> RSeri then
+      FMemorySerializedPosition := -1;
   FSerializedEngine := RSeri;
   Result := UnserializedMemory();
 end;
@@ -929,6 +937,16 @@ end;
 function TMemoryRaster.MemorySize: Integer;
 begin
   Result := Width * Height * SizeOf(TRColor);
+end;
+
+function TMemoryRaster.GetMD5: TMD5;
+begin
+  Result := umlMD5(@Bits^[0], MemorySize);
+end;
+
+function TMemoryRaster.GetCRC32: Cardinal;
+begin
+  Result := umlCRC32(@Bits^[0], MemorySize);
 end;
 
 procedure TMemoryRaster.SetSize(NewWidth, NewHeight: Integer);
@@ -4884,6 +4902,24 @@ begin
   DisposeObject(m64);
 end;
 
+function TMemoryRasterList.BuildArray: TMemoryRasterArray;
+var
+  i: Integer;
+begin
+  SetLength(Result, Count);
+  for i := 0 to Count - 1 do
+      Result[i] := Items[i];
+end;
+
+function TMemoryRaster2DMatrix.BuildArray: TMemoryRaster2DArray;
+var
+  i: Integer;
+begin
+  SetLength(Result, Count);
+  for i := 0 to Count - 1 do
+      Result[i] := Items[i].BuildArray;
+end;
+
 procedure TByteRasterList.SaveToStream(stream: TCoreClassStream);
 var
   d: TDataFrameEngine;
@@ -4937,21 +4973,35 @@ end;
 constructor TRasterSerialized.Create(stream_: TCoreClassStream);
 begin
   inherited Create;
+  // init
   FStream := stream_;
   FAutoFreeStream := False;
   FCritical := TCritical.Create;
-  FWriteList := TMemoryRasterList.Create;
-  FReadList := TMemoryRasterList.Create;
+  FWriteHistory := TMemoryRasterList.Create;
+  FReadHistory := TMemoryRasterList.Create;
+  FEnabledWriteHistory := False;
+  FEnabledReadHistory := False;
+
+  // update global Pool
+  RasterSerializedPool.Lock;
+  RasterSerializedPool.V.Add(Self);
+  RasterSerializedPool.UnLock;
 end;
 
 destructor TRasterSerialized.Destroy;
 begin
-  Clear();
+  // update global Pool
+  RasterSerializedPool.Lock;
+  RasterSerializedPool.V.Remove(Self);
+  RasterSerializedPool.UnLock;
+
+  // free
+  ClearHistory();
   if FAutoFreeStream then
       DisposeObject(FStream);
   DisposeObject(FCritical);
-  DisposeObject(FWriteList);
-  DisposeObject(FReadList);
+  DisposeObject(FWriteHistory);
+  DisposeObject(FReadHistory);
   inherited Destroy;
 end;
 
@@ -4959,10 +5009,9 @@ function TRasterSerialized.Write(R: TMemoryRaster): Int64;
 var
   h1, h2: TRasterSerializedHeader;
   p: Int64;
-  i: Integer;
 begin
   Result := 0;
-  if (R = nil) or (R.empty) then
+  if (R = nil) or (R.empty()) then
       exit;
 
   FCritical.Acquire;
@@ -4996,15 +5045,9 @@ begin
           Result := h1.siz;
         end;
 
-    i := 0;
-    while i < FWriteList.Count do
-      begin
-        if FWriteList[i] = R then
-            FWriteList.Delete(i)
-        else
-            inc(i);
-      end;
-    FWriteList.Add(R);
+    if FEnabledWriteHistory then
+      if FWriteHistory.IndexOf(R) < 0 then
+          FWriteHistory.Add(R);
   finally
       FCritical.Release;
   end;
@@ -5013,7 +5056,6 @@ end;
 function TRasterSerialized.Read(R: TMemoryRaster): Int64;
 var
   H: TRasterSerializedHeader;
-  i: Integer;
 begin
   Result := 0;
   if (R = nil) or (R.FMemorySerializedPosition < 0) then
@@ -5050,15 +5092,9 @@ begin
             end;
       end;
 
-    i := 0;
-    while i < FReadList.Count do
-      begin
-        if FReadList[i] = R then
-            FReadList.Delete(i)
-        else
-            inc(i);
-      end;
-    FReadList.Add(R);
+    if FEnabledReadHistory then
+      if FReadHistory.IndexOf(R) < 0 then
+          FReadHistory.Add(R);
   finally
       FCritical.Release;
   end;
@@ -5071,19 +5107,19 @@ begin
   FCritical.Acquire;
   try
     i := 0;
-    while i < FReadList.Count do
+    while i < FReadHistory.Count do
       begin
-        if FReadList[i] = R then
-            FReadList.Delete(i)
+        if FReadHistory[i] = R then
+            FReadHistory.Delete(i)
         else
             inc(i);
       end;
 
     i := 0;
-    while i < FWriteList.Count do
+    while i < FWriteHistory.Count do
       begin
-        if FWriteList[i] = R then
-            FWriteList.Delete(i)
+        if FWriteHistory[i] = R then
+            FWriteHistory.Delete(i)
         else
             inc(i);
       end;
@@ -5092,11 +5128,29 @@ begin
   end;
 end;
 
-procedure TRasterSerialized.Clear;
+procedure TRasterSerialized.ClearHistory;
 begin
-  while FReadList.Count > 0 do
-      Remove(FReadList[0]);
-  while FWriteList.Count > 0 do
-      Remove(FWriteList[0]);
-  FStream.Size := 0;
+  FCritical.Acquire;
+  try
+    FReadHistory.Clear;
+    FWriteHistory.Clear;
+  finally
+      FCritical.Release;
+  end;
+end;
+
+function TRasterSerialized.StreamSize: Int64;
+begin
+  FCritical.Acquire;
+  Result := FStream.Size;
+  FCritical.Release;
+end;
+
+function TRasterSerialized.StreamFile: U_String;
+begin
+  Result := '';
+  FCritical.Acquire;
+  if FStream is TCoreClassFileStream then
+      Result := TCoreClassFileStream(FStream).FileName;
+  FCritical.Release;
 end;
