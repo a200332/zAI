@@ -200,7 +200,7 @@ begin
           LargeScaleTrainingMemoryRecycleTime := C_Tick_Second * 5;
 
           Train_OutputIndex := TPascalStringList.Create;
-          if ai.GDCNIC_Train(True, RSeri, 32, 32, imgMat, param, Train_OutputIndex) then
+          if ai.GDCNIC_Train(True, True, RSeri, 32, 32, imgMat, param, Train_OutputIndex) then
             begin
               Train_OutputIndex.SaveToFile(gdcnic_index_fn);
               DoStatus('ÑµÁ·³É¹¦.');

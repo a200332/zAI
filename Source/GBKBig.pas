@@ -22,8 +22,7 @@ unit GBKBig;
 
 interface
 
-uses DoStatusIO, CoreClasses, PascalStrings, MemoryStream64, ListEngine, UnicodeMixedLib,
-  UPascalStrings;
+uses DoStatusIO, CoreClasses, PascalStrings, MemoryStream64, ListEngine, UnicodeMixedLib, UPascalStrings;
 
 procedure BigKeyAnalysis(const Analysis: THashVariantList);
 function BigKey(const s: TUPascalString; const MatchSingleWord: Boolean; const Unidentified, Completed: TListPascalString): Integer;

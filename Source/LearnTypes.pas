@@ -495,6 +495,16 @@ type
     MaxError: TLFloat;
   end;
 
+  (*
+    generates FFT plan
+  *)
+  TFTPlan = record
+    Plan: TLIVec;
+    Precomputed: TLVec;
+    TmpBuf: TLVec;
+    StackBuf: TLVec;
+  end;
+
 const
   // IEEE floating
   MachineEpsilon = 5.0E-16;

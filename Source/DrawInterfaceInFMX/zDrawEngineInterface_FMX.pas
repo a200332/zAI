@@ -346,11 +346,21 @@ end;
 procedure BitmapToMemoryBitmap(bmp: TBitmap; b: TMemoryRaster);
 var
   Surface: TBitmapSurface;
+  BitmapData: TBitmapData;
+  i: Integer;
 begin
-  Surface := TBitmapSurface.Create;
-  Surface.Assign(bmp);
-  SurfaceToMemoryBitmap(Surface, b);
-  DisposeObject(Surface);
+  if bmp.BytesPerPixel = 4 then
+    begin
+      b.SetSize(bmp.width, bmp.height);
+
+      if bmp.Map(TMapAccess.Read, BitmapData) then
+        for i := 0 to bmp.height - 1 do
+            CopyPtr(BitmapData.GetScanline(i), b.ScanLine[i], BitmapData.BytesPerLine);
+      bmp.Unmap(BitmapData);
+
+      if bmp.PixelFormat = TPixelFormat.RGBA then
+          b.FormatBGRA;
+    end;
 end;
 
 function CanLoadMemoryBitmap(f: SystemString): Boolean;

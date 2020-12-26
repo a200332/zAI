@@ -70,7 +70,7 @@ type
     function RunFaceTraining(var report: SystemString): Boolean;
     procedure FaceTrainingRunDone(th: TTrainingProcessThread);
 
-    procedure cmd_RecFace_ThRun(ThSender: TStreamCmdThread; ThInData, ThOutData: TDataFrameEngine);
+    procedure cmd_RecFace_ThRun(ThSender: THPC_Stream; ThInData, ThOutData: TDataFrameEngine);
     // 客户端识别人脸的命令
     procedure cmd_RecFace(Sender: TPeerIO; InData, OutData: TDataFrameEngine);
 
@@ -510,8 +510,8 @@ begin
 
   // 使用shell方式调用trainingtool.exe进行人脸训练
   FaceTrainingThread := TTrainingProcessThread.Create;
-  FaceTrainingThread.cmd := PFormat('"%s" "-ai:%s" "-i:%s" "-p:param.txt" "-o:%s" "-k:%s" "-product:%s"',
-    [AI_TrainingTool.Text, AI_Engine_Library.Text, datafile.Text, train_out.Text, AI_UserKey.Text, 'TrainingTool']);
+  FaceTrainingThread.cmd := PFormat('"%s" "-ai:%s" "-i:%s" "-p:param.txt" "-o:%s" "-product:%s"',
+    [AI_TrainingTool.Text, AI_Engine_Library.Text, datafile.Text, train_out.Text, 'TrainingTool']);
   DoStatus(FaceTrainingThread.cmd);
   FaceTrainingThread.workPath := umlGetFilePath(AI_TrainingTool);
   FaceTrainingThread.serv := Self;
@@ -606,7 +606,7 @@ begin
   FaceTrainingThread := nil;
 end;
 
-procedure TReponse_FaceServer.cmd_RecFace_ThRun(ThSender: TStreamCmdThread; ThInData, ThOutData: TDataFrameEngine);
+procedure TReponse_FaceServer.cmd_RecFace_ThRun(ThSender: THPC_Stream; ThInData, ThOutData: TDataFrameEngine);
 type
   TFace_Result = record
     k: TLFloat;
@@ -772,7 +772,7 @@ end;
 procedure TReponse_FaceServer.cmd_RecFace(Sender: TPeerIO; InData, OutData: TDataFrameEngine);
 begin
   // 这里我们使用ZServer4D的HPC机制在一个后台线程中做人脸识别处理
-  RunStreamWithDelayThreadM(Sender, nil, nil, InData, OutData, cmd_RecFace_ThRun);
+  RunHPC_StreamM(Sender, nil, nil, InData, OutData, cmd_RecFace_ThRun);
 end;
 
 procedure TReponse_FaceServer.cmd_GetFaceList(Sender: TPeerIO; InData, OutData: TDataFrameEngine);

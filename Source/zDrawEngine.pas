@@ -806,8 +806,8 @@ type
     { scroll text and UI }
     property MaxScrollText: Integer read FMaxScrollText write FMaxScrollText;
     procedure ClearScrollText;
-    procedure PostScrollText(LifeTime: Double; Text: SystemString; Size: Integer; COLOR: TDEColor); overload;
-    procedure PostScrollText(Tag: TCoreClassObject; LifeTime: Double; Text: SystemString; Size: Integer; COLOR: TDEColor); overload;
+    procedure PostScrollText(LifeTime: Double; Text_: SystemString; Size: Integer; COLOR: TDEColor); overload;
+    procedure PostScrollText(Tag: TCoreClassObject; LifeTime: Double; Text_: SystemString; Size: Integer; COLOR: TDEColor); overload;
     function GetLastPostScrollText: SystemString;
 
     procedure ClearUI;
@@ -943,7 +943,10 @@ type
       Comment_prefix_, Comment_postfix_,
       Number_prefix_, Number_postfix_,
       Symbol_prefix_, Symbol_postfix_,
-      Ascii_prefix_, Ascii_postfix_: SystemString): SystemString;
+      Ascii_prefix_, Ascii_postfix_: SystemString): SystemString; overload;
+    class function RebuildNumAndWordColor(Text: SystemString;
+      Number_prefix_, Number_postfix_: SystemString;
+      Ascii_matched_, Ascii_replace_: array of SystemString): SystemString; overload;
     function DrawText(const Text: SystemString; Size: TDEFloat; r: TDERect; COLOR: TDEColor; center: Boolean; RotateVec: TDEVec; Angle: TDEFloat): TV2Rect4; overload;
     function DrawText(const Text: SystemString; Size: TDEFloat; r: TDERect; COLOR: TDEColor; center: Boolean): TV2Rect4; overload;
     function DrawText(const Text: SystemString; Size: TDEFloat; COLOR: TDEColor; ScreenPt: TDEVec): TV2Rect4; overload;
@@ -990,11 +993,13 @@ type
     function FitDrawPictureInScene(t: TCoreClassObject; Sour, destScene: TDERect; Alpha: TDEFloat): TDERect; overload;
     function FitDrawPictureInScene(indentEndge: Boolean; t: TCoreClassObject; Sour, destScene: TDERect; Alpha: TDEFloat): TDERect; overload;
     { draw texture packing in scene }
-    function DrawPicturePackingInScene(packing_t: TMemoryRasterList; Margins: TDEFloat; destOffset: TDEVec; Alpha: TDEFloat; ShowBox: Boolean): TDERect; overload;
-    function DrawPicturePackingInScene(packing_t: TMemoryRasterList; Margins: TDEFloat; destOffset: TDEVec; Alpha: TDEFloat): TDERect; overload;
+    function DrawRectPackingInScene(rp: TRectPacking; destOffset: TDEVec; Alpha: TDEFloat; ShowBox: Boolean): TDERect;
+    function DrawPicturePackingInScene(Input_: TMemoryRasterList; Margins: TDEFloat; destOffset: TDEVec; Alpha: TDEFloat; ShowBox: Boolean): TDERect; overload;
+    function DrawPicturePackingInScene(Input_: TMemoryRasterList; Margins: TDEFloat; destOffset: TDEVec; Alpha: TDEFloat): TDERect; overload;
+    function DrawPictureMatrixPackingInScene(Input_: TMemoryRaster2DMatrix; Margins: TDEFloat; destOffset: TDEVec; Alpha: TDEFloat; ShowBox: Boolean): TDERect;
     { draw text packing in scene }
-    function DrawTextPackingInScene(packing_t: TArrayPascalString; text_color: TDEColor; text_siz, Margins: TDEFloat; destOffset: TDEVec; ShowBox: Boolean): TDERect; overload;
-    function DrawTextPackingInScene(packing_t: TArrayPascalString; text_color: TDEColor; text_siz, Margins: TDEFloat; destOffset: TDEVec): TDERect; overload;
+    function DrawTextPackingInScene(Input_: TArrayPascalString; text_color: TDEColor; text_siz, Margins: TDEFloat; destOffset: TDEVec; ShowBox: Boolean): TDERect; overload;
+    function DrawTextPackingInScene(Input_: TArrayPascalString; text_color: TDEColor; text_siz, Margins: TDEFloat; destOffset: TDEVec): TDERect; overload;
 
     { sequence animation }
     function CreateSequenceAnimation(stream: TCoreClassStream): TSequenceAnimationBase; overload;
@@ -1113,6 +1118,7 @@ const
 
 function DrawPool(workObj: TCoreClassObject; Draw: TDrawEngineInterface): TDrawEngine; overload;
 function DrawPool(workObj: TCoreClassObject): TDrawEngine; overload;
+function DrawPool(): TDrawEnginePool; overload;
 function DrawEnginePool(workObj: TCoreClassObject; Draw: TDrawEngineInterface): TDrawEngine; overload;
 function DrawEnginePool(workObj: TCoreClassObject): TDrawEngine; overload;
 
@@ -1170,6 +1176,11 @@ end;
 function DrawPool(workObj: TCoreClassObject): TDrawEngine;
 begin
   Result := EnginePool.GetEng(workObj);
+end;
+
+function DrawPool(): TDrawEnginePool;
+begin
+  Result := EnginePool;
 end;
 
 function DrawEnginePool(workObj: TCoreClassObject; Draw: TDrawEngineInterface): TDrawEngine;
@@ -1531,7 +1542,7 @@ var
     end;
   end;
 
-  procedure ProcessLBreak(o: TDSegmentionText; l: TSegmentionTextLists);
+  procedure ProcessLBreak(o: TDSegmentionText; L: TSegmentionTextLists);
   var
     n_o: TDSegmentionText;
     n: TPascalString;
@@ -1541,7 +1552,7 @@ var
     n_o.Text := umlGetFirstStr_Discontinuity(n, #10);
     n_o.Size := o.Size;
     n_o.COLOR := o.COLOR;
-    l.Last.Add(n_o);
+    L.Last.Add(n_o);
 
     while n.Exists(#10) do
       begin
@@ -1549,15 +1560,15 @@ var
         n_o.Text := umlGetFirstStr_Discontinuity(n, #10);
         n_o.Size := o.Size;
         n_o.COLOR := o.COLOR;
-        l.Add(TSegmentionTextList.Create);
-        l.Last.Add(n_o);
+        L.Add(TSegmentionTextList.Create);
+        L.Last.Add(n_o);
       end;
   end;
 
 var
   t: TTextParsing;
   i, j: Integer;
-  l: TSegmentionTextLists;
+  L: TSegmentionTextLists;
   o: TDSegmentionText;
   pb, pe: PTokenData;
   error: Boolean;
@@ -1575,8 +1586,8 @@ begin
     end;
 
   t := TTextParsing.Create(s, tsText);
-  l := TSegmentionTextLists.Create;
-  l.Add(TSegmentionTextList.Create);
+  L := TSegmentionTextLists.Create;
+  L.Add(TSegmentionTextList.Create);
   oprt := nil;
 
   error := False;
@@ -1592,7 +1603,7 @@ begin
       if pb = nil then
         begin
           o.Text := t.TokenCombine(i, t.TokenCount - 1);
-          ProcessLBreak(o, l);
+          ProcessLBreak(o, L);
           break;
         end
       else
@@ -1600,7 +1611,7 @@ begin
           if pb^.Index > i then
             begin
               o.Text := t.TokenCombine(i, pb^.Index - 1);
-              ProcessLBreak(o, l);
+              ProcessLBreak(o, L);
             end;
           pe := t.TokenProbeR(pb^.Index + 1, [ttSymbol], '|');
           if pe = nil then
@@ -1644,18 +1655,18 @@ begin
 
   if not error then
     begin
-      SetLength(Result, l.Count);
-      for j := 0 to l.Count - 1 do
+      SetLength(Result, L.Count);
+      for j := 0 to L.Count - 1 do
         begin
-          SetLength(Result[j], l[j].Count);
-          for i := 0 to l[j].Count - 1 do
-              Result[j, i] := l[j][i];
+          SetLength(Result[j], L[j].Count);
+          for i := 0 to L[j].Count - 1 do
+              Result[j, i] := L[j][i];
         end;
     end;
 
-  for i := 0 to l.Count - 1 do
-      disposeObject(l[i]);
-  disposeObject(l);
+  for i := 0 to L.Count - 1 do
+      disposeObject(L[i]);
+  disposeObject(L);
 
   if oprt <> nil then
       disposeObject(oprt);
@@ -1984,6 +1995,7 @@ procedure TDETexture.NoUsage;
 begin
   inherited NoUsage;
   ReleaseGPUMemory();
+  DisposeObjectAndNil(FStaticShadow);
 end;
 
 function TDETexture.StaticShadow: TDETexture;
@@ -4622,17 +4634,17 @@ end;
 
 function TDrawEngine.ComputeScaleTextSize(const t: SystemString; Size: TDEFloat; MaxSiz: TDEVec): TDEFloat;
 var
-  l: TDEFloat;
+  L: TDEFloat;
   lsiz: TVec2;
 begin
-  l := Size;
-  lsiz := GetTextSize(t, l);
+  L := Size;
+  lsiz := GetTextSize(t, L);
   // compute scale
   if lsiz[0] > MaxSiz[0] then
-      l := l * (MaxSiz[0] / lsiz[0])
+      L := L * (MaxSiz[0] / lsiz[0])
   else if lsiz[1] > MaxSiz[1] then
-      l := l * (MaxSiz[1] / lsiz[1]);
-  Result := l;
+      L := L * (MaxSiz[1] / lsiz[1]);
+  Result := L;
 end;
 
 procedure TDrawEngine.ClearScrollText;
@@ -4645,18 +4657,30 @@ begin
   FScrollTextList.Clear;
 end;
 
-procedure TDrawEngine.PostScrollText(LifeTime: Double; Text: SystemString; Size: Integer; COLOR: TDEColor);
+procedure TDrawEngine.PostScrollText(LifeTime: Double; Text_: SystemString; Size: Integer; COLOR: TDEColor);
 var
+  n: U_String;
   Sour: TScrollTextSource;
 begin
   if not ReadyOK then
       exit;
 
+  n := Text_;
+
+  if n.Exists(#10) then
+    begin
+      n := n.DeleteChar(#13);
+      PostScrollText(LifeTime, umlGetFirstStr_Discontinuity(n, #10), Size, COLOR);
+      n := umlDeleteFirstStr_Discontinuity(n, #10);
+      PostScrollText(LifeTime, n, Size, COLOR);
+      exit;
+    end;
+
   Sour := TScrollTextSource.Create;
   Sour.LifeTime := LifeTime;
   Sour.TextSize := Size;
   Sour.TextColor := COLOR;
-  Sour.Text := Text;
+  Sour.Text := Text_;
   Sour.Tag := nil;
   FScrollTextList.Add(Sour);
 
@@ -4667,13 +4691,24 @@ begin
     end;
 end;
 
-procedure TDrawEngine.PostScrollText(Tag: TCoreClassObject; LifeTime: Double; Text: SystemString; Size: Integer; COLOR: TDEColor);
+procedure TDrawEngine.PostScrollText(Tag: TCoreClassObject; LifeTime: Double; Text_: SystemString; Size: Integer; COLOR: TDEColor);
 var
+  n: U_String;
   i: Integer;
   Sour: TScrollTextSource;
 begin
   if not ReadyOK then
       exit;
+
+  n := Text_;
+  if n.Exists(#10) then
+    begin
+      n := n.DeleteChar(#13);
+      PostScrollText(Tag, LifeTime, umlGetFirstStr_Discontinuity(n, #10), Size, COLOR);
+      n := umlDeleteFirstStr_Discontinuity(n, #10);
+      PostScrollText(Tag, LifeTime, n, Size, COLOR);
+      exit;
+    end;
 
   Sour := nil;
   for i := 0 to FScrollTextList.Count - 1 do
@@ -4693,7 +4728,7 @@ begin
   Sour.LifeTime := LifeTime;
   Sour.TextSize := Size;
   Sour.TextColor := COLOR;
-  Sour.Text := Text;
+  Sour.Text := Text_;
   Sour.Tag := Tag;
 end;
 
@@ -5404,7 +5439,7 @@ end;
 procedure TDrawEngine.DrawLabelBox(lab: SystemString; labSiz: TDEFloat; labColor: TDEColor;
   Box: TDERect; boxColor: TDEColor; boxLineWidth: TDEFloat);
 var
-  l: TDEFloat;
+  L: TDEFloat;
   r, lr: TDERect;
   lsiz, bsiz: TVec2;
 begin
@@ -5412,8 +5447,8 @@ begin
   DrawBox(r, boxColor, boxLineWidth);
   if lab = '' then
       exit;
-  l := labSiz;
-  lsiz := GetTextSize(lab, l);
+  L := labSiz;
+  lsiz := GetTextSize(lab, L);
   bsiz := RectSize(r);
   if (lsiz[0] < bsiz[0]) and (lsiz[1] < bsiz[1]) then
     begin
@@ -5424,16 +5459,16 @@ begin
     begin
       // compute font scale size
       if lsiz[0] > bsiz[0] * 0.8 then
-          l := l * (bsiz[0] * 0.8 / lsiz[0])
+          L := L * (bsiz[0] * 0.8 / lsiz[0])
       else
-          l := l * (bsiz[1] * 0.8 / lsiz[1]);
-      lsiz := GetTextSize(lab, l);
+          L := L * (bsiz[1] * 0.8 / lsiz[1]);
+      lsiz := GetTextSize(lab, L);
       lr[0] := r[0];
       lr[1] := Vec2Add(lr[0], lsiz);
     end;
 
   FillBox(lr, boxColor);
-  DrawText(lab, l, lr, labColor, False);
+  DrawText(lab, L, lr, labColor, False);
 end;
 
 procedure TDrawEngine.DrawLabelBoxInScene(lab: SystemString; labSiz: TDEFloat; labColor: TDEColor;
@@ -5591,22 +5626,22 @@ end;
 
 procedure TDrawEngine.DrawPolygon(PolygonBuff: TArrayVec2; COLOR: TDEColor; LineWidth: TDEFloat);
 var
-  l, i: Integer;
+  L, i: Integer;
   t1, t2: TDEVec;
 begin
-  l := length(PolygonBuff);
+  L := length(PolygonBuff);
   FDrawCommand.SetLineWidth(LineWidth);
 
-  for i := 1 to l - 1 do
+  for i := 1 to L - 1 do
     begin
       t1 := PolygonBuff[i - 1];
       t2 := PolygonBuff[i];
       FDrawCommand.DrawLine(t1, t2, COLOR);
     end;
-  if (l > 1) then
+  if (L > 1) then
     begin
       t1 := PolygonBuff[0];
-      t2 := PolygonBuff[l - 1];
+      t2 := PolygonBuff[L - 1];
       FDrawCommand.DrawLine(t1, t2, COLOR);
     end;
 end;
@@ -5622,22 +5657,22 @@ end;
 
 procedure TDrawEngine.DrawPolygonDotLine(PolygonBuff: TArrayVec2; COLOR: TDEColor; LineWidth: TDEFloat);
 var
-  l, i: Integer;
+  L, i: Integer;
   t1, t2: TDEVec;
 begin
-  l := length(PolygonBuff);
+  L := length(PolygonBuff);
   FDrawCommand.SetLineWidth(LineWidth);
 
-  for i := 1 to l - 1 do
+  for i := 1 to L - 1 do
     begin
       t1 := PolygonBuff[i - 1];
       t2 := PolygonBuff[i];
       FDrawCommand.DrawDotLine(t1, t2, COLOR);
     end;
-  if (l > 1) then
+  if (L > 1) then
     begin
       t1 := PolygonBuff[0];
-      t2 := PolygonBuff[l - 1];
+      t2 := PolygonBuff[L - 1];
       FDrawCommand.DrawDotLine(t1, t2, COLOR);
     end;
 end;
@@ -5674,6 +5709,40 @@ begin
             ttNumber: p^.Text := Number_prefix_ + p^.Text + Number_postfix_;
             ttSymbol: p^.Text := Symbol_prefix_ + p^.Text + Symbol_postfix_;
             ttAscii: p^.Text := Ascii_prefix_ + p^.Text + Ascii_postfix_;
+          end;
+        end;
+      tp.RebuildToken;
+      Result := tp.Text;
+      disposeObject(tp);
+    end
+  else
+      Result := Text;
+end;
+
+class function TDrawEngine.RebuildNumAndWordColor(Text: SystemString;
+  Number_prefix_, Number_postfix_: SystemString;
+  Ascii_matched_, Ascii_replace_: array of SystemString): SystemString;
+var
+  tp: TTextParsing;
+  i, j: Integer;
+  p: PTokenData;
+begin
+  if length(Ascii_matched_) <> length(Ascii_replace_) then
+      raiseInfo('error.');
+  if not IsSegmentionText(Text) then
+    begin
+      tp := TTextParsing.Create(Text);
+      for i := 0 to tp.TokenCount - 1 do
+        begin
+          p := tp[i];
+          case p^.tokenType of
+            ttNumber: p^.Text := Number_prefix_ + p^.Text + Number_postfix_;
+            ttAscii:
+              begin
+                for j := 0 to length(Ascii_matched_) - 1 do
+                  if umlMultipleMatch(True, Ascii_matched_[j], p^.Text) then
+                      p^.Text := Ascii_replace_[j];
+              end;
           end;
         end;
       tp.RebuildToken;
@@ -6001,24 +6070,13 @@ begin
   Result := FitDrawPictureInScene(t, Sour, Result, Alpha);
 end;
 
-function TDrawEngine.DrawPicturePackingInScene(packing_t: TMemoryRasterList; Margins: TDEFloat; destOffset: TDEVec; Alpha: TDEFloat; ShowBox: Boolean): TDERect;
+function TDrawEngine.DrawRectPackingInScene(rp: TRectPacking; destOffset: TDEVec; Alpha: TDEFloat; ShowBox: Boolean): TDERect;
 var
-  rp: TRectPacking;
   i: Integer;
   t: TMemoryRaster;
   r: TDERect;
 begin
   Result := NULLRect;
-  if packing_t.Count = 0 then
-      exit;
-  rp := TRectPacking.Create;
-  rp.Margins := Margins;
-
-  for i := 0 to packing_t.Count - 1 do
-      rp.Add(nil, packing_t[i], packing_t[i].BoundsRectV2);
-
-  rp.Build();
-
   for i := 0 to rp.Count - 1 do
     begin
       t := rp[i]^.Data2 as TMemoryRaster;
@@ -6029,18 +6087,82 @@ begin
           Result := BoundRect(Result, r);
       DrawPictureInScene(t, t.BoundsRectV2, r, Alpha);
       if ShowBox then
-          DrawLabelBox(PFormat('%d|s:10| %d*%d', [i + 1, t.width, t.height]), 12, DEColor(1, 0, 0), SceneToScreen(r), DEColor(1, 1, 1), 2);
+          DrawLabelBox(PFormat('%d - %d*%d', [i + 1, t.width, t.height]), 12, DEColor(1, 1, 1), SceneToScreen(r), DEColor(1, 0, 0), 2);
+    end;
+end;
+
+function TDrawEngine.DrawPicturePackingInScene(Input_: TMemoryRasterList; Margins: TDEFloat; destOffset: TDEVec; Alpha: TDEFloat; ShowBox: Boolean): TDERect;
+var
+  rp: TRectPacking;
+  i: Integer;
+begin
+  Result := NULLRect;
+  if Input_.Count = 0 then
+      exit;
+  rp := TRectPacking.Create;
+  rp.Margins := Margins;
+
+  for i := 0 to Input_.Count - 1 do
+      rp.Add(nil, Input_[i], Input_[i].BoundsRectV2);
+
+  rp.Build();
+  Result := DrawRectPackingInScene(rp, destOffset, Alpha, ShowBox);
+  disposeObject(rp);
+end;
+
+function TDrawEngine.DrawPicturePackingInScene(Input_: TMemoryRasterList; Margins: TDEFloat; destOffset: TDEVec; Alpha: TDEFloat): TDERect;
+begin
+  Result := DrawPicturePackingInScene(Input_, Margins, destOffset, Alpha, True);
+end;
+
+function TDrawEngine.DrawPictureMatrixPackingInScene(Input_: TMemoryRaster2DMatrix; Margins: TDEFloat; destOffset: TDEVec; Alpha: TDEFloat; ShowBox: Boolean): TDERect;
+var
+  rp: TRectPacking;
+  i, j: Integer;
+  L: TMemoryRasterList;
+  tr: TRectPacking;
+  r, rr: TDERect;
+begin
+  Result := NULLRect;
+  if Input_.Count = 0 then
+      exit;
+
+  rp := TRectPacking.Create;
+  rp.Margins := Margins;
+
+  for i := 0 to Input_.Count - 1 do
+    begin
+      L := Input_[i];
+      if L.Count = 0 then
+          continue;
+      tr := TRectPacking.Create;
+      tr.Margins := 2;
+      tr.UserToken := L.UserToken;
+      for j := 0 to L.Count - 1 do
+          tr.Add(nil, L[j], L[j].BoundsRectV2);
+      tr.Build();
+      rp.Add(nil, tr, tr.GetBoundsBox);
+    end;
+  rp.Build();
+
+  for i := 0 to rp.Count - 1 do
+    begin
+      tr := rp[i]^.Data2 as TRectPacking;
+      r := RectAdd(rp[i]^.Rect, destOffset);
+      rr := DrawRectPackingInScene(tr, r[0], Alpha, False);
+      DrawLabelBox(PFormat('%d', [tr.Count]), 12, DEColor(1, 1, 1), SceneToScreen(r), DEColor(1, 0, 0), 1);
+      disposeObject(tr);
+
+      if i = 0 then
+          Result := rr
+      else
+          Result := BoundRect(Result, rr);
     end;
 
   disposeObject(rp);
 end;
 
-function TDrawEngine.DrawPicturePackingInScene(packing_t: TMemoryRasterList; Margins: TDEFloat; destOffset: TDEVec; Alpha: TDEFloat): TDERect;
-begin
-  Result := DrawPicturePackingInScene(packing_t, Margins, destOffset, Alpha, True);
-end;
-
-function TDrawEngine.DrawTextPackingInScene(packing_t: TArrayPascalString; text_color: TDEColor; text_siz, Margins: TDEFloat; destOffset: TDEVec; ShowBox: Boolean): TDERect;
+function TDrawEngine.DrawTextPackingInScene(Input_: TArrayPascalString; text_color: TDEColor; text_siz, Margins: TDEFloat; destOffset: TDEVec; ShowBox: Boolean): TDERect;
 var
   rp: TRectPacking;
   i: Integer;
@@ -6048,13 +6170,13 @@ var
   r: TDERect;
 begin
   Result := NULLRect;
-  if length(packing_t) = 0 then
+  if length(Input_) = 0 then
       exit;
   rp := TRectPacking.Create;
   rp.Margins := Margins;
 
-  for i := 0 to length(packing_t) - 1 do
-      rp.Add(@packing_t[i], nil, GetTextSizeR(packing_t[i], text_siz));
+  for i := 0 to length(Input_) - 1 do
+      rp.Add(@Input_[i], nil, GetTextSizeR(Input_[i], text_siz));
 
   rp.Build();
 
@@ -6075,9 +6197,9 @@ begin
   disposeObject(rp);
 end;
 
-function TDrawEngine.DrawTextPackingInScene(packing_t: TArrayPascalString; text_color: TDEColor; text_siz, Margins: TDEFloat; destOffset: TDEVec): TDERect;
+function TDrawEngine.DrawTextPackingInScene(Input_: TArrayPascalString; text_color: TDEColor; text_siz, Margins: TDEFloat; destOffset: TDEVec): TDERect;
 begin
-  Result := DrawTextPackingInScene(packing_t, text_color, text_siz, Margins, destOffset, True);
+  Result := DrawTextPackingInScene(Input_, text_color, text_siz, Margins, destOffset, True);
 end;
 
 function TDrawEngine.CreateSequenceAnimation(stream: TCoreClassStream): TSequenceAnimationBase;

@@ -98,4 +98,13 @@ object FaceRecForm: TFaceRecForm
     Text = #27979#35797#24230#37327#21270#32593#32476
     OnClick = MetricButtonClick
   end
+  object DNNThread_CheckBox: TCheckBox
+    Position.X = 464.000000000000000000
+    Position.Y = 16.000000000000000000
+    Size.Width = 105.000000000000000000
+    Size.Height = 19.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 9
+    Text = 'DNN Thread'
+  end
 end

@@ -436,7 +436,7 @@ end;
 var
   GBKCache_Inited: TAtomBool;
 
-procedure InitFastGBKThread(thSender: TComputeThread);
+procedure InitFastGBKThread(thSender: TCompute);
 // gbk with unpack format(unicode)
 // char=py1,py2,py3
 var
@@ -488,7 +488,7 @@ end;
 initialization
 
 GBKCache_Inited := TAtomBool.Create(False);
-TComputeThread.RunC({$IFDEF FPC}@{$ENDIF FPC}InitFastGBKThread);
+TCompute.RunC({$IFDEF FPC}@{$ENDIF FPC}InitFastGBKThread);
 
 Chinese_Number := #65296#65297#65298#65299#65300#65301#65302#65303#65304#65305;
 Chinese_Letter :=

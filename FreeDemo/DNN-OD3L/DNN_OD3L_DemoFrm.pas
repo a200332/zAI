@@ -13,7 +13,8 @@ uses
   Learn, LearnTypes,
   zAI, zAI_Common, zAI_TrainingTask,
   zDrawEngineInterface_SlowFMX, zDrawEngine, Geometry2DUnit, MemoryRaster,
-  MemoryStream64, PascalStrings, UnicodeMixedLib, DoStatusIO, FMX.Layouts, FMX.ExtCtrls;
+  MemoryStream64, PascalStrings, UnicodeMixedLib, DoStatusIO, FMX.Layouts, FMX.ExtCtrls,
+  FMX.Memo.Types;
 
 type
   TDNN_OD3L_Form = class(TForm)

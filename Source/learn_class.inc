@@ -201,6 +201,7 @@ begin
         end;
 
       FMemorySource := TCoreClassList.Create;
+      FTokenCache := THashList.CustomCreate($FFFF);
       FKDToken := TKDTree.Create(FOutSize);
       FLearnType := lt;
 
@@ -244,6 +245,7 @@ begin
         end;
 
       FMemorySource := TCoreClassList.Create;
+      FTokenCache := THashList.CustomCreate($FFFF);
       FKDToken := TKDTree.Create(FOutSize);
       FLearnType := lt;
 
@@ -287,6 +289,7 @@ begin
         end;
 
       FMemorySource := TCoreClassList.Create;
+      FTokenCache := THashList.CustomCreate($FFFF);
       FKDToken := TKDTree.Create(FOutSize);
       FLearnType := lt;
 
@@ -319,6 +322,7 @@ begin
       FInSize := InDataLen;
       FOutSize := 1;
       FMemorySource := TCoreClassList.Create;
+      FTokenCache := THashList.CustomCreate($FFFF);
       FKDToken := TKDTree.Create(FOutSize);
       FLearnType := lt;
 
@@ -351,6 +355,7 @@ begin
       FInSize := InDataLen;
       FOutSize := 1;
       FMemorySource := TCoreClassList.Create;
+      FTokenCache := THashList.CustomCreate($FFFF);
       FKDToken := TKDTree.Create(FOutSize);
       FLearnType := lt;
 
@@ -383,6 +388,7 @@ begin
       FInSize := InDataLen;
       FOutSize := 1;
       FMemorySource := TCoreClassList.Create;
+      FTokenCache := THashList.CustomCreate($FFFF);
       FKDToken := TKDTree.Create(FOutSize);
       FLearnType := lt;
 
@@ -409,6 +415,7 @@ begin
   FInSize := 1;
   FOutSize := 1;
   FMemorySource := nil;
+  FTokenCache := nil;
   FKDToken := nil;
   FLearnType := ltKDT;
   FLearnData := nil;
@@ -439,6 +446,12 @@ begin
         end;
       DisposeObject(FMemorySource);
       FMemorySource := nil;
+    end;
+
+  if FTokenCache <> nil then
+    begin
+      DisposeObject(FTokenCache);
+      FTokenCache := nil;
     end;
 
   if FKDToken <> nil then
@@ -478,6 +491,9 @@ begin
 
   FMemorySource := TCoreClassList.Create;
 
+  if FTokenCache <> nil then
+      FTokenCache.Clear;
+
   CreateLearnData(False);
 
   FLastTrainMaxInValue := 0;
@@ -495,7 +511,7 @@ begin
   Result := PLearnMemory(FMemorySource[index]);
 end;
 
-procedure TLearn.AddMemory(const f_In, f_Out: TLVec; f_token: TPascalString);
+function TLearn.AddMemory(const f_In, f_Out: TLVec; f_token: TPascalString): PLearnMemory;
 var
   p: PLearnMemory;
   i: TLInt;
@@ -523,68 +539,73 @@ begin
   p^.token := umlTrimSpace(f_token);
 
   FMemorySource.Add(p);
+
+  if not FTokenCache.Exists(f_token) then
+      FTokenCache.Add(f_token, p, False);
+
+  Result := p;
 end;
 
-procedure TLearn.AddMemory(const f_In: TLVec; f_token: TPascalString);
+function TLearn.AddMemory(const f_In: TLVec; f_token: TPascalString): PLearnMemory;
 var
-  i: Integer;
+  p: PLearnMemory;
   f_Out: TLVec;
 begin
-  i := FindTokenIndex(f_token);
-  if i >= 0 then
+  p := FindTokenData(f_token);
+  if p <> nil then
     begin
-      AddMemory(f_In, MemorySource[i]^.m_out, f_token);
+      Result := AddMemory(f_In, p^.m_out, f_token);
       exit;
     end;
 
   f_Out := LVec(FOutSize);
   LSetVec(f_Out, Count);
-  AddMemory(f_In, f_Out, f_token);
+  Result := AddMemory(f_In, f_Out, f_token);
   SetLength(f_Out, 0);
 end;
 
-procedure TLearn.AddMemory(const f_In, f_Out: TLVec);
+function TLearn.AddMemory(const f_In, f_Out: TLVec): PLearnMemory;
 begin
-  AddMemory(f_In, f_Out, LVec(f_Out));
+  Result := AddMemory(f_In, f_Out, LVec(f_Out));
 end;
 
-procedure TLearn.AddMemory(const s_In, s_Out, s_token: TPascalString);
+function TLearn.AddMemory(const s_In, s_Out, s_token: TPascalString): PLearnMemory;
 var
   f_In, f_Out: TLVec;
 begin
   f_In := LVec(s_In, FInSize);
   f_Out := LVec(s_Out, FOutSize);
-  AddMemory(f_In, f_Out, s_token);
+  Result := AddMemory(f_In, f_Out, s_token);
   SetLength(f_In, 0);
   SetLength(f_Out, 0);
 end;
 
-procedure TLearn.AddMemory(const s_In, s_Out: TPascalString);
+function TLearn.AddMemory(const s_In, s_Out: TPascalString): PLearnMemory;
 var
-  i: Integer;
+  p: PLearnMemory;
 begin
-  i := FindTokenIndex(s_Out);
-  if i >= 0 then
+  p := FindTokenData(s_Out);
+  if p <> nil then
     begin
-      AddMemory(LVec(s_In), MemorySource[i]^.m_out, s_Out);
+      Result := AddMemory(LVec(s_In), p^.m_out, s_Out);
       exit;
     end;
-  AddMemory(s_In, s_Out, s_Out);
+  Result := AddMemory(s_In, s_Out, s_Out);
 end;
 
-procedure TLearn.AddMemory(const s: TPascalString);
+function TLearn.AddMemory(const s: TPascalString): PLearnMemory;
 var
   s_In, s_Out: TPascalString;
   v: TLVec;
-  i: Integer;
+  p: PLearnMemory;
 begin
   s_In := umlTrimSpace(umlGetFirstStr(s, '='));
   s_Out := umlTrimSpace(umlDeleteFirstStr(s, '='));
 
-  i := FindTokenIndex(s_Out);
-  if i >= 0 then
+  p := FindTokenData(s_Out);
+  if p <> nil then
     begin
-      AddMemory(LVec(s_In), MemorySource[i]^.m_out, s_Out);
+      Result := AddMemory(LVec(s_In), p^.m_out, s_Out);
       exit;
     end;
 
@@ -593,14 +614,14 @@ begin
       v := LVec(s_Out);
       if (length(v) = FOutSize) and (not FClassifier) then
         begin
-          AddMemory(s_In.Text, s_Out.Text);
+          Result := AddMemory(s_In, s_Out, s_Out);
           exit;
         end;
     end;
 
   v := LVec(FOutSize);
   LSetVec(v, Count);
-  AddMemory(s_In, LVec(v), s_Out);
+  Result := AddMemory(s_In, LVec(v), s_Out);
   SetLength(v, 0);
 end;
 
@@ -1027,13 +1048,18 @@ function TLearn.FindTokenIndex(const token_: TPascalString): Integer;
 var
   i: Integer;
 begin
-  for i := 0 to Count - 1 do
+  for i := Count - 1 downto 0 do
     if token_.Same(@MemorySource[i]^.token) then
       begin
         Result := i;
         exit;
       end;
   Result := -1;
+end;
+
+function TLearn.FindTokenData(const token_: TPascalString): PLearnMemory;
+begin
+  Result := PLearnMemory(FTokenCache[token_]);
 end;
 
 function TLearn.Process(const p_in, p_out: PLVec): Boolean;

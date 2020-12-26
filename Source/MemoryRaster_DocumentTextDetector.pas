@@ -375,7 +375,7 @@ begin
             and (calBin.BoxHitSum(R, True) > opt^.WordSegmentationHitSum) then
             begin
               R := RectDiv(R, Scale);
-              LinePtr^.WordList.AddWordData(R, LinePtr^.LineCalibrateRaster.BuildAreaCopy(R));
+              LinePtr^.WordList.AddWordData(R, LinePtr^.LineCalibrateRaster.BuildAreaCopyAs(R));
             end;
         end;
     end;
@@ -529,7 +529,7 @@ begin
         begin
           r2 := RectProjection(OriCalRaster.BoundsRectV20, CalOri.BoundsRectV20, r1);
           if (RectWidth(r2) > opt^.LineSegmentationWidthSuppression) and (RectHeight(r2) > opt^.LineSegmentationHeightSuppression) then
-              LDataList.AddLineData(r2, CalOri.BuildAreaCopy(r2));
+              LDataList.AddLineData(r2, CalOri.BuildAreaCopyAs(r2));
         end;
     end;
   DisposeObject(Seg);

@@ -17,7 +17,6 @@ type
     ClientLayout: TLayout;
     Layout1: TLayout;
     PaintBox: TPaintBox;
-    PlayButton: TButton;
     Layout2: TLayout;
     Label1: TLabel;
     fpsEdit: TEdit;

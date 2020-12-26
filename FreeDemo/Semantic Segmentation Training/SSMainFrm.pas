@@ -92,7 +92,7 @@ begin
       imgList: TAI_ImageList;
       param: PSS_Train_Parameter;
       sync_fn, output_fn, colorpool_fn: U_String;
-      ColorPool: TSegmentationColorList;
+      ColorPool: TSegmentationColorTable;
     begin
       TThread.Synchronize(Sender, procedure
         begin
@@ -173,7 +173,7 @@ begin
   TComputeThread.RunP(nil, nil, procedure(Sender: TComputeThread)
     var
       output_fn, colorpool_fn: U_String;
-      ColorPool: TSegmentationColorList;
+      ColorPool: TSegmentationColorTable;
       ssHnd: TSS_Handle;
       inputRaster, outputRaster: TMemoryRaster;
       output_token: TPascalStringList;
@@ -197,7 +197,7 @@ begin
           ssHnd := ai.SS_Open_Stream(output_fn);
 
           DoStatus('正在读取分割颜色');
-          ColorPool := TSegmentationColorList.Create;
+          ColorPool := TSegmentationColorTable.Create;
           ColorPool.LoadFromFile(colorpool_fn);
 
           DoStatus('正在读取测试样本库');
@@ -218,7 +218,7 @@ begin
                 begin
                   outputRaster := ai.SS_Process(ssHnd, inputRaster, ColorPool, output_token);
                 end);
-              ColorPool.BuildViewer(outputRaster, inputRaster, nil, RColorF(1, 1, 1), [boClosing], 5, 5, 50, 500);
+              ColorPool.BuildViewer(outputRaster, inputRaster, nil, RColorF(1, 1, 1), [boClosing], 5, 5, 50, 500, False);
 
               DisposeObject(output_token);
               TThread.Synchronize(Sender, procedure

@@ -67,7 +67,7 @@ type
 
   PDelphiParallelThData32_Block = ^TDelphiParallelThData32_Block;
 
-procedure DelphiParallelTh32_Block(ThSender: TComputeThread);
+procedure DelphiParallelTh32_Block(ThSender: TCompute);
 var
   p: PDelphiParallelThData32_Block;
   Pass: Integer;
@@ -130,7 +130,7 @@ begin
             p^.Completed := @Completed;
             p^.OnFor := OnFor;
             p^.Critical := Critical;
-            TComputeThread.RunC(p, nil, DelphiParallelTh32_Block);
+            TCompute.RunC(p, nil, DelphiParallelTh32_Block);
             inc(Pass);
           end;
       end
@@ -159,7 +159,7 @@ begin
             p^.Completed := @Completed;
             p^.OnFor := OnFor;
             p^.Critical := Critical;
-            TComputeThread.RunC(p, nil, DelphiParallelTh32_Block);
+            TCompute.RunC(p, nil, DelphiParallelTh32_Block);
             inc(Pass);
           end;
       end;
@@ -187,7 +187,7 @@ type
 
   PDelphiParallelThData64_Block = ^TDelphiParallelThData64_Block;
 
-procedure DelphiParallelTh64_Block(ThSender: TComputeThread);
+procedure DelphiParallelTh64_Block(ThSender: TCompute);
 var
   p: PDelphiParallelThData64_Block;
   Pass: Int64;
@@ -250,7 +250,7 @@ begin
             p^.Completed := @Completed;
             p^.OnFor := OnFor;
             p^.Critical := Critical;
-            TComputeThread.RunC(p, nil, DelphiParallelTh64_Block);
+            TCompute.RunC(p, nil, DelphiParallelTh64_Block);
             inc(Pass);
           end;
       end
@@ -279,7 +279,7 @@ begin
             p^.Completed := @Completed;
             p^.OnFor := OnFor;
             p^.Critical := Critical;
-            TComputeThread.RunC(p, nil, DelphiParallelTh64_Block);
+            TCompute.RunC(p, nil, DelphiParallelTh64_Block);
             inc(Pass);
           end;
       end;
@@ -308,7 +308,7 @@ type
 
   PDelphiParallelThData32_Fold = ^TDelphiParallelThData32_Fold;
 
-procedure DelphiParallelTh32_Fold(ThSender: TComputeThread);
+procedure DelphiParallelTh32_Fold(ThSender: TCompute);
 var
   p: PDelphiParallelThData32_Fold;
 begin
@@ -357,7 +357,8 @@ begin
     Depth := Min(ParallelGranularity, e - b + 1);
     SetLength(states, Depth);
 
-    for i := 0 to Length(states) - 1 do
+    i := 0;
+    while i < Depth do
       begin
         p := @states[i];
         p^.Pass := b + i;
@@ -366,7 +367,8 @@ begin
         p^.Completed := False;
         p^.OnFor := OnFor;
         p^.Critical := Critical;
-        TComputeThread.RunC(p, nil, DelphiParallelTh32_Fold);
+        TCompute.RunC(p, nil, DelphiParallelTh32_Fold);
+        inc(i);
       end;
 
     repeat
@@ -399,7 +401,7 @@ type
 
   PDelphiParallelThData64_Fold = ^TDelphiParallelThData64_Fold;
 
-procedure DelphiParallelTh64_Fold(ThSender: TComputeThread);
+procedure DelphiParallelTh64_Fold(ThSender: TCompute);
 var
   p: PDelphiParallelThData64_Fold;
 begin
@@ -448,7 +450,8 @@ begin
     Depth := Min(ParallelGranularity, e - b + 1);
     SetLength(states, Depth);
 
-    for i := 0 to Length(states) - 1 do
+    i := 0;
+    while i < Depth do
       begin
         p := @states[i];
         p^.Pass := b + i;
@@ -457,7 +460,8 @@ begin
         p^.Completed := False;
         p^.OnFor := OnFor;
         p^.Critical := Critical;
-        TComputeThread.RunC(p, nil, DelphiParallelTh64_Fold);
+        TCompute.RunC(p, nil, DelphiParallelTh64_Fold);
+        inc(i);
       end;
 
     repeat

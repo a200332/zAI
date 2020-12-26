@@ -47,37 +47,63 @@ type
     destructor Destroy; override;
   end;
 
-  TOnAI_OpenFFMPEGVideoProcessorDoneCall = procedure(thSender: TComputeThread; Processor: TAI_FFMPEG_Processor);
-  TOnAI_OpenFFMPEGVideoProcessorCall = procedure(thSender: TComputeThread; Processor: TAI_FFMPEG_Processor; var ProcessStop: Boolean);
-  TOnAI_OpenFFMPEGVideoProcessorDoneMethod = procedure(thSender: TComputeThread; Processor: TAI_FFMPEG_Processor) of object;
-  TOnAI_OpenFFMPEGVideoProcessorMethod = procedure(thSender: TComputeThread; Processor: TAI_FFMPEG_Processor; var ProcessStop: Boolean) of object;
+  TOnAI_OpenFFMPEGVideoProcessorDoneCall = procedure(thSender: TCompute; Processor: TAI_FFMPEG_Processor);
+  TOnAI_OpenFFMPEGVideoProcessorCall = procedure(thSender: TCompute; Processor: TAI_FFMPEG_Processor; var ProcessStop: Boolean);
+  TOnAI_OpenFFMPEGVideoProcessorDoneMethod = procedure(thSender: TCompute; Processor: TAI_FFMPEG_Processor) of object;
+  TOnAI_OpenFFMPEGVideoProcessorMethod = procedure(thSender: TCompute; Processor: TAI_FFMPEG_Processor; var ProcessStop: Boolean) of object;
 
 {$IFDEF FPC}
-  TOnAI_OpenFFMPEGVideoProcessorDoneProc = procedure(thSender: TComputeThread; Processor: TAI_FFMPEG_Processor) is nested;
-  TOnAI_OpenFFMPEGVideoProcessorProc = procedure(thSender: TComputeThread; Processor: TAI_FFMPEG_Processor; var ProcessStop: Boolean) is nested;
+  TOnAI_OpenFFMPEGVideoProcessorDoneProc = procedure(thSender: TCompute; Processor: TAI_FFMPEG_Processor) is nested;
+  TOnAI_OpenFFMPEGVideoProcessorProc = procedure(thSender: TCompute; Processor: TAI_FFMPEG_Processor; var ProcessStop: Boolean) is nested;
 {$ELSE FPC}
-  TOnAI_OpenFFMPEGVideoProcessorDoneProc = reference to procedure(thSender: TComputeThread; Processor: TAI_FFMPEG_Processor);
-  TOnAI_OpenFFMPEGVideoProcessorProc = reference to procedure(thSender: TComputeThread; Processor: TAI_FFMPEG_Processor; var ProcessStop: Boolean);
+  TOnAI_OpenFFMPEGVideoProcessorDoneProc = reference to procedure(thSender: TCompute; Processor: TAI_FFMPEG_Processor);
+  TOnAI_OpenFFMPEGVideoProcessorProc = reference to procedure(thSender: TCompute; Processor: TAI_FFMPEG_Processor; var ProcessStop: Boolean);
 {$ENDIF FPC}
 
 function AI_OpenFFMPEGVideoProcessorFile(AI: TAI; IO_Class: TAI_IO_Class; UserData: Pointer; VideoSource: SystemString): TAI_FFMPEG_Processor; overload;
 function AI_OpenFFMPEGVideoProcessorFile(AI: TAI; IO_Class: TAI_IO_Class; UserData: Pointer; VideoSource: SystemString; PrepareDecode: integer): TAI_FFMPEG_Processor; overload;
+function AI_OpenFFMPEGVideoProcessorFile(AI_Parallel: TAI_Parallel; IO_Class: TAI_IO_Class; UserData: Pointer; VideoSource: SystemString): TAI_FFMPEG_Processor; overload;
+function AI_OpenFFMPEGVideoProcessorFile(AI_Parallel: TAI_Parallel; IO_Class: TAI_IO_Class; UserData: Pointer; VideoSource: SystemString; PrepareDecode: integer): TAI_FFMPEG_Processor; overload;
 function AI_OpenFFMPEGVideoProcessorFile(Processor_: TAI_FFMPEG_Processor; UserData: Pointer; VideoSource: SystemString): TAI_FFMPEG_Processor; overload;
 
-function AI_OpenFFMPEGVideoProcessorFileC(AI: TAI; IO_Class: TAI_IO_Class; UserData: Pointer;
-  VideoSource: SystemString; PrepareDecode: integer; DoneFreeProcessor: Boolean;
+function AI_OpenFFMPEGVideoProcessorFileC(IO_Class: TAI_IO_Class; UserData: Pointer;
+  VideoSource: SystemString; PrepareDecode: integer; DoneFreeProcessor, Parallel: Boolean;
   OnAI_OpenFFMPEGVideoProcessorCall: TOnAI_OpenFFMPEGVideoProcessorCall;
-  OnAI_OpenFFMPEGVideoProcessorDoneCall: TOnAI_OpenFFMPEGVideoProcessorDoneCall): TAI_FFMPEG_Processor;
+  OnAI_OpenFFMPEGVideoProcessorDoneCall: TOnAI_OpenFFMPEGVideoProcessorDoneCall): TAI_FFMPEG_Processor; overload;
+function AI_OpenFFMPEGVideoProcessorFileC(AI: TAI; IO_Class: TAI_IO_Class; UserData: Pointer;
+  VideoSource: SystemString; PrepareDecode: integer; DoneFreeProcessor, Parallel: Boolean;
+  OnAI_OpenFFMPEGVideoProcessorCall: TOnAI_OpenFFMPEGVideoProcessorCall;
+  OnAI_OpenFFMPEGVideoProcessorDoneCall: TOnAI_OpenFFMPEGVideoProcessorDoneCall): TAI_FFMPEG_Processor; overload;
+function AI_OpenFFMPEGVideoProcessorFileC(AI_Parallel: TAI_Parallel; IO_Class: TAI_IO_Class; UserData: Pointer;
+  VideoSource: SystemString; PrepareDecode: integer; DoneFreeProcessor, Parallel: Boolean;
+  OnAI_OpenFFMPEGVideoProcessorCall: TOnAI_OpenFFMPEGVideoProcessorCall;
+  OnAI_OpenFFMPEGVideoProcessorDoneCall: TOnAI_OpenFFMPEGVideoProcessorDoneCall): TAI_FFMPEG_Processor; overload;
 
-function AI_OpenFFMPEGVideoProcessorFileM(AI: TAI; IO_Class: TAI_IO_Class; UserData: Pointer;
-  VideoSource: SystemString; PrepareDecode: integer; DoneFreeProcessor: Boolean;
+function AI_OpenFFMPEGVideoProcessorFileM(IO_Class: TAI_IO_Class; UserData: Pointer;
+  VideoSource: SystemString; PrepareDecode: integer; DoneFreeProcessor, Parallel: Boolean;
   OnAI_OpenFFMPEGVideoProcessorMethod: TOnAI_OpenFFMPEGVideoProcessorMethod;
-  OnAI_OpenFFMPEGVideoProcessorDoneMethod: TOnAI_OpenFFMPEGVideoProcessorDoneMethod): TAI_FFMPEG_Processor;
+  OnAI_OpenFFMPEGVideoProcessorDoneMethod: TOnAI_OpenFFMPEGVideoProcessorDoneMethod): TAI_FFMPEG_Processor; overload;
+function AI_OpenFFMPEGVideoProcessorFileM(AI: TAI; IO_Class: TAI_IO_Class; UserData: Pointer;
+  VideoSource: SystemString; PrepareDecode: integer; DoneFreeProcessor, Parallel: Boolean;
+  OnAI_OpenFFMPEGVideoProcessorMethod: TOnAI_OpenFFMPEGVideoProcessorMethod;
+  OnAI_OpenFFMPEGVideoProcessorDoneMethod: TOnAI_OpenFFMPEGVideoProcessorDoneMethod): TAI_FFMPEG_Processor; overload;
+function AI_OpenFFMPEGVideoProcessorFileM(AI_Parallel: TAI_Parallel; IO_Class: TAI_IO_Class; UserData: Pointer;
+  VideoSource: SystemString; PrepareDecode: integer; DoneFreeProcessor, Parallel: Boolean;
+  OnAI_OpenFFMPEGVideoProcessorMethod: TOnAI_OpenFFMPEGVideoProcessorMethod;
+  OnAI_OpenFFMPEGVideoProcessorDoneMethod: TOnAI_OpenFFMPEGVideoProcessorDoneMethod): TAI_FFMPEG_Processor; overload;
 
-function AI_OpenFFMPEGVideoProcessorFileP(AI: TAI; IO_Class: TAI_IO_Class; UserData: Pointer;
-  VideoSource: SystemString; PrepareDecode: integer; DoneFreeProcessor: Boolean;
+function AI_OpenFFMPEGVideoProcessorFileP(IO_Class: TAI_IO_Class; UserData: Pointer;
+  VideoSource: SystemString; PrepareDecode: integer; DoneFreeProcessor, Parallel: Boolean;
   OnAI_OpenFFMPEGVideoProcessorProc: TOnAI_OpenFFMPEGVideoProcessorProc;
-  OnAI_OpenFFMPEGVideoProcessorDoneProc: TOnAI_OpenFFMPEGVideoProcessorDoneProc): TAI_FFMPEG_Processor;
+  OnAI_OpenFFMPEGVideoProcessorDoneProc: TOnAI_OpenFFMPEGVideoProcessorDoneProc): TAI_FFMPEG_Processor; overload;
+function AI_OpenFFMPEGVideoProcessorFileP(AI: TAI; IO_Class: TAI_IO_Class; UserData: Pointer;
+  VideoSource: SystemString; PrepareDecode: integer; DoneFreeProcessor, Parallel: Boolean;
+  OnAI_OpenFFMPEGVideoProcessorProc: TOnAI_OpenFFMPEGVideoProcessorProc;
+  OnAI_OpenFFMPEGVideoProcessorDoneProc: TOnAI_OpenFFMPEGVideoProcessorDoneProc): TAI_FFMPEG_Processor; overload;
+function AI_OpenFFMPEGVideoProcessorFileP(AI_Parallel: TAI_Parallel; IO_Class: TAI_IO_Class; UserData: Pointer;
+  VideoSource: SystemString; PrepareDecode: integer; DoneFreeProcessor, Parallel: Boolean;
+  OnAI_OpenFFMPEGVideoProcessorProc: TOnAI_OpenFFMPEGVideoProcessorProc;
+  OnAI_OpenFFMPEGVideoProcessorDoneProc: TOnAI_OpenFFMPEGVideoProcessorDoneProc): TAI_FFMPEG_Processor; overload;
 
 var
   FFMPEG_ActivtedThreadNum: integer;
@@ -117,7 +143,8 @@ begin
   inherited Create;
   UserData := UserData_;
   DestroyDoFreeProcessor := True;
-  Processor := TAI_FFMPEG_Processor.Create(AI, IO_Class);
+  Processor := TAI_FFMPEG_Processor.Create(IO_Class);
+  Processor.AI := AI;
   Processor.PrepareDecode := 30;
   DiscardDelayBuffer := True;
 end;
@@ -151,10 +178,10 @@ type
     OnAI_OpenFFMPEGVideoProcessorMethod: TOnAI_OpenFFMPEGVideoProcessorMethod;
     OnAI_OpenFFMPEGVideoProcessorDoneProc: TOnAI_OpenFFMPEGVideoProcessorDoneProc;
     OnAI_OpenFFMPEGVideoProcessorProc: TOnAI_OpenFFMPEGVideoProcessorProc;
-    procedure ComputeThread_Run(thSender: TComputeThread);
+    procedure ComputeThread_Run(thSender: TCompute);
   end;
 
-procedure TAI_Video_FFMPEG_Reader.ComputeThread_Run(thSender: TComputeThread);
+procedure TAI_Video_FFMPEG_Reader.ComputeThread_Run(thSender: TCompute);
 var
   Raster: TMemoryRaster;
   ProcessStop: Boolean;
@@ -208,7 +235,8 @@ var
 begin
   reader := TAI_Video_FFMPEG_Reader.Create(VideoSource);
   reader.DoneFreeProcessor := False;
-  reader.Processor := TAI_FFMPEG_Processor.Create(AI, IO_Class);
+  reader.Processor := TAI_FFMPEG_Processor.Create(IO_Class);
+  reader.Processor.AI := AI;
   reader.UserData := UserData;
   reader.Processor.PrepareDecode := PrepareDecode;
 
@@ -219,7 +247,33 @@ begin
   reader.OnAI_OpenFFMPEGVideoProcessorDoneProc := nil;
   reader.OnAI_OpenFFMPEGVideoProcessorProc := nil;
   Result := reader.Processor;
-  TComputeThread.RunM(nil, nil, {$IFDEF FPC}@{$ENDIF FPC}reader.ComputeThread_Run);
+  TCompute.RunM(nil, nil, {$IFDEF FPC}@{$ENDIF FPC}reader.ComputeThread_Run);
+end;
+
+function AI_OpenFFMPEGVideoProcessorFile(AI_Parallel: TAI_Parallel; IO_Class: TAI_IO_Class; UserData: Pointer; VideoSource: SystemString): TAI_FFMPEG_Processor;
+begin
+  Result := AI_OpenFFMPEGVideoProcessorFile(AI_Parallel, IO_Class, UserData, VideoSource, 10);
+end;
+
+function AI_OpenFFMPEGVideoProcessorFile(AI_Parallel: TAI_Parallel; IO_Class: TAI_IO_Class; UserData: Pointer; VideoSource: SystemString; PrepareDecode: integer): TAI_FFMPEG_Processor;
+var
+  reader: TAI_Video_FFMPEG_Reader;
+begin
+  reader := TAI_Video_FFMPEG_Reader.Create(VideoSource);
+  reader.DoneFreeProcessor := False;
+  reader.Processor := TAI_FFMPEG_Processor.Create(IO_Class);
+  reader.Processor.AIPool := AI_Parallel;
+  reader.UserData := UserData;
+  reader.Processor.PrepareDecode := PrepareDecode;
+
+  reader.OnAI_OpenFFMPEGVideoProcessorDoneCall := nil;
+  reader.OnAI_OpenFFMPEGVideoProcessorCall := nil;
+  reader.OnAI_OpenFFMPEGVideoProcessorDoneMethod := nil;
+  reader.OnAI_OpenFFMPEGVideoProcessorMethod := nil;
+  reader.OnAI_OpenFFMPEGVideoProcessorDoneProc := nil;
+  reader.OnAI_OpenFFMPEGVideoProcessorProc := nil;
+  Result := reader.Processor;
+  TCompute.RunM(nil, nil, {$IFDEF FPC}@{$ENDIF FPC}reader.ComputeThread_Run);
 end;
 
 function AI_OpenFFMPEGVideoProcessorFile(Processor_: TAI_FFMPEG_Processor; UserData: Pointer; VideoSource: SystemString): TAI_FFMPEG_Processor;
@@ -238,11 +292,11 @@ begin
   reader.OnAI_OpenFFMPEGVideoProcessorDoneProc := nil;
   reader.OnAI_OpenFFMPEGVideoProcessorProc := nil;
   Result := reader.Processor;
-  TComputeThread.RunM(nil, nil, {$IFDEF FPC}@{$ENDIF FPC}reader.ComputeThread_Run);
+  TCompute.RunM(nil, nil, {$IFDEF FPC}@{$ENDIF FPC}reader.ComputeThread_Run);
 end;
 
-function AI_OpenFFMPEGVideoProcessorFileC(AI: TAI; IO_Class: TAI_IO_Class; UserData: Pointer;
-  VideoSource: SystemString; PrepareDecode: integer; DoneFreeProcessor: Boolean;
+function AI_OpenFFMPEGVideoProcessorFileC(IO_Class: TAI_IO_Class; UserData: Pointer;
+  VideoSource: SystemString; PrepareDecode: integer; DoneFreeProcessor, Parallel: Boolean;
   OnAI_OpenFFMPEGVideoProcessorCall: TOnAI_OpenFFMPEGVideoProcessorCall;
   OnAI_OpenFFMPEGVideoProcessorDoneCall: TOnAI_OpenFFMPEGVideoProcessorDoneCall): TAI_FFMPEG_Processor;
 var
@@ -250,7 +304,8 @@ var
 begin
   reader := TAI_Video_FFMPEG_Reader.Create(VideoSource);
   reader.DoneFreeProcessor := DoneFreeProcessor;
-  reader.Processor := TAI_FFMPEG_Processor.Create(AI, IO_Class);
+  reader.Processor := TAI_FFMPEG_Processor.Create(IO_Class);
+  reader.Processor.ParallelProcessor := Parallel;
   reader.UserData := UserData;
   reader.Processor.PrepareDecode := PrepareDecode;
 
@@ -261,11 +316,61 @@ begin
   reader.OnAI_OpenFFMPEGVideoProcessorDoneProc := nil;
   reader.OnAI_OpenFFMPEGVideoProcessorProc := nil;
   Result := reader.Processor;
-  TComputeThread.RunM(nil, nil, {$IFDEF FPC}@{$ENDIF FPC}reader.ComputeThread_Run);
+  TCompute.RunM(nil, nil, {$IFDEF FPC}@{$ENDIF FPC}reader.ComputeThread_Run);
 end;
 
-function AI_OpenFFMPEGVideoProcessorFileM(AI: TAI; IO_Class: TAI_IO_Class; UserData: Pointer;
-  VideoSource: SystemString; PrepareDecode: integer; DoneFreeProcessor: Boolean;
+function AI_OpenFFMPEGVideoProcessorFileC(AI: TAI; IO_Class: TAI_IO_Class; UserData: Pointer;
+  VideoSource: SystemString; PrepareDecode: integer; DoneFreeProcessor, Parallel: Boolean;
+  OnAI_OpenFFMPEGVideoProcessorCall: TOnAI_OpenFFMPEGVideoProcessorCall;
+  OnAI_OpenFFMPEGVideoProcessorDoneCall: TOnAI_OpenFFMPEGVideoProcessorDoneCall): TAI_FFMPEG_Processor;
+var
+  reader: TAI_Video_FFMPEG_Reader;
+begin
+  reader := TAI_Video_FFMPEG_Reader.Create(VideoSource);
+  reader.DoneFreeProcessor := DoneFreeProcessor;
+  reader.Processor := TAI_FFMPEG_Processor.Create(IO_Class);
+  reader.Processor.AI := AI;
+  reader.Processor.ParallelProcessor := Parallel;
+  reader.UserData := UserData;
+  reader.Processor.PrepareDecode := PrepareDecode;
+
+  reader.OnAI_OpenFFMPEGVideoProcessorDoneCall := OnAI_OpenFFMPEGVideoProcessorDoneCall;
+  reader.OnAI_OpenFFMPEGVideoProcessorCall := OnAI_OpenFFMPEGVideoProcessorCall;
+  reader.OnAI_OpenFFMPEGVideoProcessorDoneMethod := nil;
+  reader.OnAI_OpenFFMPEGVideoProcessorMethod := nil;
+  reader.OnAI_OpenFFMPEGVideoProcessorDoneProc := nil;
+  reader.OnAI_OpenFFMPEGVideoProcessorProc := nil;
+  Result := reader.Processor;
+  TCompute.RunM(nil, nil, {$IFDEF FPC}@{$ENDIF FPC}reader.ComputeThread_Run);
+end;
+
+function AI_OpenFFMPEGVideoProcessorFileC(AI_Parallel: TAI_Parallel; IO_Class: TAI_IO_Class; UserData: Pointer;
+  VideoSource: SystemString; PrepareDecode: integer; DoneFreeProcessor, Parallel: Boolean;
+  OnAI_OpenFFMPEGVideoProcessorCall: TOnAI_OpenFFMPEGVideoProcessorCall;
+  OnAI_OpenFFMPEGVideoProcessorDoneCall: TOnAI_OpenFFMPEGVideoProcessorDoneCall): TAI_FFMPEG_Processor;
+var
+  reader: TAI_Video_FFMPEG_Reader;
+begin
+  reader := TAI_Video_FFMPEG_Reader.Create(VideoSource);
+  reader.DoneFreeProcessor := DoneFreeProcessor;
+  reader.Processor := TAI_FFMPEG_Processor.Create(IO_Class);
+  reader.Processor.AIPool := AI_Parallel;
+  reader.Processor.ParallelProcessor := Parallel;
+  reader.UserData := UserData;
+  reader.Processor.PrepareDecode := PrepareDecode;
+
+  reader.OnAI_OpenFFMPEGVideoProcessorDoneCall := OnAI_OpenFFMPEGVideoProcessorDoneCall;
+  reader.OnAI_OpenFFMPEGVideoProcessorCall := OnAI_OpenFFMPEGVideoProcessorCall;
+  reader.OnAI_OpenFFMPEGVideoProcessorDoneMethod := nil;
+  reader.OnAI_OpenFFMPEGVideoProcessorMethod := nil;
+  reader.OnAI_OpenFFMPEGVideoProcessorDoneProc := nil;
+  reader.OnAI_OpenFFMPEGVideoProcessorProc := nil;
+  Result := reader.Processor;
+  TCompute.RunM(nil, nil, {$IFDEF FPC}@{$ENDIF FPC}reader.ComputeThread_Run);
+end;
+
+function AI_OpenFFMPEGVideoProcessorFileM(IO_Class: TAI_IO_Class; UserData: Pointer;
+  VideoSource: SystemString; PrepareDecode: integer; DoneFreeProcessor, Parallel: Boolean;
   OnAI_OpenFFMPEGVideoProcessorMethod: TOnAI_OpenFFMPEGVideoProcessorMethod;
   OnAI_OpenFFMPEGVideoProcessorDoneMethod: TOnAI_OpenFFMPEGVideoProcessorDoneMethod): TAI_FFMPEG_Processor;
 var
@@ -273,7 +378,8 @@ var
 begin
   reader := TAI_Video_FFMPEG_Reader.Create(VideoSource);
   reader.DoneFreeProcessor := DoneFreeProcessor;
-  reader.Processor := TAI_FFMPEG_Processor.Create(AI, IO_Class);
+  reader.Processor := TAI_FFMPEG_Processor.Create(IO_Class);
+  reader.Processor.ParallelProcessor := Parallel;
   reader.UserData := UserData;
   reader.Processor.PrepareDecode := PrepareDecode;
 
@@ -284,11 +390,61 @@ begin
   reader.OnAI_OpenFFMPEGVideoProcessorDoneProc := nil;
   reader.OnAI_OpenFFMPEGVideoProcessorProc := nil;
   Result := reader.Processor;
-  TComputeThread.RunM(nil, nil, {$IFDEF FPC}@{$ENDIF FPC}reader.ComputeThread_Run);
+  TCompute.RunM(nil, nil, {$IFDEF FPC}@{$ENDIF FPC}reader.ComputeThread_Run);
 end;
 
-function AI_OpenFFMPEGVideoProcessorFileP(AI: TAI; IO_Class: TAI_IO_Class; UserData: Pointer;
-  VideoSource: SystemString; PrepareDecode: integer; DoneFreeProcessor: Boolean;
+function AI_OpenFFMPEGVideoProcessorFileM(AI: TAI; IO_Class: TAI_IO_Class; UserData: Pointer;
+  VideoSource: SystemString; PrepareDecode: integer; DoneFreeProcessor, Parallel: Boolean;
+  OnAI_OpenFFMPEGVideoProcessorMethod: TOnAI_OpenFFMPEGVideoProcessorMethod;
+  OnAI_OpenFFMPEGVideoProcessorDoneMethod: TOnAI_OpenFFMPEGVideoProcessorDoneMethod): TAI_FFMPEG_Processor;
+var
+  reader: TAI_Video_FFMPEG_Reader;
+begin
+  reader := TAI_Video_FFMPEG_Reader.Create(VideoSource);
+  reader.DoneFreeProcessor := DoneFreeProcessor;
+  reader.Processor := TAI_FFMPEG_Processor.Create(IO_Class);
+  reader.Processor.AI := AI;
+  reader.Processor.ParallelProcessor := Parallel;
+  reader.UserData := UserData;
+  reader.Processor.PrepareDecode := PrepareDecode;
+
+  reader.OnAI_OpenFFMPEGVideoProcessorDoneCall := nil;
+  reader.OnAI_OpenFFMPEGVideoProcessorCall := nil;
+  reader.OnAI_OpenFFMPEGVideoProcessorDoneMethod := OnAI_OpenFFMPEGVideoProcessorDoneMethod;
+  reader.OnAI_OpenFFMPEGVideoProcessorMethod := OnAI_OpenFFMPEGVideoProcessorMethod;
+  reader.OnAI_OpenFFMPEGVideoProcessorDoneProc := nil;
+  reader.OnAI_OpenFFMPEGVideoProcessorProc := nil;
+  Result := reader.Processor;
+  TCompute.RunM(nil, nil, {$IFDEF FPC}@{$ENDIF FPC}reader.ComputeThread_Run);
+end;
+
+function AI_OpenFFMPEGVideoProcessorFileM(AI_Parallel: TAI_Parallel; IO_Class: TAI_IO_Class; UserData: Pointer;
+  VideoSource: SystemString; PrepareDecode: integer; DoneFreeProcessor, Parallel: Boolean;
+  OnAI_OpenFFMPEGVideoProcessorMethod: TOnAI_OpenFFMPEGVideoProcessorMethod;
+  OnAI_OpenFFMPEGVideoProcessorDoneMethod: TOnAI_OpenFFMPEGVideoProcessorDoneMethod): TAI_FFMPEG_Processor;
+var
+  reader: TAI_Video_FFMPEG_Reader;
+begin
+  reader := TAI_Video_FFMPEG_Reader.Create(VideoSource);
+  reader.DoneFreeProcessor := DoneFreeProcessor;
+  reader.Processor := TAI_FFMPEG_Processor.Create(IO_Class);
+  reader.Processor.AIPool := AI_Parallel;
+  reader.Processor.ParallelProcessor := Parallel;
+  reader.UserData := UserData;
+  reader.Processor.PrepareDecode := PrepareDecode;
+
+  reader.OnAI_OpenFFMPEGVideoProcessorDoneCall := nil;
+  reader.OnAI_OpenFFMPEGVideoProcessorCall := nil;
+  reader.OnAI_OpenFFMPEGVideoProcessorDoneMethod := OnAI_OpenFFMPEGVideoProcessorDoneMethod;
+  reader.OnAI_OpenFFMPEGVideoProcessorMethod := OnAI_OpenFFMPEGVideoProcessorMethod;
+  reader.OnAI_OpenFFMPEGVideoProcessorDoneProc := nil;
+  reader.OnAI_OpenFFMPEGVideoProcessorProc := nil;
+  Result := reader.Processor;
+  TCompute.RunM(nil, nil, {$IFDEF FPC}@{$ENDIF FPC}reader.ComputeThread_Run);
+end;
+
+function AI_OpenFFMPEGVideoProcessorFileP(IO_Class: TAI_IO_Class; UserData: Pointer;
+  VideoSource: SystemString; PrepareDecode: integer; DoneFreeProcessor, Parallel: Boolean;
   OnAI_OpenFFMPEGVideoProcessorProc: TOnAI_OpenFFMPEGVideoProcessorProc;
   OnAI_OpenFFMPEGVideoProcessorDoneProc: TOnAI_OpenFFMPEGVideoProcessorDoneProc): TAI_FFMPEG_Processor;
 var
@@ -296,7 +452,8 @@ var
 begin
   reader := TAI_Video_FFMPEG_Reader.Create(VideoSource);
   reader.DoneFreeProcessor := DoneFreeProcessor;
-  reader.Processor := TAI_FFMPEG_Processor.Create(AI, IO_Class);
+  reader.Processor := TAI_FFMPEG_Processor.Create(IO_Class);
+  reader.Processor.ParallelProcessor := Parallel;
   reader.UserData := UserData;
   reader.Processor.PrepareDecode := PrepareDecode;
 
@@ -307,7 +464,57 @@ begin
   reader.OnAI_OpenFFMPEGVideoProcessorDoneProc := OnAI_OpenFFMPEGVideoProcessorDoneProc;
   reader.OnAI_OpenFFMPEGVideoProcessorProc := OnAI_OpenFFMPEGVideoProcessorProc;
   Result := reader.Processor;
-  TComputeThread.RunM(nil, nil, {$IFDEF FPC}@{$ENDIF FPC}reader.ComputeThread_Run);
+  TCompute.RunM(nil, nil, {$IFDEF FPC}@{$ENDIF FPC}reader.ComputeThread_Run);
+end;
+
+function AI_OpenFFMPEGVideoProcessorFileP(AI: TAI; IO_Class: TAI_IO_Class; UserData: Pointer;
+  VideoSource: SystemString; PrepareDecode: integer; DoneFreeProcessor, Parallel: Boolean;
+  OnAI_OpenFFMPEGVideoProcessorProc: TOnAI_OpenFFMPEGVideoProcessorProc;
+  OnAI_OpenFFMPEGVideoProcessorDoneProc: TOnAI_OpenFFMPEGVideoProcessorDoneProc): TAI_FFMPEG_Processor;
+var
+  reader: TAI_Video_FFMPEG_Reader;
+begin
+  reader := TAI_Video_FFMPEG_Reader.Create(VideoSource);
+  reader.DoneFreeProcessor := DoneFreeProcessor;
+  reader.Processor := TAI_FFMPEG_Processor.Create(IO_Class);
+  reader.Processor.AI := AI;
+  reader.Processor.ParallelProcessor := Parallel;
+  reader.UserData := UserData;
+  reader.Processor.PrepareDecode := PrepareDecode;
+
+  reader.OnAI_OpenFFMPEGVideoProcessorDoneCall := nil;
+  reader.OnAI_OpenFFMPEGVideoProcessorCall := nil;
+  reader.OnAI_OpenFFMPEGVideoProcessorDoneMethod := nil;
+  reader.OnAI_OpenFFMPEGVideoProcessorMethod := nil;
+  reader.OnAI_OpenFFMPEGVideoProcessorDoneProc := OnAI_OpenFFMPEGVideoProcessorDoneProc;
+  reader.OnAI_OpenFFMPEGVideoProcessorProc := OnAI_OpenFFMPEGVideoProcessorProc;
+  Result := reader.Processor;
+  TCompute.RunM(nil, nil, {$IFDEF FPC}@{$ENDIF FPC}reader.ComputeThread_Run);
+end;
+
+function AI_OpenFFMPEGVideoProcessorFileP(AI_Parallel: TAI_Parallel; IO_Class: TAI_IO_Class; UserData: Pointer;
+  VideoSource: SystemString; PrepareDecode: integer; DoneFreeProcessor, Parallel: Boolean;
+  OnAI_OpenFFMPEGVideoProcessorProc: TOnAI_OpenFFMPEGVideoProcessorProc;
+  OnAI_OpenFFMPEGVideoProcessorDoneProc: TOnAI_OpenFFMPEGVideoProcessorDoneProc): TAI_FFMPEG_Processor;
+var
+  reader: TAI_Video_FFMPEG_Reader;
+begin
+  reader := TAI_Video_FFMPEG_Reader.Create(VideoSource);
+  reader.DoneFreeProcessor := DoneFreeProcessor;
+  reader.Processor := TAI_FFMPEG_Processor.Create(IO_Class);
+  reader.Processor.AIPool := AI_Parallel;
+  reader.Processor.ParallelProcessor := Parallel;
+  reader.UserData := UserData;
+  reader.Processor.PrepareDecode := PrepareDecode;
+
+  reader.OnAI_OpenFFMPEGVideoProcessorDoneCall := nil;
+  reader.OnAI_OpenFFMPEGVideoProcessorCall := nil;
+  reader.OnAI_OpenFFMPEGVideoProcessorDoneMethod := nil;
+  reader.OnAI_OpenFFMPEGVideoProcessorMethod := nil;
+  reader.OnAI_OpenFFMPEGVideoProcessorDoneProc := OnAI_OpenFFMPEGVideoProcessorDoneProc;
+  reader.OnAI_OpenFFMPEGVideoProcessorProc := OnAI_OpenFFMPEGVideoProcessorProc;
+  Result := reader.Processor;
+  TCompute.RunM(nil, nil, {$IFDEF FPC}@{$ENDIF FPC}reader.ComputeThread_Run);
 end;
 
 initialization

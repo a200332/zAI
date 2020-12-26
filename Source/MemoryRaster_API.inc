@@ -636,6 +636,14 @@ begin
   Result := RColor(G, G, G);
 end;
 
+function RColorGrayGradient(C: TRColor; level: Byte): Byte;
+var
+  f: TGeoFloat;
+begin
+  f := $FF / umlMax(level, 1);
+  Result := ClampByte(Round(Trunc(RColor2Gray(C) / f) * f));
+end;
+
 function RGBA2BGRA(const sour: TRColor): TRColor;
 begin
   TRColorEntry(Result).R := TRColorEntry(sour).B;
@@ -909,6 +917,71 @@ begin
     else RaiseInfo('error');
   end;
   Color := E.BGRA;
+end;
+
+{$IFDEF OverflowCheck}{$Q-}{$ENDIF}
+{$IFDEF RangeCheck}{$R-}{$ENDIF}
+
+
+procedure FillColorTable(const RBits, GBits, BBits: Byte; const DestCount: Integer; dest: PRColorArray);
+var
+  i, TotalBits, MaxCount_: Integer;
+begin
+  TotalBits := RBits + GBits + BBits;
+  MaxCount_ := umlMin(1 shl TotalBits, DestCount);
+  FillPtr(@dest^[0], DestCount * SizeOf(TRColor), 0);
+
+  for i := 0 to MaxCount_ - 1 do
+      dest^[i] :=
+      RColor(((i shr Max(0, GBits + BBits - 1)) and (1 shl RBits - 1)) * $FF div (1 shl RBits - 1),
+      ((i shr Max(0, BBits - 1)) and (1 shl GBits - 1)) * $FF div (1 shl GBits - 1),
+      ((i shr 0) and (1 shl BBits - 1)) * $FF div (1 shl BBits - 1));
+end;
+{$IFDEF OverflowCheck}{$Q+}{$ENDIF}
+{$IFDEF RangeCheck}{$R+}{$ENDIF}
+
+
+function FindColorIndex(Color: TRColor; const DestCount: Integer; dest: PRColorArray): Integer;
+var
+  Col: TRColorEntry;
+  i, MinDif, Dif: Integer;
+begin
+  Result := -1;
+  Col.BGRA := Color;
+  Col.A := $FF;
+
+  // serach nearest
+  MinDif := $03FC;
+  for i := 0 to DestCount - 1 do
+    with PRColorEntry(@dest^[i])^ do
+      begin
+        Dif := Abs(R - Col.R);
+        if Dif > MinDif then
+            Continue;
+        Dif := Dif + Abs(G - Col.G);
+        if Dif > MinDif then
+            Continue;
+        Dif := Dif + Abs(B - Col.B);
+        if Dif > MinDif then
+            Continue;
+        if Dif < MinDif then
+          begin
+            MinDif := Dif;
+            Result := i;
+            if MinDif = 0 then
+                Exit;
+          end;
+      end;
+end;
+
+function FindColor255Index(Color: TRColor): Integer;
+begin
+  Result := FindColorIndex(Color, $FF, @Color255);
+end;
+
+function FindColor65535Index(Color: TRColor): Integer;
+begin
+  Result := FindColorIndex(Color, $FFFF, @Color65535);
 end;
 
 function AggColor(const Value: TRColor): TAggColorRgba8;

@@ -23,6 +23,7 @@ type
     ResetButton: TButton;
     Image1: TImageViewer;
     MetricButton: TButton;
+    DNNThread_CheckBox: TCheckBox;
     procedure ResetButtonClick(Sender: TObject);
     procedure FaceRecButtonClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
@@ -305,6 +306,7 @@ begin
     var
       fn: U_String;
       training_successed: Boolean;
+      mdnn_stream: TMemoryStream64;
       mdnn_hnd: TMetric_Handle;
       tk: TTimeTick;
       tmpLearn: TLearn;
@@ -321,21 +323,29 @@ begin
         if not umlFileExists(fn) then
             exit;
 
-        DoStatus('载入度量化神经网络 "%s"', [fn.Text]);
-        mdnn_hnd := AI.Metric_ResNet_Open_Stream(fn);
+        mdnn_stream := TMemoryStream64.Create;
+        mdnn_stream.LoadFromFile(fn);
 
         // learn学习这一步可以保存成文件，不必每次学习
         DoStatus('Learn引擎正在学习Face度量', []);
         tmpLearn := TLearn.CreateClassifier(TLearnType.ltKDT, zAI.C_Metric_Dim);
         L_Engine.Clear;
         tk := GetTimeTick();
-        AI.Metric_ResNet_SaveToLearnEngine(mdnn_hnd, False, imgL, tmpLearn);
+        if DNNThread_CheckBox.IsChecked then
+          begin
+            AI.Metric_ResNet_SaveToLearnEngine_DT(mdnn_stream, False, imgL, tmpLearn)
+          end
+        else
+          begin
+            DoStatus('载入度量化神经网络 "%s"', [fn.Text]);
+            mdnn_hnd := AI.Metric_ResNet_Open_Stream(mdnn_stream);
+            AI.Metric_ResNet_SaveToLearnEngine(mdnn_hnd, False, imgL, tmpLearn);
+            DoStatus('关闭度量化神经网络 "%s"', [fn.Text]);
+            AI.Metric_ResNet_Close(mdnn_hnd);
+          end;
         tmpLearn.Training;
         DoStatus('学习Face度量，Learn记忆了 %d 张面部度量，耗时:%dms', [tmpLearn.Count, GetTimeTick() - tk]);
         disposeObject(tmpLearn);
-
-        DoStatus('关闭度量化神经网络 "%s"', [fn.Text]);
-        AI.Metric_ResNet_Close(mdnn_hnd);
       finally
           TThread.Synchronize(Sender, procedure
           begin

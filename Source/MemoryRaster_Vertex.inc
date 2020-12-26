@@ -439,6 +439,7 @@ begin
       F := TFragmentSampling.fsNearest;
 
   try
+    Sampler.ReadyBits();
     RasterizeTriangle(F, RColor(0, 0, 0), Sampler, nSamplerTri, nRenderTri);
     if TRasterVertex.DebugTriangle then
         Window.DrawTriangle(RenderTri, True, TRasterVertex.DebugTriangleColor, False);

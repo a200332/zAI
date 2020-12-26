@@ -19,6 +19,15 @@
 { * https://github.com/PassByYou888/FastMD5                                    * }
 { ****************************************************************************** }
 
+procedure TMorphologyBinaryzationList.Clean;
+var
+  i: Integer;
+begin
+  for i := 0 to Count - 1 do
+      DisposeObject(Items[i]);
+  Clear;
+end;
+
 function TMorphologyBinaryzationLineHitAnalysis.AnalysisBox(const x1, y1, x2, y2: NativeInt; const PixelValue_: TBinaryzationValue): NativeInt;
 begin
   FPixelSum := 0;

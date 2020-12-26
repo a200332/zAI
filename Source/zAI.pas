@@ -1,5 +1,5 @@
 { ****************************************************************************** }
-{ * AI (platform: cuda+mkl+x64)                                                * }
+{ * AI (platform: cuda+mkl64+mkl32+win64+win32)                                * }
 { * by QQ 600585@qq.com                                                        * }
 { ****************************************************************************** }
 { * https://zpascal.net                                                        * }
@@ -32,23 +32,36 @@ unit zAI;
 
 interface
 
-uses Types,
+uses Types, Variants,
   CoreClasses,
 {$IFDEF FPC}
   FPCGenericStructlist,
 {$ELSE FPC}
   System.IOUtils,
 {$ENDIF FPC}
-  PascalStrings, MemoryStream64, UnicodeMixedLib, DataFrameEngine, ListEngine, TextDataEngine,
-  ZDBEngine, ZDBLocalManager, ObjectDataManager, ObjectData, ItemStream,
+  PascalStrings, MemoryStream64, UnicodeMixedLib, DataFrameEngine, ListEngine, TextDataEngine, TextParsing,
+  ObjectDataManager, ObjectData, ItemStream,
   zDrawEngine, Geometry2DUnit, MemoryRaster, LearnTypes, Learn, KDTree, PyramidSpace,
-  zAI_Common, zAI_TrainingTask, zAI_KeyIO;
+  zAI_Common, zAI_TrainingTask, zAI_KeyIO,
+  zExpression, OpCode, MorphologyExpression;
 
 {$REGION 'BaseDefine'}
 
 
 type
   TAI = class;
+  TAI_DNN_Thread = class;
+  TAI_DNN_Thread_Class = class of TAI_DNN_Thread;
+  TAI_DNN_ThreadPool = class;
+  TAI_DNN_Thread_Metric = class;
+  TAI_DNN_Thread_LMetric = class;
+  TAI_DNN_Thread_MMOD6L = class;
+  TAI_DNN_Thread_MMOD3L = class;
+  TAI_DNN_Thread_RNIC = class;
+  TAI_DNN_Thread_LRNIC = class;
+  TAI_DNN_Thread_GDCNIC = class;
+  TAI_DNN_Thread_GNIC = class;
+  TAI_DNN_Thread_SS = class;
 
   PAI_EntryAPI = ^TAI_EntryAPI;
 
@@ -204,7 +217,13 @@ type
     Token: U_String;
   end;
 
+  PMMOD_Rect = ^TMMOD_Rect;
+  TMMOD_RectList = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<PMMOD_Rect>;
   TMMOD_Desc = array of TMMOD_Rect;
+  PMMOD_Desc = ^TMMOD_Desc;
+  TMMOD_Desc_Array = array of TMMOD_Desc;
+  PMMOD_Desc_Array = ^TMMOD_Desc_Array;
+  TMMOD_DescList = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TMMOD_Desc>;
 
   TAI_Raster_Data = packed record
     raster_Hnd: PRaster_Handle;
@@ -218,30 +237,30 @@ type
   PAI_Raster_Data_Array = ^TAI_Raster_Data_Array;
 
   TMetric_ResNet_Train_Parameter = packed record
-    // input
+    { input }
     imgArry_ptr: PAI_Raster_Data_Array;
     img_num: Integer;
     train_sync_file, train_output: P_Bytes;
-    // training param
+    { training param }
     timeout: UInt64;
     weight_decay, momentum: Double;
     iterations_without_progress_threshold: Integer;
     learning_rate, completed_learning_rate: Double;
     step_mini_batch_target_num, step_mini_batch_raster_num: Integer;
-    // progress control
+    { progress control }
     control: PTrainingControl;
-    // training result
+    { training result }
     training_average_loss, training_learning_rate: Double;
-    // full gpu
+    { full gpu }
     fullGPU_Training: Boolean;
   end;
 
   PMetric_ResNet_Train_Parameter = ^TMetric_ResNet_Train_Parameter;
 
   TMMOD_Train_Parameter = packed record
-    // input data
+    { input data }
     train_cfg, train_sync_file, train_output: P_Bytes;
-    // training param
+    { training param }
     timeout: UInt64;
     weight_decay, momentum: Double;
     target_size, min_target_size: Integer;
@@ -249,110 +268,110 @@ type
     iterations_without_progress_threshold: Integer;
     learning_rate, completed_learning_rate: Double;
     saveMemory: Integer;
-    // overlap non-max suppression param
+    { overlap non-max suppression param }
     overlap_NMS_iou_thresh, overlap_NMS_percent_covered_thresh: Double;
-    // overlap ignore param
+    { overlap ignore param }
     overlap_ignore_iou_thresh, overlap_ignore_percent_covered_thresh: Double;
-    // cropper param
+    { cropper param }
     prepare_crops_img_num: Integer;
     num_crops: Integer;
     chip_dims_x, chip_dims_y: Integer;
     min_object_size_x, min_object_size_y: Integer;
     max_rotation_degrees, max_object_size: Double;
-    // progress control
+    { progress control }
     control: PTrainingControl;
-    // training result
+    { training result }
     training_average_loss, training_learning_rate: Double;
-    // internal
+    { internal }
     TempFiles: TPascalStringList;
   end;
 
   PMMOD_Train_Parameter = ^TMMOD_Train_Parameter;
 
   TRNIC_Train_Parameter = packed record
-    // input data
+    { input data }
     imgArry_ptr: PAI_Raster_Data_Array;
     img_num: Integer;
     train_sync_file, train_output: P_Bytes;
-    // training param
+    { training param }
     timeout: UInt64;
     weight_decay, momentum: Double;
     iterations_without_progress_threshold: Integer;
     learning_rate, completed_learning_rate: Double;
     all_bn_running_stats_window_sizes: Integer;
     img_mini_batch: Integer;
-    // progress control
+    { progress control }
     control: PTrainingControl;
-    // training result
+    { training result }
     training_average_loss, training_learning_rate: Double;
   end;
 
   PRNIC_Train_Parameter = ^TRNIC_Train_Parameter;
 
   TGDCNIC_Train_Parameter = packed record
-    // input data
+    { input data }
     imgArry_ptr: PAI_Raster_Data_Array;
     img_num: Integer;
     train_sync_file, train_output: P_Bytes;
-    // training param
+    { training param }
     timeout: UInt64;
     iterations_without_progress_threshold: Integer;
     learning_rate, completed_learning_rate: Double;
     img_mini_batch: Integer;
-    // progress control
+    { progress control }
     control: PTrainingControl;
-    // training result
+    { training result }
     training_average_loss, training_learning_rate: Double;
   end;
 
   PGDCNIC_Train_Parameter = ^TGDCNIC_Train_Parameter;
 
   TGNIC_Train_Parameter = packed record
-    // input data
+    { input data }
     imgArry_ptr: PAI_Raster_Data_Array;
     img_num: Integer;
     train_sync_file, train_output: P_Bytes;
-    // training param
+    { training param }
     timeout: UInt64;
     iterations_without_progress_threshold: Integer;
     learning_rate, completed_learning_rate: Double;
     img_mini_batch: Integer;
-    // progress control
+    { progress control }
     control: PTrainingControl;
-    // training result
+    { training result }
     training_average_loss, training_learning_rate: Double;
   end;
 
   PGNIC_Train_Parameter = ^TGNIC_Train_Parameter;
 
   TSS_Train_Parameter = packed record
-    // input data
+    { input data }
     imgHnd_ptr: PPImage_Handle;
     imgHnd_num: Integer;
-    color: PSegmentationColorList;
+    color: PSegmentationColorTable;
     train_sync_file, train_output: P_Bytes;
-    // training param
+    { training param }
     timeout: UInt64;
     weight_decay, momentum: Double;
     iterations_without_progress_threshold: Integer;
     learning_rate, completed_learning_rate: Double;
     all_bn_running_stats_window_sizes: Integer;
     img_crops_batch: Integer;
-    // progress control
+    { progress control }
     control: PTrainingControl;
-    // training result
+    { training result }
     training_average_loss, training_learning_rate: Double;
   end;
 
   PSS_Train_Parameter = ^TSS_Train_Parameter;
 
-  TSS_ProcessOnResultCall = procedure(Successed: Boolean; SSInput, SSOutput: TMemoryRaster; SSToken: TPascalStringList);
-  TSS_ProcessOnResultMethod = procedure(Successed: Boolean; SSInput, SSOutput: TMemoryRaster; SSToken: TPascalStringList) of object;
+  TSS_ProcessOnResultCall = procedure(Successed: Boolean; SSInput, SSOutput: TMemoryRaster; SSTokenOutput: TPascalStringList);
+  TSS_ProcessOnResultMethod = procedure(Successed: Boolean; SSInput, SSOutput: TMemoryRaster; SSTokenOutput: TPascalStringList) of object;
 
 {$IFDEF FPC}
-  TSS_ProcessOnResultProc = procedure(Successed: Boolean; SSInput, SSOutput: TMemoryRaster; SSToken: TPascalStringList) is nested;
+  TSS_ProcessOnResultProc = procedure(Successed: Boolean; SSInput, SSOutput: TMemoryRaster; SSTokenOutput: TPascalStringList) is nested;
 {$ELSE FPC}
-  TSS_ProcessOnResultProc = reference to procedure(Successed: Boolean; SSInput, SSOutput: TMemoryRaster; SSToken: TPascalStringList);
+  TSS_ProcessOnResultProc = reference to procedure(Successed: Boolean; SSInput, SSOutput: TMemoryRaster; SSTokenOutput: TPascalStringList);
 {$ENDIF FPC}
 
   TOneStep = packed record
@@ -509,50 +528,63 @@ type
 {$ENDREGION 'Alignment'}
 {$REGION 'Entry'}
 
+  TMorphExpIntf = class
+  private
+    FAI_EntryAPI: PAI_EntryAPI;
+    MorphologyExpression_RegData: Pointer;
+    function MorphExp_HotMap(OpRunTime: TOpCustomRunTime; var param: TOpParam): Variant;
+    function MorphExp_JetMap(OpRunTime: TOpCustomRunTime; var param: TOpParam): Variant;
+    function MorphExp_Salient(OpRunTime: TOpCustomRunTime; var param: TOpParam): Variant;
+    procedure RegMorphExpExternalAPI(Exp: TMorphExpRunTime);
+  public
+    constructor Create(AI_EntryAPI_: PAI_EntryAPI);
+    destructor Destroy; override;
+  end;
+
   TAI_EntryAPI = packed record
-    // engine support
+    { engine support }
     Authentication, Training, CUDA, MKL: Integer;
 
-    // prepare image
+    { prepare image }
     Prepare_RGB_Image: function(const raster_ptr: PRColorArray; const Width, Height: Integer): TRGB_Image_Handle; stdcall;
     Prepare_Matrix_Image: function(const raster_ptr: PRColorArray; const Width, Height: Integer): TMatrix_Image_Handle; stdcall;
     Close_RGB_Image: procedure(img: TRGB_Image_Handle); stdcall;
     Close_Matrix_Image: procedure(img: TMatrix_Image_Handle); stdcall;
 
-    // image buffer
+    { image buffer }
     OpenImageBuffer_RGB: function(hnd: TRGB_Image_Handle): TBGRA_Buffer_Handle; stdcall;
     OpenImageBuffer_MatrixRGB: function(hnd: TMatrix_Image_Handle): TBGRA_Buffer_Handle; stdcall;
     OpenImageBuffer_Hot: function(const raster_ptr: PRColorArray; const Width, Height: Integer): TBGRA_Buffer_Handle; stdcall;
     OpenImageBuffer_Jet: function(const raster_ptr: PRColorArray; const Width, Height: Integer): TBGRA_Buffer_Handle; stdcall;
     CloseImageBuffer: procedure(hnd: TBGRA_Buffer_Handle); stdcall;
 
-    // image segment
+    { image segment }
     Segment: function(const raster_ptr: PRColorArray; const Width, Height: Integer; const k: Double; const min_siz: Integer): TBGRA_Buffer_Handle; stdcall;
 
-    // image salient
+    { image salient }
     Salient: function(const raster_ptr: PRColorArray; const Width, Height: Integer; const iterations: Integer): TBGRA_Buffer_Handle; stdcall;
 
-    // search Candidate Object from image
+    { search Candidate Object from image }
     CandidateObject: function(const raster_ptr: PRColorArray; const Width, Height: Integer;
       const min_size, max_merging_iterations: Integer; const AI_Rect: PAI_Rect; const max_AI_Rect: Integer): Integer; stdcall;
 
-    // Rasterize Unmixing
+    { Rasterize Unmixing }
     RasterizeUnmixing: function(const raster_ptr: PRColorArray; const Width, Height: Integer): PUnmixedData; stdcall;
     FreeUnmixingData: procedure(data: PUnmixedData); stdcall;
 
-    // poisson blend
+    { poisson blend }
     poisson_blend: procedure(const GAMMA: Double;
       const sour_ptr: PRColorArray; const sour_Width, sour_Height: Integer;
       const dest_ptr: PRColorArray; const dest_Width, dest_Height: Integer;
       const projection_x, projection_y, paper: Integer); stdcall;
 
-    // grabcut
+    { grabcut }
     CutRaster: procedure(const raster_ptr: PRColorArray; maskIO: PByte; const Width, Height: Integer; box: TAI_Rect; iterCount, mode: Integer); stdcall;
 
-    // surf detector
+    { surf detector }
     fast_surf: function(const raster_ptr: PRColorArray; const Width, Height: Integer; const max_points: Integer; const detection_threshold: Double; const output: PSurf_Desc): Integer; stdcall;
 
-    // object detector 6 layer
+    { object detector 6 layer }
     OD6L_Train: function(train_cfg, train_output: P_Bytes; window_w, window_h, thread_num: Integer): Integer; stdcall;
     LargeScale_OD6L_Train: function(img_: PPImage_Handle; num_: Integer; train_output: P_Bytes; window_w, window_h, thread_num: Integer): Integer; stdcall;
     OD6L_Init: function(train_data: P_Bytes): TOD6L_Handle; stdcall;
@@ -561,7 +593,7 @@ type
     OD6L_Process: function(hnd: TOD6L_Handle; const raster_ptr: PRColorArray; const Width, Height: Integer; const OD_Rect: POD_Rect; const max_OD_Rect: Integer; var OD_Rect_num: Integer): Integer; stdcall;
     OD6L_Process_Image: function(hnd: TOD6L_Handle; rgb_img: TRGB_Image_Handle; const OD_Rect: POD_Rect; const max_OD_Rect: Integer; var OD_Rect_num: Integer): Integer; stdcall;
 
-    // object detector 3 layer
+    { object detector 3 layer }
     OD3L_Train: function(train_cfg, train_output: P_Bytes; window_w, window_h, thread_num: Integer): Integer; stdcall;
     LargeScale_OD3L_Train: function(img_: PPImage_Handle; num_: Integer; train_output: P_Bytes; window_w, window_h, thread_num: Integer): Integer; stdcall;
     OD3L_Init: function(train_data: P_Bytes): TOD6L_Handle; stdcall;
@@ -570,7 +602,7 @@ type
     OD3L_Process: function(hnd: TOD6L_Handle; const raster_ptr: PRColorArray; const Width, Height: Integer; const OD_Rect: POD_Rect; const max_OD_Rect: Integer; var OD_Rect_num: Integer): Integer; stdcall;
     OD3L_Process_Image: function(hnd: TOD6L_Handle; rgb_img: TRGB_Image_Handle; const OD_Rect: POD_Rect; const max_OD_Rect: Integer; var OD_Rect_num: Integer): Integer; stdcall;
 
-    // shape predictor and shape detector
+    { shape predictor and shape detector }
     SP_Train: function(train_cfg, train_output: P_Bytes; oversampling_amount, tree_depth, thread_num: Integer): Integer; stdcall;
     LargeScale_SP_Train: function(img_: PPImage_Handle; num_: Integer; train_output: P_Bytes; oversampling_amount, tree_depth, thread_num: Integer): Integer; stdcall;
     SP_Init: function(train_data: P_Bytes): TSP_Handle; stdcall;
@@ -579,7 +611,7 @@ type
     SP_Process: function(hnd: TSP_Handle; const raster_ptr: PRColorArray; const Width, Height: Integer; const AI_Rect: PAI_Rect; const AI_Point: PAI_Point; const max_AI_Point: Integer; var AI_Point_num: Integer): Integer; stdcall;
     SP_Process_Image: function(hnd: TSP_Handle; rgb_img: TRGB_Image_Handle; const AI_Rect: PAI_Rect; const AI_Point: PAI_Point; const max_AI_Point: Integer; var AI_Point_num: Integer): Integer; stdcall;
 
-    // face recognition shape predictor
+    { face recognition shape predictor }
     SP_extract_face_rect_desc_chips: function(hnd: TSP_Handle; const raster_ptr: PRColorArray; const Width, Height, extract_face_size: Integer; rect_desc_: PAI_Rect; rect_num: Integer): TFACE_Handle; stdcall;
     SP_extract_face_rect_chips: function(hnd: TSP_Handle; const raster_ptr: PRColorArray; const Width, Height, extract_face_size: Integer): TFACE_Handle; stdcall;
     SP_extract_face_rect: function(const raster_ptr: PRColorArray; const Width, Height: Integer): TFACE_Handle; stdcall;
@@ -592,7 +624,7 @@ type
     SP_get_num: function(hnd: TFACE_Handle): Integer; stdcall;
     SP_get: function(hnd: TFACE_Handle; const index: Integer; const AI_Point: PAI_Point; const max_AI_Point: Integer): Integer; stdcall;
 
-    // MDNN-ResNet(ResNet metric DNN input net size 150*150, full resnet jitter)
+    { MDNN-ResNet(ResNet metric DNN input net size 150*150, full resnet jitter) }
     MDNN_ResNet_Train: function(param: PMetric_ResNet_Train_Parameter): Integer; stdcall;
     MDNN_ResNet_Full_GPU_Train: function(param: PMetric_ResNet_Train_Parameter): Integer; stdcall;
     MDNN_ResNet_Init: function(train_data: P_Bytes): TMetric_Handle; stdcall;
@@ -601,7 +633,7 @@ type
     MDNN_ResNet_Process: function(hnd: TMetric_Handle; imgArry_ptr: PAI_Raster_Data_Array; img_num: Integer; output: PDouble): Integer; stdcall;
     MDNN_DebugInfo: procedure(hnd: TMetric_Handle; var p: PPascalString); stdcall;
 
-    // LMDNN-ResNet(ResNet metric DNN input net size 200*200, resnet no jitter)
+    { LMDNN-ResNet(ResNet metric DNN input net size 200*200, resnet no jitter) }
     LMDNN_ResNet_Train: function(param: PMetric_ResNet_Train_Parameter): Integer; stdcall;
     LMDNN_ResNet_Full_GPU_Train: function(param: PMetric_ResNet_Train_Parameter): Integer; stdcall;
     LMDNN_ResNet_Init: function(train_data: P_Bytes): TLMetric_Handle; stdcall;
@@ -610,7 +642,7 @@ type
     LMDNN_ResNet_Process: function(hnd: TLMetric_Handle; imgArry_ptr: PAI_Raster_Data_Array; img_num: Integer; output: PDouble): Integer; stdcall;
     LMDNN_DebugInfo: procedure(hnd: TLMetric_Handle; var p: PPascalString); stdcall;
 
-    // MMOD-DNN(max-margin DNN object detector) 6 Layer
+    { MMOD-DNN(max-margin DNN object detector) 6 Layer }
     MMOD6L_DNN_Train: function(param: PMMOD_Train_Parameter): Integer; stdcall;
     LargeScale_MMOD6L_Train: function(param: PMMOD_Train_Parameter; img_: PPImage_Handle; num_: Integer): Integer; stdcall;
     MMOD6L_DNN_Init: function(train_data: P_Bytes): TMMOD6L_Handle; stdcall;
@@ -620,7 +652,7 @@ type
     MMOD6L_DNN_Process_Image: function(hnd: TMMOD6L_Handle; matrix_img: TMatrix_Image_Handle; const MMOD6L_AI_Rect: PAI_MMOD_Rect; const max_AI_Rect: Integer): Integer; stdcall;
     MMOD6L_DebugInfo: procedure(hnd: TMMOD6L_Handle; var p: PPascalString); stdcall;
 
-    // MMOD-DNN(max-margin DNN object detector) 3 Layer
+    { MMOD-DNN(max-margin DNN object detector) 3 Layer }
     MMOD3L_DNN_Train: function(param: PMMOD_Train_Parameter): Integer; stdcall;
     LargeScale_MMOD3L_Train: function(param: PMMOD_Train_Parameter; img_: PPImage_Handle; num_: Integer): Integer; stdcall;
     MMOD3L_DNN_Init: function(train_data: P_Bytes): TMMOD3L_Handle; stdcall;
@@ -630,7 +662,7 @@ type
     MMOD3L_DNN_Process_Image: function(hnd: TMMOD3L_Handle; matrix_img: TMatrix_Image_Handle; const MMOD3L_AI_Rect: PAI_MMOD_Rect; const max_AI_Rect: Integer): Integer; stdcall;
     MMOD3L_DebugInfo: procedure(hnd: TMMOD3L_Handle; var p: PPascalString); stdcall;
 
-    // ResNet-Image-Classifier
+    { ResNet-Image-Classifier }
     RNIC_Train: function(param: PRNIC_Train_Parameter): Integer; stdcall;
     RNIC_Init: function(train_data: P_Bytes): TRNIC_Handle; stdcall;
     RNIC_Init_Memory: function(memory: Pointer; Size: Integer): TRNIC_Handle; stdcall;
@@ -639,7 +671,7 @@ type
     RNIC_Process_Image: function(hnd: TRNIC_Handle; num_crops: Integer; matrix_img: TMatrix_Image_Handle; output: PDouble): Integer; stdcall;
     RNIC_DebugInfo: procedure(hnd: TRNIC_Handle; var p: PPascalString); stdcall;
 
-    // Large-ResNet-Image-Classifier
+    { Large-ResNet-Image-Classifier }
     LRNIC_Train: function(param: PRNIC_Train_Parameter): Integer; stdcall;
     LRNIC_Init: function(train_data: P_Bytes): TLRNIC_Handle; stdcall;
     LRNIC_Init_Memory: function(memory: Pointer; Size: Integer): TLRNIC_Handle; stdcall;
@@ -648,7 +680,7 @@ type
     LRNIC_Process_Image: function(hnd: TLRNIC_Handle; num_crops: Integer; matrix_img: TMatrix_Image_Handle; output: PDouble): Integer; stdcall;
     LRNIC_DebugInfo: procedure(hnd: TLRNIC_Handle; var p: PPascalString); stdcall;
 
-    // Going Deeper with Convolutions net-Image-Classifier
+    { Going Deeper with Convolutions net-Image-Classifier }
     GDCNIC_Train: function(param: PGDCNIC_Train_Parameter): Integer; stdcall;
     GDCNIC_Init: function(train_data: P_Bytes): TGDCNIC_Handle; stdcall;
     GDCNIC_Init_Memory: function(memory: Pointer; Size: Integer): TGDCNIC_Handle; stdcall;
@@ -656,7 +688,7 @@ type
     GDCNIC_Process: function(hnd: TGDCNIC_Handle; const raster_ptr: PRColorArray; const Width, Height: Integer; output: PDouble): Integer; stdcall;
     GDCNIC_DebugInfo: procedure(hnd: TGDCNIC_Handle; var p: PPascalString); stdcall;
 
-    // Gradient-based net-Image-Classifier
+    { Gradient-based net-Image-Classifier }
     GNIC_Train: function(param: PGNIC_Train_Parameter): Integer; stdcall;
     GNIC_Init: function(train_data: P_Bytes): TGNIC_Handle; stdcall;
     GNIC_Init_Memory: function(memory: Pointer; Size: Integer): TGNIC_Handle; stdcall;
@@ -664,7 +696,7 @@ type
     GNIC_Process: function(hnd: TGNIC_Handle; const raster_ptr: PRColorArray; const Width, Height: Integer; output: PDouble): Integer; stdcall;
     GNIC_DebugInfo: procedure(hnd: TGNIC_Handle; var p: PPascalString); stdcall;
 
-    // segmantic segmentation
+    { segmantic segmentation }
     SS_Train: function(param: PSS_Train_Parameter): Integer; stdcall;
     SS_Init: function(train_data: P_Bytes): TSS_Handle; stdcall;
     SS_Init_Memory: function(memory: Pointer; Size: Integer): TSS_Handle; stdcall;
@@ -673,7 +705,7 @@ type
     SS_Process_Image: function(hnd: TSS_Handle; matrix_img: TMatrix_Image_Handle; output: PWORD): Integer; stdcall;
     SS_DebugInfo: procedure(hnd: TSS_Handle; var p: PPascalString); stdcall;
 
-    // correlation video tracker
+    { correlation video tracker }
     Start_Tracker: function(rgb_img: TRGB_Image_Handle; AI_Rect: PAI_Rect): TTracker_Handle; stdcall;
     Update_Tracker: function(hnd: TTracker_Handle; rgb_img: TRGB_Image_Handle; var AI_Rect: TAI_Rect): Double; stdcall;
     Update_Tracker_NoScale: function(hnd: TTracker_Handle; rgb_img: TRGB_Image_Handle; var AI_Rect: TAI_Rect): Double; stdcall;
@@ -682,7 +714,7 @@ type
     Update_Tracker_NoScale_matrix: function(hnd: TTracker_Handle; mat_img: TMatrix_Image_Handle; var AI_Rect: TAI_Rect): Double; stdcall;
     Stop_Tracker: function(hnd: TTracker_Handle): Integer; stdcall;
 
-    // ocr
+    { ocr }
     OpenOCREngine: function(ocrData, ocrLang: P_Bytes): TOCR_Handle; stdcall;
     CloseOCREngine: procedure(hnd: TOCR_Handle); stdcall;
     SetOCRParameter: procedure(hnd: TOCR_Handle; paramKey, paramValue: P_Bytes); stdcall;
@@ -697,18 +729,18 @@ type
     GetOCR_ResultWordStrBoxText: function(hnd: TOCR_Handle): Pointer; stdcall;
     GetOCR_ResultOSDText: function(hnd: TOCR_Handle): Pointer; stdcall;
 
-    // check key
+    { check key }
     CheckKey: function(): Integer; stdcall;
-    // print key state
+    { print key state }
     printKeyState: procedure(); stdcall;
-    // close ai entry
+    { close ai entry }
     CloseAI: procedure(); stdcall;
     SetComputeDeviceOfProcess: function(device_id: Integer): Integer; stdcall;
     GetComputeDeviceOfProcess: function(): Integer; stdcall;
     GetComputeDeviceNumOfProcess: function(): Integer; stdcall;
     GetComputeDeviceNameOfProcess: function(device_id: Integer): Pointer; stdcall;
 
-    // backcall api
+    { backcall api }
     API_OnOneStep: procedure(Sender: PAI_EntryAPI; one_step_calls: UInt64; average_loss, learning_rate: Double); stdcall;
     API_OnPause: procedure(); stdcall;
     API_Status_Out: procedure(Sender: PAI_EntryAPI; i_char: Integer); stdcall;
@@ -726,48 +758,74 @@ type
     API_GetDetectorDefinePartNum: function(hnd: PImage_Handle; detIndex: Integer): Integer; stdcall;
     API_GetDetectorDefinePart: function(hnd: PImage_Handle; detIndex, partIndex: Integer; var part_: TAI_Point): Byte; stdcall;
     API_GetSegmentationMaskMergeImage: function(hnd: PImage_Handle; var Bits: Pointer; var Width, Height: Integer): Byte; stdcall;
-    API_QuerySegmentationMaskColorID: function(cl: PSegmentationColorList; color: TRColor; def: WORD): WORD; stdcall;
+    API_QuerySegmentationMaskColorID: function(cl: PSegmentationColorTable; color: TRColor; def: WORD): WORD; stdcall;
 
-    // version information
-    MajorVer, MinorVer: Integer;
-    // Key information
+    { version information }
+    (*
+      1£¬snapshot
+      2£¬alpha
+      3£¬beta
+      4£¬pre
+      5£¬RC(Release Candidate)
+      6£¬GA(General Availability)
+      7£¬release
+      8£¬stable
+      9£¬current
+      10£¬eval
+      11£¬Patch
+    *)
+    MajorVer, MinorVer, VerMode, VerID: Integer;
+    { Key information }
     Key: TAI_Key;
-    // ComputeDeviceOfTraining (cuda/MKL support)
+    { ComputeDeviceOfTraining (cuda/MKL support) }
     ComputeDeviceOfTraining: array [0 .. 64 - 1] of Integer;
 
-    // internal usage
+    { internal usage }
     LibraryFile: SystemString;
     LoadLibraryTime: TDateTime;
     OneStepList: TOneStepList;
     Log: TAI_LogList;
     RasterSerialized: TRasterSerialized;
     SerializedTime: TTimeTick;
+    Critical: TCritical;
+
+    { morph expression api }
+    MorphExpIntf: TMorphExpIntf;
+
+    procedure Lock;
+    procedure UnLock;
+    function GetVersionName: TPascalString;
+    function GetVersionTitle: TPascalString;
+    function GetVersionInfo: TPascalString;
   end;
 {$ENDREGION 'Entry'}
 {$REGION 'AI Core'}
 
   TAI = class(TCoreClassObject)
+{$REGION 'general'}
   protected
-    // internal
+    { internal }
     FAI_EntryAPI: PAI_EntryAPI;
-    face_sp_hnd: TSP_Handle;
+    FFace_SP_Hnd: TSP_Handle;
     TrainingControl: TTrainingControl;
     Critical: TCritical;
   public
   var
-    // Parallel handle
+    { Parallel handle }
     Parallel_OD6L_Hnd: TOD6L_Handle;
     Parallel_OD3L_Hnd: TOD3L_Handle;
     Parallel_OD_Marshal_Hnd: TOD6L_Marshal_Handle;
     Parallel_SP_Hnd: TSP_Handle;
 
-    // root path
-    rootPath: SystemString;
+    { root path }
+    RootPath: SystemString;
 
-    // deep neural network training state
+    { deep neural network training state }
     Last_training_average_loss, Last_training_learning_rate, completed_learning_rate: Double;
   public
-    // API entry
+    // face shape handle
+    property Face_SP_Hnd: TSP_Handle read FFace_SP_Hnd;
+    { API entry }
     property API: PAI_EntryAPI read FAI_EntryAPI;
 
     constructor Create;
@@ -776,46 +834,45 @@ type
     class function OpenEngine: TAI; overload;
     destructor Destroy; override;
 
-{$REGION 'general'}
-    // engine activted
+    { engine activted }
     function Activted: Boolean;
 
-    // GPU supported
+    { GPU supported }
     function isGPU: Boolean;
-    // Intel-MKL supported
+    { Intel-MKL supported }
     function isMKL: Boolean;
-    // trainer supported
+    { trainer supported }
     function isTrainer: Boolean;
 
-    // set GPU/MKL compute device for Training
+    { set GPU/MKL compute device for Training }
     procedure SetComputeDeviceOfTraining(const Device_: array of Integer);
-    // set GPU/MKL compute device for process
+    { set GPU/MKL compute device for process }
     function SetComputeDeviceOfProcess(device_id: Integer): Boolean;
-    // get current GPU/MKL compute device for process
+    { get current GPU/MKL compute device for process }
     function GetComputeDeviceOfProcess(): Integer;
-    // get GPU/MKL compute device number for process
+    { get GPU/MKL compute device number for process }
     function GetComputeDeviceNumOfProcess(): Integer;
-    // get GPU/MKL compute device name for process
+    { get GPU/MKL compute device name for process }
     function GetComputeDeviceNameOfProcess(device_id: Integer): U_String;
     function GetComputeDeviceNames(): U_StringArray; overload;
     procedure GetComputeDeviceNames(output: TCoreClassStrings); overload;
 
-    // MemoryRasterSerialized
+    { MemoryRasterSerialized }
     function MakeSerializedFileName: U_String;
 
-    // atomic ctrl
+    { atomic ctrl }
     procedure Lock;
-    procedure Unlock;
+    procedure UnLock;
     function Busy: Boolean;
 
-    // training control
+    { training control }
     procedure Training_Stop;
     procedure Training_Pause;
     procedure Training_Continue;
     function Training_IsPause: Boolean;
 {$ENDREGION 'general'}
 {$REGION 'graphics'}
-    // structor draw
+    { structor draw }
     procedure DrawOD6L(od_hnd: TOD6L_Handle; Raster: TMemoryRaster; color: TDEColor);
     procedure DrawOD3L(od_hnd: TOD3L_Handle; Raster: TMemoryRaster; color: TDEColor);
     procedure DrawOD(od_desc: TOD_Desc; Raster: TMemoryRaster; color: TDEColor);
@@ -833,13 +890,13 @@ type
     procedure PrintFace(prefix: SystemString; Raster: TMemoryRaster; Metric_hnd: TMetric_Handle; Face_Learn: TLearn; faceAccuracy: TGeoFloat);
     function DrawExtractFace(Raster: TMemoryRaster): TMemoryRaster;
 
-    // prepare image
+    { prepare image }
     function Prepare_RGB_Image(Raster: TMemoryRaster): TRGB_Image_Handle;
     procedure Close_RGB_Image(hnd: TRGB_Image_Handle);
     function Prepare_Matrix_Image(Raster: TMemoryRaster): TMatrix_Image_Handle;
     procedure Close_Matrix_Image(hnd: TMatrix_Image_Handle);
 
-    // Medical graphic support
+    { Medical graphic support }
     procedure HotMap(Raster: TMemoryRaster);
     procedure JetMap(Raster: TMemoryRaster);
     function BuildHotMap(Raster: TMemoryRaster): TMemoryRaster;
@@ -1030,7 +1087,7 @@ type
 
 {$ENDREGION 'GrabCut ¡ª Interactive Foreground Extraction using Iterated Graph Cuts'}
 {$REGION 'Speeded Up Robust Features'}
-    // fast surf(cpu)
+    { fast surf(cpu) }
     function fast_surf(Raster: TMemoryRaster; const max_points: Integer; const detection_threshold: Double): TSurf_DescBuffer;
     function surf_sqr(const sour, dest: PSurf_Desc): Single; inline;
     function Surf_Matched(reject_ratio_sqr: Single; r1_, r2_: TMemoryRaster; sd1_, sd2_: TSurf_DescBuffer): TSurfMatchedBuffer;
@@ -1039,21 +1096,21 @@ type
     function BuildSurfMatchOutput(raster1, raster2: TMemoryRaster): TMemoryRaster;
 {$ENDREGION 'Speeded Up Robust Features'}
 {$REGION 'object detector 6 layer'}
-    // object detector 6 layer training(cpu), usage XML swap dataset.
+    { object detector 6 layer training(cpu), usage XML swap dataset. }
     function OD6L_Train(train_cfg, train_output: U_String; window_w, window_h, thread_num: Integer): Boolean; overload;
     function OD6L_Train(imgList: TAI_ImageList; TokenFilter, train_output: U_String; window_w, window_h, thread_num: Integer): Boolean; overload;
     function OD6L_Train(imgMat: TAI_ImageMatrix; TokenFilter, train_output: U_String; window_w, window_h, thread_num: Integer): Boolean; overload;
     function OD6L_Train_Stream(imgList: TAI_ImageList; window_w, window_h, thread_num: Integer): TMemoryStream64; overload;
     function OD6L_Train_Stream(imgMat: TAI_ImageMatrix; window_w, window_h, thread_num: Integer): TMemoryStream64; overload;
-    // large-scale object detector 6 layer training(cpu), direct input without XML swap dataset.
+    { large-scale object detector 6 layer training(cpu), direct input without XML swap dataset. }
     function LargeScale_OD6L_Train(imgList: TAI_ImageList; train_output: U_String; window_w, window_h, thread_num: Integer): Boolean; overload;
     function LargeScale_OD6L_Train(imgMat: TAI_ImageMatrix; train_output: U_String; window_w, window_h, thread_num: Integer): Boolean; overload;
     function LargeScale_OD6L_Train_Stream(imgList: TAI_ImageList; window_w, window_h, thread_num: Integer): TMemoryStream64; overload;
     function LargeScale_OD6L_Train_Stream(imgMat: TAI_ImageMatrix; window_w, window_h, thread_num: Integer): TMemoryStream64; overload;
-    // object detector 6 layer api(cpu)
-    function OD6L_Open(train_file: U_String): TOD6L_Handle;
+    { object detector 6 layer api(cpu) }
+    function OD6L_Open(train_file: SystemString): TOD6L_Handle;
     function OD6L_Open_Stream(stream: TMemoryStream64): TOD6L_Handle; overload;
-    function OD6L_Open_Stream(train_file: U_String): TOD6L_Handle; overload;
+    function OD6L_Open_Stream(train_file: SystemString): TOD6L_Handle; overload;
     function OD6L_Close(var hnd: TOD6L_Handle): Boolean;
     function OD6L_Process(hnd: TOD6L_Handle; Raster: TMemoryRaster; const max_AI_Rect: Integer): TOD_Desc; overload;
     function OD6L_Process(hnd: TOD6L_Handle; Raster: TMemoryRaster): TOD_List; overload;
@@ -1062,21 +1119,21 @@ type
     function OD6L_ProcessScaleSpace(hnd: TOD6L_Handle; Raster: TMemoryRaster; scale: TGeoFloat): TOD_Desc; overload;
 {$ENDREGION 'object detector 6 layer'}
 {$REGION 'object detector 3 layer'}
-    // object detector 3 layer training(cpu), usage XML swap dataset.
+    { object detector 3 layer training(cpu), usage XML swap dataset. }
     function OD3L_Train(train_cfg, train_output: U_String; window_w, window_h, thread_num: Integer): Boolean; overload;
     function OD3L_Train(imgList: TAI_ImageList; TokenFilter, train_output: U_String; window_w, window_h, thread_num: Integer): Boolean; overload;
     function OD3L_Train(imgMat: TAI_ImageMatrix; TokenFilter, train_output: U_String; window_w, window_h, thread_num: Integer): Boolean; overload;
     function OD3L_Train_Stream(imgList: TAI_ImageList; window_w, window_h, thread_num: Integer): TMemoryStream64; overload;
     function OD3L_Train_Stream(imgMat: TAI_ImageMatrix; window_w, window_h, thread_num: Integer): TMemoryStream64; overload;
-    // large-scale object detector 3 layer training(cpu), direct input without XML swap dataset.
+    { large-scale object detector 3 layer training(cpu), direct input without XML swap dataset. }
     function LargeScale_OD3L_Train(imgList: TAI_ImageList; train_output: U_String; window_w, window_h, thread_num: Integer): Boolean; overload;
     function LargeScale_OD3L_Train(imgMat: TAI_ImageMatrix; train_output: U_String; window_w, window_h, thread_num: Integer): Boolean; overload;
     function LargeScale_OD3L_Train_Stream(imgList: TAI_ImageList; window_w, window_h, thread_num: Integer): TMemoryStream64; overload;
     function LargeScale_OD3L_Train_Stream(imgMat: TAI_ImageMatrix; window_w, window_h, thread_num: Integer): TMemoryStream64; overload;
-    // object detector 3 layer api(cpu)
-    function OD3L_Open(train_file: U_String): TOD3L_Handle;
+    { object detector 3 layer api(cpu) }
+    function OD3L_Open(train_file: SystemString): TOD3L_Handle;
     function OD3L_Open_Stream(stream: TMemoryStream64): TOD3L_Handle; overload;
-    function OD3L_Open_Stream(train_file: U_String): TOD3L_Handle; overload;
+    function OD3L_Open_Stream(train_file: SystemString): TOD3L_Handle; overload;
     function OD3L_Close(var hnd: TOD3L_Handle): Boolean;
     function OD3L_Process(hnd: TOD3L_Handle; Raster: TMemoryRaster; const max_AI_Rect: Integer): TOD_Desc; overload;
     function OD3L_Process(hnd: TOD3L_Handle; Raster: TMemoryRaster): TOD_List; overload;
@@ -1085,41 +1142,42 @@ type
     function OD3L_ProcessScaleSpace(hnd: TOD3L_Handle; Raster: TMemoryRaster; scale: TGeoFloat): TOD_Desc; overload;
 {$ENDREGION 'object detector 3 layer'}
 {$REGION 'object marshal(6 layer) detector'}
-    // object marshal detector(6 layer) training(cpu), usage XML swap dataset.
+    { object marshal detector(6 layer) training(cpu), usage XML swap dataset. }
     function OD6L_Marshal_Train(imgList: TAI_ImageList; window_w, window_h, thread_num: Integer): TMemoryStream64; overload;
     function OD6L_Marshal_Train(imgMat: TAI_ImageMatrix; window_w, window_h, thread_num: Integer): TMemoryStream64; overload;
-    // object marshal detector(6 layer) api(cpu)
+    { object marshal detector(6 layer) api(cpu) }
     function OD6L_Marshal_Open_Stream(stream: TMemoryStream64): TOD6L_Marshal_Handle; overload;
-    function OD6L_Marshal_Open_Stream(train_file: U_String): TOD6L_Marshal_Handle; overload;
+    function OD6L_Marshal_Open_Stream(train_file: SystemString): TOD6L_Marshal_Handle; overload;
     function OD6L_Marshal_Close(var hnd: TOD6L_Marshal_Handle): Boolean;
     function OD6L_Marshal_Process(hnd: TOD6L_Marshal_Handle; Raster: TMemoryRaster): TOD_Marshal_Desc;
     function OD6L_Marshal_ProcessScaleSpace(hnd: TOD6L_Marshal_Handle; Raster: TMemoryRaster; scale: TGeoFloat): TOD_Marshal_Desc;
 {$ENDREGION 'object marshal(6 layer) detector'}
 {$REGION 'shape predictor and shape detector'}
-    // shape predictor and shape detector training(cpu), usage XML swap dataset.
+    { shape predictor and shape detector training(cpu), usage XML swap dataset. }
     function SP_Train(train_cfg, train_output: U_String; oversampling_amount, tree_depth, thread_num: Integer): Boolean; overload;
     function SP_Train(imgList: TAI_ImageList; train_output: U_String; oversampling_amount, tree_depth, thread_num: Integer): Boolean; overload;
     function SP_Train(imgMat: TAI_ImageMatrix; train_output: U_String; oversampling_amount, tree_depth, thread_num: Integer): Boolean; overload;
     function SP_Train_Stream(imgList: TAI_ImageList; oversampling_amount, tree_depth, thread_num: Integer): TMemoryStream64; overload;
     function SP_Train_Stream(imgMat: TAI_ImageMatrix; oversampling_amount, tree_depth, thread_num: Integer): TMemoryStream64; overload;
-    // large-scale shape predictor and shape detector training(cpu), direct input without XML swap dataset.
+    { large-scale shape predictor and shape detector training(cpu), direct input without XML swap dataset. }
     function LargeScale_SP_Train(imgList: TAI_ImageList; train_output: U_String; oversampling_amount, tree_depth, thread_num: Integer): Boolean; overload;
     function LargeScale_SP_Train(imgMat: TAI_ImageMatrix; train_output: U_String; oversampling_amount, tree_depth, thread_num: Integer): Boolean; overload;
     function LargeScale_SP_Train_Stream(imgList: TAI_ImageList; oversampling_amount, tree_depth, thread_num: Integer): TMemoryStream64; overload;
     function LargeScale_SP_Train_Stream(imgMat: TAI_ImageMatrix; oversampling_amount, tree_depth, thread_num: Integer): TMemoryStream64; overload;
-    // shape predictor and shape detector api(cpu)
-    function SP_Open(train_file: U_String): TSP_Handle;
+    { shape predictor and shape detector api(cpu) }
+    function SP_Open(train_file: SystemString): TSP_Handle;
     function SP_Open_Stream(stream: TMemoryStream64): TSP_Handle; overload;
-    function SP_Open_Stream(train_file: U_String): TSP_Handle; overload;
+    function SP_Open_Stream(train_file: SystemString): TSP_Handle; overload;
     function SP_Close(var hnd: TSP_Handle): Boolean;
     function SP_Process(hnd: TSP_Handle; Raster: TMemoryRaster; const AI_Rect: TAI_Rect; const max_AI_Point: Integer): TSP_Desc;
     function SP_Process_Vec2List(hnd: TSP_Handle; Raster: TMemoryRaster; const R: TRectV2): TVec2List;
     function SP_Process_Vec2(hnd: TSP_Handle; Raster: TMemoryRaster; const R: TRectV2): TArrayVec2; overload;
     function SP_Process_Vec2(hnd: TSP_Handle; Raster: TMemoryRaster; const R: TAI_Rect): TArrayVec2; overload;
     function SP_Process_Vec2(hnd: TSP_Handle; Raster: TMemoryRaster; const R: TOD_Rect): TArrayVec2; overload;
+    function SP_Process_Face(Raster: TMemoryRaster; const R: TRectV2): TArrayVec2;
 {$ENDREGION 'shape predictor and shape detector'}
 {$REGION 'face shape predictor'}
-    // face shape predictor(cpu)
+    { face shape predictor(cpu) }
     procedure PrepareFaceDataSource;
     function Face_Detector(Raster: TMemoryRaster; R: TRect; extract_face_size: Integer): TFACE_Handle; overload;
     function Face_Detector(Raster: TMemoryRaster; desc: TAI_Rect_Desc; extract_face_size: Integer): TFACE_Handle; overload;
@@ -1132,6 +1190,7 @@ type
     function Face_Detector_AllRect(Raster: TMemoryRaster): TAI_Rect_Desc;
     function Face_chips_num(hnd: TFACE_Handle): Integer;
     function Face_chips(hnd: TFACE_Handle; index: Integer): TMemoryRaster;
+    function Face_GetCentreRectIndex(Raster: TMemoryRaster; hnd: TFACE_Handle): Integer;
     function Face_Rect_Num(hnd: TFACE_Handle): Integer;
     function Face_Rect(hnd: TFACE_Handle; index: Integer): TAI_Rect;
     function Face_RectV2(hnd: TFACE_Handle; index: Integer): TRectV2;
@@ -1142,26 +1201,36 @@ type
     procedure Face_Close(var hnd: TFACE_Handle);
 {$ENDREGION 'face shape predictor'}
 {$REGION 'MDNN-ResNet(ResNet metric DNN)'}
-    // MDNN-ResNet(ResNet metric DNN) training(gpu), extract dim 256, input size 150*150, full resnet jitter, include bias, direct input without XML swap dataset.
+    { MDNN-ResNet(ResNet metric DNN) training(gpu), extract dim 256, input size 150*150, full resnet jitter, include bias, direct input without XML swap dataset. }
     class function Init_Metric_ResNet_Parameter(train_sync_file, train_output: U_String): PMetric_ResNet_Train_Parameter;
     class procedure Free_Metric_ResNet_Parameter(param: PMetric_ResNet_Train_Parameter);
-    // data prototype
+    { data prototype }
     function Metric_ResNet_Train(LargeScale_: Boolean; RSeri: TRasterSerialized; imgList: TMemoryRaster2DArray; param: PMetric_ResNet_Train_Parameter): Boolean; overload;
     function Metric_ResNet_Train(Snapshot_: Boolean; imgList: TAI_ImageList; param: PMetric_ResNet_Train_Parameter): Boolean; overload;
     function Metric_ResNet_Train_Stream(Snapshot_: Boolean; imgList: TAI_ImageList; param: PMetric_ResNet_Train_Parameter): TMemoryStream64; overload;
     function Metric_ResNet_Train(Snapshot_: Boolean; imgMat: TAI_ImageMatrix; param: PMetric_ResNet_Train_Parameter): Boolean; overload;
     function Metric_ResNet_Train_Stream(Snapshot_: Boolean; imgMat: TAI_ImageMatrix; param: PMetric_ResNet_Train_Parameter): TMemoryStream64; overload;
-    // Large-Scale-MDNN-ResNet(ResNet metric DNN) training(gpu), extract dim 256, input size 150*150, full resnet jitter, include bias, direct input without XML swap dataset.
+    { Large-Scale-MDNN-ResNet(ResNet metric DNN) training(gpu), extract dim 256, input size 150*150, full resnet jitter, include bias, direct input without XML swap dataset. }
     function Metric_ResNet_Train(Snapshot_, LargeScale_: Boolean; RSeri: TRasterSerialized; imgMat: TAI_ImageMatrix; param: PMetric_ResNet_Train_Parameter): Boolean; overload;
     function Metric_ResNet_Train_Stream(Snapshot_, LargeScale_: Boolean; RSeri: TRasterSerialized; imgMat: TAI_ImageMatrix; param: PMetric_ResNet_Train_Parameter): TMemoryStream64; overload;
-    // MDNN-ResNet(ResNet metric DNN) api(gpu), extract dim 256, input size 150*150, full resnet jitter, include bias
-    function Metric_ResNet_Open(train_file: U_String): TMetric_Handle;
+    { MDNN-ResNet(ResNet metric DNN) api(gpu), extract dim 256, input size 150*150, full resnet jitter, include bias }
+    class function BuildShareFaceLearn(): TLearn;
+    class function Build_Metric_ResNet_Learn(): TLearn;
+    function Metric_ResNet_Open_ShareFace(): TMetric_Handle;
+    function Metric_ResNet_Open(train_file: SystemString): TMetric_Handle;
     function Metric_ResNet_Open_Stream(stream: TMemoryStream64): TMetric_Handle; overload;
-    function Metric_ResNet_Open_Stream(train_file: U_String): TMetric_Handle; overload;
+    function Metric_ResNet_Open_Stream(train_file: SystemString): TMetric_Handle; overload;
     function Metric_ResNet_Close(var hnd: TMetric_Handle): Boolean;
     function Metric_ResNet_Process(hnd: TMetric_Handle; RasterArray: TMemoryRasterArray; output: PDouble): Integer; overload;
     function Metric_ResNet_Process(hnd: TMetric_Handle; RasterArray: TMemoryRasterArray): TLMatrix; overload;
     function Metric_ResNet_Process(hnd: TMetric_Handle; Raster: TMemoryRaster): TLVec; overload;
+    { DNN Thread tech }
+    procedure Metric_ResNet_SaveToLearnEngine_DT(pool_: TAI_DNN_ThreadPool; Snapshot_: Boolean; RSeri: TRasterSerialized; imgList: TAI_ImageList; lr: TLearn); overload;
+    procedure Metric_ResNet_SaveToLearnEngine_DT(Metric_stream: TMemoryStream64; Snapshot_: Boolean; RSeri: TRasterSerialized; imgList: TAI_ImageList; lr: TLearn); overload;
+    procedure Metric_ResNet_SaveToLearnEngine_DT(Metric_stream: TMemoryStream64; Snapshot_: Boolean; RSeri: TRasterSerialized; imgMat: TAI_ImageMatrix; lr: TLearn); overload;
+    procedure Metric_ResNet_SaveToLearnEngine_DT(Metric_stream: TMemoryStream64; Snapshot_: Boolean; imgList: TAI_ImageList; lr: TLearn); overload;
+    procedure Metric_ResNet_SaveToLearnEngine_DT(Metric_stream: TMemoryStream64; Snapshot_: Boolean; imgMat: TAI_ImageMatrix; lr: TLearn); overload;
+    { normal }
     procedure Metric_ResNet_SaveToLearnEngine(Metric_hnd: TMetric_Handle; Snapshot_: Boolean; RSeri: TRasterSerialized; imgList: TAI_ImageList; lr: TLearn); overload;
     procedure Metric_ResNet_SaveToLearnEngine(Metric_hnd: TMetric_Handle; Snapshot_: Boolean; RSeri: TRasterSerialized; imgMat: TAI_ImageMatrix; lr: TLearn); overload;
     procedure Metric_ResNet_SaveToLearnEngine(Metric_hnd: TMetric_Handle; Snapshot_: Boolean; imgList: TAI_ImageList; lr: TLearn); overload;
@@ -1173,26 +1242,34 @@ type
     function Metric_ResNet_DebugInfo(hnd: TMetric_Handle): U_String;
 {$ENDREGION 'MDNN-ResNet(ResNet metric DNN)'}
 {$REGION 'Large-Scale-LMDNN-ResNet(ResNet LMetric DNN)'}
-    // LMDNN-ResNet(ResNet LMetric DNN) training(gpu), extract dim 384, input size 200*200, no resnet jitter, no bias, direct input without XML swap dataset.
+    { LMDNN-ResNet(ResNet LMetric DNN) training(gpu), extract dim 384, input size 200*200, no resnet jitter, no bias, direct input without XML swap dataset. }
     class function Init_LMetric_ResNet_Parameter(train_sync_file, train_output: U_String): PMetric_ResNet_Train_Parameter;
     class procedure Free_LMetric_ResNet_Parameter(param: PMetric_ResNet_Train_Parameter);
-    // data prototype
+    { data prototype }
     function LMetric_ResNet_Train(LargeScale_: Boolean; RSeri: TRasterSerialized; imgList: TMemoryRaster2DArray; param: PMetric_ResNet_Train_Parameter): Boolean; overload;
     function LMetric_ResNet_Train(Snapshot_: Boolean; imgList: TAI_ImageList; param: PMetric_ResNet_Train_Parameter): Boolean; overload;
     function LMetric_ResNet_Train_Stream(Snapshot_: Boolean; imgList: TAI_ImageList; param: PMetric_ResNet_Train_Parameter): TMemoryStream64; overload;
     function LMetric_ResNet_Train(Snapshot_: Boolean; imgMat: TAI_ImageMatrix; param: PMetric_ResNet_Train_Parameter): Boolean; overload;
     function LMetric_ResNet_Train_Stream(Snapshot_: Boolean; imgMat: TAI_ImageMatrix; param: PMetric_ResNet_Train_Parameter): TMemoryStream64; overload;
-    // Large-Scale-LMDNN-ResNet(ResNet LMetric DNN) training(gpu), extract dim 384, input size 200*200, no resnet jitter, no bias, direct input without XML swap dataset.
+    { Large-Scale-LMDNN-ResNet(ResNet LMetric DNN) training(gpu), extract dim 384, input size 200*200, no resnet jitter, no bias, direct input without XML swap dataset. }
     function LMetric_ResNet_Train(Snapshot_, LargeScale_: Boolean; RSeri: TRasterSerialized; imgMat: TAI_ImageMatrix; param: PMetric_ResNet_Train_Parameter): Boolean; overload;
     function LMetric_ResNet_Train_Stream(Snapshot_, LargeScale_: Boolean; RSeri: TRasterSerialized; imgMat: TAI_ImageMatrix; param: PMetric_ResNet_Train_Parameter): TMemoryStream64; overload;
-    // LMDNN-ResNet(ResNet LMetric DNN) api(gpu), extract dim 384, input size 200*200, no resnet jitter
-    function LMetric_ResNet_Open(train_file: U_String): TLMetric_Handle;
+    { LMDNN-ResNet(ResNet LMetric DNN) api(gpu), extract dim 384, input size 200*200, no resnet jitter }
+    class function Build_LMetric_ResNet_Learn(): TLearn;
+    function LMetric_ResNet_Open(train_file: SystemString): TLMetric_Handle;
     function LMetric_ResNet_Open_Stream(stream: TMemoryStream64): TLMetric_Handle; overload;
-    function LMetric_ResNet_Open_Stream(train_file: U_String): TLMetric_Handle; overload;
+    function LMetric_ResNet_Open_Stream(train_file: SystemString): TLMetric_Handle; overload;
     function LMetric_ResNet_Close(var hnd: TLMetric_Handle): Boolean;
     function LMetric_ResNet_Process(hnd: TLMetric_Handle; RasterArray: TMemoryRasterArray; output: PDouble): Integer; overload;
     function LMetric_ResNet_Process(hnd: TLMetric_Handle; RasterArray: TMemoryRasterArray): TLMatrix; overload;
     function LMetric_ResNet_Process(hnd: TLMetric_Handle; Raster: TMemoryRaster): TLVec; overload;
+    { DNN Thread tech }
+    procedure LMetric_ResNet_SaveToLearnEngine_DT(pool_: TAI_DNN_ThreadPool; Snapshot_: Boolean; RSeri: TRasterSerialized; imgList: TAI_ImageList; lr: TLearn); overload;
+    procedure LMetric_ResNet_SaveToLearnEngine_DT(LMetric_stream: TMemoryStream64; Snapshot_: Boolean; RSeri: TRasterSerialized; imgList: TAI_ImageList; lr: TLearn); overload;
+    procedure LMetric_ResNet_SaveToLearnEngine_DT(LMetric_stream: TMemoryStream64; Snapshot_: Boolean; RSeri: TRasterSerialized; imgMat: TAI_ImageMatrix; lr: TLearn); overload;
+    procedure LMetric_ResNet_SaveToLearnEngine_DT(LMetric_stream: TMemoryStream64; Snapshot_: Boolean; imgList: TAI_ImageList; lr: TLearn); overload;
+    procedure LMetric_ResNet_SaveToLearnEngine_DT(LMetric_stream: TMemoryStream64; Snapshot_: Boolean; imgMat: TAI_ImageMatrix; lr: TLearn); overload;
+    { normal }
     procedure LMetric_ResNet_SaveToLearnEngine(LMetric_hnd: TLMetric_Handle; Snapshot_: Boolean; RSeri: TRasterSerialized; imgList: TAI_ImageList; lr: TLearn); overload;
     procedure LMetric_ResNet_SaveToLearnEngine(LMetric_hnd: TLMetric_Handle; Snapshot_: Boolean; RSeri: TRasterSerialized; imgMat: TAI_ImageMatrix; lr: TLearn); overload;
     procedure LMetric_ResNet_SaveToLearnEngine(LMetric_hnd: TLMetric_Handle; Snapshot_: Boolean; imgList: TAI_ImageList; lr: TLearn); overload;
@@ -1204,7 +1281,7 @@ type
     function LMetric_ResNet_DebugInfo(hnd: TLMetric_Handle): U_String;
 {$ENDREGION 'Large-Scale-LMDNN-ResNet(ResNet LMetric DNN)'}
 {$REGION 'MMOD-DNN(DNN+SVM:max-margin object detector 6 layer)'}
-    // MMOD-DNN(DNN+SVM:max-margin object detector 6 layer) training(gpu), usage XML swap dataset.
+    { MMOD-DNN(DNN+SVM:max-margin object detector 6 layer) training(gpu), usage XML swap dataset. }
     class function Init_MMOD6L_DNN_TrainParam(train_cfg, train_sync_file, train_output: U_String): PMMOD_Train_Parameter;
     class procedure Free_MMOD6L_DNN_TrainParam(param: PMMOD_Train_Parameter);
     function MMOD6L_DNN_PrepareTrain(imgList: TAI_ImageList; train_sync_file: U_String): PMMOD_Train_Parameter; overload;
@@ -1212,7 +1289,7 @@ type
     function MMOD6L_DNN_Train(param: PMMOD_Train_Parameter): Integer;
     function MMOD6L_DNN_Train_Stream(param: PMMOD_Train_Parameter): TMemoryStream64;
     procedure MMOD6L_DNN_FreeTrain(param: PMMOD_Train_Parameter);
-    // Large-Scale MMOD-DNN(DNN+SVM:max-margin object detector 6 layer) training(gpu), direct input without XML swap dataset.
+    { Large-Scale MMOD-DNN(DNN+SVM:max-margin object detector 6 layer) training(gpu), direct input without XML swap dataset. }
     function LargeScale_MMOD6L_DNN_PrepareTrain(train_sync_file, train_output: U_String): PMMOD_Train_Parameter;
     function LargeScale_MMOD6L_DNN_Train(param: PMMOD_Train_Parameter; imgList: TAI_ImageList): Integer; overload;
     function LargeScale_MMOD6L_DNN_Train(param: PMMOD_Train_Parameter; imgMat: TAI_ImageMatrix): Integer; overload;
@@ -1223,18 +1300,18 @@ type
     function LargeScale_MMOD6L_DNN_Train_Stream(param: PMMOD_Train_Parameter; RSeri: TRasterSerialized; imgList: TAI_ImageList): TMemoryStream64; overload;
     function LargeScale_MMOD6L_DNN_Train_Stream(param: PMMOD_Train_Parameter; RSeri: TRasterSerialized; imgMat: TAI_ImageMatrix): TMemoryStream64; overload;
     procedure LargeScale_MMOD6L_DNN_FreeTrain(param: PMMOD_Train_Parameter);
-    // MMOD-DNN(DNN+SVM:max-margin object detector 6 layer) api(gpu)
-    function MMOD6L_DNN_Open(train_file: U_String): TMMOD6L_Handle;
-    function MMOD6L_DNN_Open_Face(): TMMOD6L_Handle; overload;
+    { MMOD-DNN(DNN+SVM:max-margin object detector 6 layer) api(gpu) }
+    function MMOD6L_DNN_Open_Face(): TMMOD6L_Handle;
+    function MMOD6L_DNN_Open(train_file: SystemString): TMMOD6L_Handle;
     function MMOD6L_DNN_Open_Stream(stream: TMemoryStream64): TMMOD6L_Handle; overload;
-    function MMOD6L_DNN_Open_Stream(train_file: U_String): TMMOD6L_Handle; overload;
+    function MMOD6L_DNN_Open_Stream(train_file: SystemString): TMMOD6L_Handle; overload;
     function MMOD6L_DNN_Close(var hnd: TMMOD6L_Handle): Boolean;
-    function MMOD6L_DNN_Process(hnd: TMMOD6L_Handle; Raster: TMemoryRaster): TMMOD_Desc; overload;
-    function MMOD6L_DNN_Process_Matrix(hnd: TMMOD6L_Handle; matrix_img: TMatrix_Image_Handle): TMMOD_Desc; overload;
+    function MMOD6L_DNN_Process(hnd: TMMOD6L_Handle; Raster: TMemoryRaster): TMMOD_Desc;
+    function MMOD6L_DNN_Process_Matrix(hnd: TMMOD6L_Handle; matrix_img: TMatrix_Image_Handle): TMMOD_Desc;
     function MMOD6L_DNN_DebugInfo(hnd: TMMOD6L_Handle): U_String;
 {$ENDREGION 'MMOD-DNN(DNN+SVM:max-margin object detector 6 layer)'}
 {$REGION 'MMOD-DNN(DNN+SVM:max-margin object detector 3 layer)'}
-    // MMOD-DNN(DNN+SVM:max-margin object detector 3 layer) training(gpu), usage XML swap dataset.
+    { MMOD-DNN(DNN+SVM:max-margin object detector 3 layer) training(gpu), usage XML swap dataset. }
     class function Init_MMOD3L_DNN_TrainParam(train_cfg, train_sync_file, train_output: U_String): PMMOD_Train_Parameter;
     class procedure Free_MMOD3L_DNN_TrainParam(param: PMMOD_Train_Parameter);
     function MMOD3L_DNN_PrepareTrain(imgList: TAI_ImageList; train_sync_file: U_String): PMMOD_Train_Parameter; overload;
@@ -1242,7 +1319,7 @@ type
     function MMOD3L_DNN_Train(param: PMMOD_Train_Parameter): Integer;
     function MMOD3L_DNN_Train_Stream(param: PMMOD_Train_Parameter): TMemoryStream64;
     procedure MMOD3L_DNN_FreeTrain(param: PMMOD_Train_Parameter);
-    // Large-Scale MMOD-DNN(DNN+SVM:max-margin object detector 3 layer) training(gpu), direct input without XML swap dataset.
+    { Large-Scale MMOD-DNN(DNN+SVM:max-margin object detector 3 layer) training(gpu), direct input without XML swap dataset. }
     function LargeScale_MMOD3L_DNN_PrepareTrain(train_sync_file, train_output: U_String): PMMOD_Train_Parameter;
     function LargeScale_MMOD3L_DNN_Train(param: PMMOD_Train_Parameter; imgList: TAI_ImageList): Integer; overload;
     function LargeScale_MMOD3L_DNN_Train(param: PMMOD_Train_Parameter; imgMat: TAI_ImageMatrix): Integer; overload;
@@ -1253,38 +1330,37 @@ type
     function LargeScale_MMOD3L_DNN_Train_Stream(param: PMMOD_Train_Parameter; RSeri: TRasterSerialized; imgList: TAI_ImageList): TMemoryStream64; overload;
     function LargeScale_MMOD3L_DNN_Train_Stream(param: PMMOD_Train_Parameter; RSeri: TRasterSerialized; imgMat: TAI_ImageMatrix): TMemoryStream64; overload;
     procedure LargeScale_MMOD3L_DNN_FreeTrain(param: PMMOD_Train_Parameter);
-    // MMOD-DNN(DNN+SVM:max-margin object detector 3 layer) api(gpu)
-    function MMOD3L_DNN_Open(train_file: U_String): TMMOD3L_Handle;
-    function MMOD3L_DNN_Open_Face(): TMMOD3L_Handle; overload;
+    { MMOD-DNN(DNN+SVM:max-margin object detector 3 layer) api(gpu) }
+    function MMOD3L_DNN_Open(train_file: SystemString): TMMOD3L_Handle;
     function MMOD3L_DNN_Open_Stream(stream: TMemoryStream64): TMMOD3L_Handle; overload;
-    function MMOD3L_DNN_Open_Stream(train_file: U_String): TMMOD3L_Handle; overload;
+    function MMOD3L_DNN_Open_Stream(train_file: SystemString): TMMOD3L_Handle; overload;
     function MMOD3L_DNN_Close(var hnd: TMMOD3L_Handle): Boolean;
-    function MMOD3L_DNN_Process(hnd: TMMOD3L_Handle; Raster: TMemoryRaster): TMMOD_Desc; overload;
-    function MMOD3L_DNN_Process_Matrix(hnd: TMMOD3L_Handle; matrix_img: TMatrix_Image_Handle): TMMOD_Desc; overload;
+    function MMOD3L_DNN_Process(hnd: TMMOD3L_Handle; Raster: TMemoryRaster): TMMOD_Desc;
+    function MMOD3L_DNN_Process_Matrix(hnd: TMMOD3L_Handle; matrix_img: TMatrix_Image_Handle): TMMOD_Desc;
     function MMOD3L_DNN_DebugInfo(hnd: TMMOD3L_Handle): U_String;
 {$ENDREGION 'MMOD-DNN(DNN+SVM:max-margin object detector 3 layer)'}
 {$REGION 'ResNet-Image-Classifier'}
-    // ResNet-Image-Classifier training(gpu), crop size 227, max classifier 1000, direct input without XML swap dataset.
+    { ResNet-Image-Classifier training(gpu), crop size 227, max classifier 1000, direct input without XML swap dataset. }
     class function Init_RNIC_Train_Parameter(train_sync_file, train_output: U_String): PRNIC_Train_Parameter;
     class procedure Free_RNIC_Train_Parameter(param: PRNIC_Train_Parameter);
-    // data prototype
+    { data prototype }
     function RNIC_Train(LargeScale_: Boolean; RSeri: TRasterSerialized; imgList: TMemoryRaster2DArray; param: PRNIC_Train_Parameter; Train_OutputIndex: TMemoryRasterList): Boolean; overload;
-    // ImageList data source
+    { ImageList data source }
     function RNIC_Train(imgList: TAI_ImageList; param: PRNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): Boolean; overload;
     function RNIC_Train(imgList: TAI_ImageList; param: PRNIC_Train_Parameter; train_index_output: U_String): Boolean; overload;
     function RNIC_Train_Stream(imgList: TAI_ImageList; param: PRNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): TMemoryStream64; overload;
-    // ImageMatrix data source
+    { ImageMatrix data source }
     function RNIC_Train(imgMat: TAI_ImageMatrix; param: PRNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): Boolean; overload;
     function RNIC_Train(imgMat: TAI_ImageMatrix; param: PRNIC_Train_Parameter; train_index_output: U_String): Boolean; overload;
     function RNIC_Train_Stream(imgMat: TAI_ImageMatrix; param: PRNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): TMemoryStream64; overload;
-    // LargeScale-ResNet-Image-Classifier training(gpu), crop size 227, max classifier 1000, direct input without XML swap dataset.
+    { LargeScale-ResNet-Image-Classifier training(gpu), crop size 227, max classifier 1000, direct input without XML swap dataset. }
     function RNIC_Train(LargeScale_: Boolean; RSeri: TRasterSerialized; imgMat: TAI_ImageMatrix; param: PRNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): Boolean; overload;
     function RNIC_Train(LargeScale_: Boolean; RSeri: TRasterSerialized; imgMat: TAI_ImageMatrix; param: PRNIC_Train_Parameter; train_index_output: U_String): Boolean; overload;
     function RNIC_Train_Stream(LargeScale_: Boolean; RSeri: TRasterSerialized; imgMat: TAI_ImageMatrix; param: PRNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): TMemoryStream64; overload;
-    // ResNet-Image-Classifier api(gpu), crop size 227, max classifier 1000
-    function RNIC_Open(train_file: U_String): TRNIC_Handle;
+    { ResNet-Image-Classifier api(gpu), crop size 227, max classifier 1000 }
+    function RNIC_Open(train_file: SystemString): TRNIC_Handle;
     function RNIC_Open_Stream(stream: TMemoryStream64): TRNIC_Handle; overload;
-    function RNIC_Open_Stream(train_file: U_String): TRNIC_Handle; overload;
+    function RNIC_Open_Stream(train_file: SystemString): TRNIC_Handle; overload;
     function RNIC_Close(var hnd: TRNIC_Handle): Boolean;
     function RNIC_Process(hnd: TRNIC_Handle; Raster: TMemoryRaster; num_crops: Integer): TLVec; overload;
     function RNIC_Process(hnd: TRNIC_Handle; Raster: TMemoryRaster): TLVec; overload;
@@ -1292,27 +1368,27 @@ type
     function RNIC_DebugInfo(hnd: TRNIC_Handle): U_String;
 {$ENDREGION 'ResNet-Image-Classifier'}
 {$REGION 'Large-ResNet-Image-Classifier'}
-    // Large-ResNet-Image-Classifier training(gpu), crop size 227, max classifier 10000, direct input without XML swap dataset.
+    { Large-ResNet-Image-Classifier training(gpu), crop size 227, max classifier 10000, direct input without XML swap dataset. }
     class function Init_LRNIC_Train_Parameter(train_sync_file, train_output: U_String): PRNIC_Train_Parameter;
     class procedure Free_LRNIC_Train_Parameter(param: PRNIC_Train_Parameter);
-    // data prototype
+    { data prototype }
     function LRNIC_Train(LargeScale_: Boolean; RSeri: TRasterSerialized; imgList: TMemoryRaster2DArray; param: PRNIC_Train_Parameter; Train_OutputIndex: TMemoryRasterList): Boolean; overload;
-    // ImageList data source
+    { ImageList data source }
     function LRNIC_Train(imgList: TAI_ImageList; param: PRNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): Boolean; overload;
     function LRNIC_Train(imgList: TAI_ImageList; param: PRNIC_Train_Parameter; train_index_output: U_String): Boolean; overload;
     function LRNIC_Train_Stream(imgList: TAI_ImageList; param: PRNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): TMemoryStream64; overload;
-    // ImageMatrix data source
+    { ImageMatrix data source }
     function LRNIC_Train(imgMat: TAI_ImageMatrix; param: PRNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): Boolean; overload;
     function LRNIC_Train(imgMat: TAI_ImageMatrix; param: PRNIC_Train_Parameter; train_index_output: U_String): Boolean; overload;
     function LRNIC_Train_Stream(imgMat: TAI_ImageMatrix; param: PRNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): TMemoryStream64; overload;
-    // LargeScale-Large-ResNet-Image-Classifier training(gpu), crop size 227, max classifier 1000, direct input without XML swap dataset.
+    { LargeScale-Large-ResNet-Image-Classifier training(gpu), crop size 227, max classifier 1000, direct input without XML swap dataset. }
     function LRNIC_Train(LargeScale_: Boolean; RSeri: TRasterSerialized; imgMat: TAI_ImageMatrix; param: PRNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): Boolean; overload;
     function LRNIC_Train(LargeScale_: Boolean; RSeri: TRasterSerialized; imgMat: TAI_ImageMatrix; param: PRNIC_Train_Parameter; train_index_output: U_String): Boolean; overload;
     function LRNIC_Train_Stream(LargeScale_: Boolean; RSeri: TRasterSerialized; imgMat: TAI_ImageMatrix; param: PRNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): TMemoryStream64; overload;
-    // Large-ResNet-Image-Classifier api(gpu), crop size 227, max classifier 10000
-    function LRNIC_Open(train_file: U_String): TLRNIC_Handle;
+    { Large-ResNet-Image-Classifier api(gpu), crop size 227, max classifier 10000 }
+    function LRNIC_Open(train_file: SystemString): TLRNIC_Handle;
     function LRNIC_Open_Stream(stream: TMemoryStream64): TLRNIC_Handle; overload;
-    function LRNIC_Open_Stream(train_file: U_String): TLRNIC_Handle; overload;
+    function LRNIC_Open_Stream(train_file: SystemString): TLRNIC_Handle; overload;
     function LRNIC_Close(var hnd: TLRNIC_Handle): Boolean;
     function LRNIC_Process(hnd: TLRNIC_Handle; Raster: TMemoryRaster; num_crops: Integer): TLVec; overload;
     function LRNIC_Process(hnd: TLRNIC_Handle; Raster: TMemoryRaster): TLVec; overload;
@@ -1353,27 +1429,27 @@ type
 
       create by qq600585, test passed. 2019/4
     *)
-    // Going Deeper with Convolutions net Image Classifier training(gpu), max classifier 10000, direct input without XML swap dataset.
+    { Going Deeper with Convolutions net Image Classifier training(gpu), max classifier 10000, direct input without XML swap dataset. }
     class function Init_GDCNIC_Train_Parameter(train_sync_file, train_output: U_String): PGDCNIC_Train_Parameter;
     class procedure Free_GDCNIC_Train_Parameter(param: PGDCNIC_Train_Parameter);
-    // data prototype
-    function GDCNIC_Train(LargeScale_: Boolean; RSeri: TRasterSerialized; imgList: TMemoryRaster2DArray; param: PGDCNIC_Train_Parameter; Train_OutputIndex: TMemoryRasterList): Boolean; overload;
-    // ImageList data source
-    function GDCNIC_Train(SS_width, SS_height: Integer; imgList: TAI_ImageList; param: PGDCNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): Boolean; overload;
-    function GDCNIC_Train(SS_width, SS_height: Integer; imgList: TAI_ImageList; param: PGDCNIC_Train_Parameter; train_index_output: U_String): Boolean; overload;
-    function GDCNIC_Train_Stream(SS_width, SS_height: Integer; imgList: TAI_ImageList; param: PGDCNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): TMemoryStream64; overload;
-    // ImageMatrix data source
-    function GDCNIC_Train(SS_width, SS_height: Integer; imgMat: TAI_ImageMatrix; param: PGDCNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): Boolean; overload;
-    function GDCNIC_Train(SS_width, SS_height: Integer; imgMat: TAI_ImageMatrix; param: PGDCNIC_Train_Parameter; train_index_output: U_String): Boolean; overload;
-    function GDCNIC_Train_Stream(SS_width, SS_height: Integer; imgMat: TAI_ImageMatrix; param: PGDCNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): TMemoryStream64; overload;
-    // LargeScale Going Deeper with Convolutions net Image Classifier training(gpu), max classifier 10000, direct input without XML swap dataset.
-    function GDCNIC_Train(LargeScale_: Boolean; RSeri: TRasterSerialized; SS_width, SS_height: Integer; imgMat: TAI_ImageMatrix; param: PGDCNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): Boolean; overload;
-    function GDCNIC_Train(LargeScale_: Boolean; RSeri: TRasterSerialized; SS_width, SS_height: Integer; imgMat: TAI_ImageMatrix; param: PGDCNIC_Train_Parameter; train_index_output: U_String): Boolean; overload;
-    function GDCNIC_Train_Stream(LargeScale_: Boolean; RSeri: TRasterSerialized; SS_width, SS_height: Integer; imgMat: TAI_ImageMatrix; param: PGDCNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): TMemoryStream64; overload;
-    // Going Deeper with Convolutions net Image Classifier api(gpu), max classifier 10000
-    function GDCNIC_Open(train_file: U_String): TGDCNIC_Handle;
+    { data prototype }
+    function GDCNIC_Train_(LargeScale_: Boolean; RSeri: TRasterSerialized; imgList: TMemoryRaster2DArray; param: PGDCNIC_Train_Parameter; Train_OutputIndex: TMemoryRasterList): Boolean; overload;
+    { ImageList data source }
+    function GDCNIC_Train(Snapshot_: Boolean; SS_width, SS_height: Integer; imgList: TAI_ImageList; param: PGDCNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): Boolean; overload;
+    function GDCNIC_Train(Snapshot_: Boolean; SS_width, SS_height: Integer; imgList: TAI_ImageList; param: PGDCNIC_Train_Parameter; train_index_output: U_String): Boolean; overload;
+    function GDCNIC_Train_Stream(Snapshot_: Boolean; SS_width, SS_height: Integer; imgList: TAI_ImageList; param: PGDCNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): TMemoryStream64; overload;
+    { ImageMatrix data source }
+    function GDCNIC_Train(Snapshot_: Boolean; SS_width, SS_height: Integer; imgMat: TAI_ImageMatrix; param: PGDCNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): Boolean; overload;
+    function GDCNIC_Train(Snapshot_: Boolean; SS_width, SS_height: Integer; imgMat: TAI_ImageMatrix; param: PGDCNIC_Train_Parameter; train_index_output: U_String): Boolean; overload;
+    function GDCNIC_Train_Stream(Snapshot_: Boolean; SS_width, SS_height: Integer; imgMat: TAI_ImageMatrix; param: PGDCNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): TMemoryStream64; overload;
+    { LargeScale Going Deeper with Convolutions net Image Classifier training(gpu), max classifier 10000, direct input without XML swap dataset. }
+    function GDCNIC_Train(Snapshot_, LargeScale_: Boolean; RSeri: TRasterSerialized; SS_width, SS_height: Integer; imgMat: TAI_ImageMatrix; param: PGDCNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): Boolean; overload;
+    function GDCNIC_Train(Snapshot_, LargeScale_: Boolean; RSeri: TRasterSerialized; SS_width, SS_height: Integer; imgMat: TAI_ImageMatrix; param: PGDCNIC_Train_Parameter; train_index_output: U_String): Boolean; overload;
+    function GDCNIC_Train_Stream(Snapshot_, LargeScale_: Boolean; RSeri: TRasterSerialized; SS_width, SS_height: Integer; imgMat: TAI_ImageMatrix; param: PGDCNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): TMemoryStream64; overload;
+    { Going Deeper with Convolutions net Image Classifier api(gpu), max classifier 10000 }
+    function GDCNIC_Open(train_file: SystemString): TGDCNIC_Handle;
     function GDCNIC_Open_Stream(stream: TMemoryStream64): TGDCNIC_Handle; overload;
-    function GDCNIC_Open_Stream(train_file: U_String): TGDCNIC_Handle; overload;
+    function GDCNIC_Open_Stream(train_file: SystemString): TGDCNIC_Handle; overload;
     function GDCNIC_Close(var hnd: TGDCNIC_Handle): Boolean;
     function GDCNIC_Process(hnd: TGDCNIC_Handle; SS_width, SS_height: Integer; Raster: TMemoryRaster): TLVec;
     function GDCNIC_DebugInfo(hnd: TGDCNIC_Handle): U_String;
@@ -1386,27 +1462,27 @@ type
       im extracting CNN net struct part, not text recognition!!
       create by qq600585, test passed. 2019/4
     *)
-    // Gradient-based net Image Classifier training(gpu), max classifier 10000, direct input without XML swap dataset.
+    { Gradient-based net Image Classifier training(gpu), max classifier 10000, direct input without XML swap dataset. }
     class function Init_GNIC_Train_Parameter(train_sync_file, train_output: U_String): PGNIC_Train_Parameter;
     class procedure Free_GNIC_Train_Parameter(param: PGNIC_Train_Parameter);
-    // data prototype
-    function GNIC_Train(LargeScale_: Boolean; RSeri: TRasterSerialized; imgList: TMemoryRaster2DArray; param: PGNIC_Train_Parameter; Train_OutputIndex: TMemoryRasterList): Boolean; overload;
-    // ImageList data source
-    function GNIC_Train(SS_width, SS_height: Integer; imgList: TAI_ImageList; param: PGNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): Boolean; overload;
-    function GNIC_Train(SS_width, SS_height: Integer; imgList: TAI_ImageList; param: PGNIC_Train_Parameter; train_index_output: U_String): Boolean; overload;
-    function GNIC_Train_Stream(SS_width, SS_height: Integer; imgList: TAI_ImageList; param: PGNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): TMemoryStream64; overload;
-    // ImageMatrix data source
-    function GNIC_Train(SS_width, SS_height: Integer; imgMat: TAI_ImageMatrix; param: PGNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): Boolean; overload;
-    function GNIC_Train(SS_width, SS_height: Integer; imgMat: TAI_ImageMatrix; param: PGNIC_Train_Parameter; train_index_output: U_String): Boolean; overload;
-    function GNIC_Train_Stream(SS_width, SS_height: Integer; imgMat: TAI_ImageMatrix; param: PGNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): TMemoryStream64; overload;
-    // LargeScale Gradient-based net Image Classifier training(gpu), max classifier 10000, direct input without XML swap dataset.
-    function GNIC_Train(LargeScale_: Boolean; RSeri: TRasterSerialized; SS_width, SS_height: Integer; imgMat: TAI_ImageMatrix; param: PGNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): Boolean; overload;
-    function GNIC_Train(LargeScale_: Boolean; RSeri: TRasterSerialized; SS_width, SS_height: Integer; imgMat: TAI_ImageMatrix; param: PGNIC_Train_Parameter; train_index_output: U_String): Boolean; overload;
-    function GNIC_Train_Stream(LargeScale_: Boolean; RSeri: TRasterSerialized; SS_width, SS_height: Integer; imgMat: TAI_ImageMatrix; param: PGNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): TMemoryStream64; overload;
-    // Gradient-based net Image Classifier api(gpu), max classifier 10000
-    function GNIC_Open(train_file: U_String): TGNIC_Handle;
+    { data prototype }
+    function GNIC_Train_(LargeScale_: Boolean; RSeri: TRasterSerialized; imgList: TMemoryRaster2DArray; param: PGNIC_Train_Parameter; Train_OutputIndex: TMemoryRasterList): Boolean; overload;
+    { ImageList data source }
+    function GNIC_Train(Snapshot_: Boolean; SS_width, SS_height: Integer; imgList: TAI_ImageList; param: PGNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): Boolean; overload;
+    function GNIC_Train(Snapshot_: Boolean; SS_width, SS_height: Integer; imgList: TAI_ImageList; param: PGNIC_Train_Parameter; train_index_output: U_String): Boolean; overload;
+    function GNIC_Train_Stream(Snapshot_: Boolean; SS_width, SS_height: Integer; imgList: TAI_ImageList; param: PGNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): TMemoryStream64; overload;
+    { ImageMatrix data source }
+    function GNIC_Train(Snapshot_: Boolean; SS_width, SS_height: Integer; imgMat: TAI_ImageMatrix; param: PGNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): Boolean; overload;
+    function GNIC_Train(Snapshot_: Boolean; SS_width, SS_height: Integer; imgMat: TAI_ImageMatrix; param: PGNIC_Train_Parameter; train_index_output: U_String): Boolean; overload;
+    function GNIC_Train_Stream(Snapshot_: Boolean; SS_width, SS_height: Integer; imgMat: TAI_ImageMatrix; param: PGNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): TMemoryStream64; overload;
+    { LargeScale Gradient-based net Image Classifier training(gpu), max classifier 10000, direct input without XML swap dataset. }
+    function GNIC_Train(Snapshot_, LargeScale_: Boolean; RSeri: TRasterSerialized; SS_width, SS_height: Integer; imgMat: TAI_ImageMatrix; param: PGNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): Boolean; overload;
+    function GNIC_Train(Snapshot_, LargeScale_: Boolean; RSeri: TRasterSerialized; SS_width, SS_height: Integer; imgMat: TAI_ImageMatrix; param: PGNIC_Train_Parameter; train_index_output: U_String): Boolean; overload;
+    function GNIC_Train_Stream(Snapshot_, LargeScale_: Boolean; RSeri: TRasterSerialized; SS_width, SS_height: Integer; imgMat: TAI_ImageMatrix; param: PGNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): TMemoryStream64; overload;
+    { Gradient-based net Image Classifier api(gpu), max classifier 10000 }
+    function GNIC_Open(train_file: SystemString): TGNIC_Handle;
     function GNIC_Open_Stream(stream: TMemoryStream64): TGNIC_Handle; overload;
-    function GNIC_Open_Stream(train_file: U_String): TGNIC_Handle; overload;
+    function GNIC_Open_Stream(train_file: SystemString): TGNIC_Handle; overload;
     function GNIC_Close(var hnd: TGNIC_Handle): Boolean;
     function GNIC_Process(hnd: TGNIC_Handle; SS_width, SS_height: Integer; Raster: TMemoryRaster): TLVec;
     function GNIC_DebugInfo(hnd: TGNIC_Handle): U_String;
@@ -1419,39 +1495,42 @@ type
       University of Freiburg, Germany
       ronneber@informatik.uni-freiburg.de
       WWW home page: http://lmb.informatik.uni-freiburg.de/
+
+      hint: Max Classifier num is 50
     *)
-    // segmantic segmentation
+    { segmantic segmentation }
     class function Init_SS_Train_Parameter(train_sync_file, train_output: U_String): PSS_Train_Parameter;
     class procedure Free_SS_Train_Parameter(param: PSS_Train_Parameter);
-    function SS_Train(LargeScale_: Boolean; RSeri: TRasterSerialized; imgList: TAI_ImageList; param: PSS_Train_Parameter; const colorPool: TSegmentationColorList): Boolean; overload;
-    function SS_Train(LargeScale_: Boolean; RSeri: TRasterSerialized; imgMat: TAI_ImageMatrix; param: PSS_Train_Parameter; const colorPool: TSegmentationColorList): Boolean; overload;
-    function SS_Train_Stream(imgList: TAI_ImageList; param: PSS_Train_Parameter; const colorPool: TSegmentationColorList): TMemoryStream64; overload;
-    function SS_Train_Stream(imgMat: TAI_ImageMatrix; param: PSS_Train_Parameter; const colorPool: TSegmentationColorList): TMemoryStream64; overload;
-    function SS_Open(train_file: U_String): TSS_Handle;
+    function SS_Train(LargeScale_: Boolean; RSeri: TRasterSerialized; imgList: TAI_ImageList; param: PSS_Train_Parameter; const colorPool: TSegmentationColorTable): Boolean; overload;
+    function SS_Train(LargeScale_: Boolean; RSeri: TRasterSerialized; imgMat: TAI_ImageMatrix; param: PSS_Train_Parameter; const colorPool: TSegmentationColorTable): Boolean; overload;
+    function SS_Train_Stream(imgList: TAI_ImageList; param: PSS_Train_Parameter; const colorPool: TSegmentationColorTable): TMemoryStream64; overload;
+    function SS_Train_Stream(imgMat: TAI_ImageMatrix; param: PSS_Train_Parameter; const colorPool: TSegmentationColorTable): TMemoryStream64; overload;
+    function SS_Open(train_file: SystemString): TSS_Handle;
     function SS_Open_Stream(stream: TMemoryStream64): TSS_Handle; overload;
-    function SS_Open_Stream(train_file: U_String): TSS_Handle; overload;
+    function SS_Open_Stream(train_file: SystemString): TSS_Handle; overload;
     function SS_Close(var hnd: TSS_Handle): Boolean;
     class function SS_TranslateColor(const c: WORD): TRColorEntry;
-    function SS_Process(hnd: TSS_Handle; InputRaster: TMemoryRaster; colorPool: TSegmentationColorList; SSToken: TPascalStringList): TMemoryRaster; overload;
-    function SS_Process(hnd: TSS_Handle; mat_hnd: TMatrix_Image_Handle; Width, Height: Integer; colorPool: TSegmentationColorList; SSToken: TPascalStringList): TMemoryRaster; overload;
-    procedure SS_ProcessAsync(hnd: TSS_Handle; SSInput: TMemoryRaster; colorPool: TSegmentationColorList;
+    function SS_Process(parallel_: Boolean; hnd: TSS_Handle; InputRaster: TMemoryRaster; colorPool: TSegmentationColorTable; SSTokenOutput: TPascalStringList): TMemoryRaster; overload;
+    function SS_Process(hnd: TSS_Handle; InputRaster: TMemoryRaster; colorPool: TSegmentationColorTable; SSTokenOutput: TPascalStringList): TMemoryRaster; overload;
+    function SS_Process(hnd: TSS_Handle; mat_hnd: TMatrix_Image_Handle; Width, Height: Integer; colorPool: TSegmentationColorTable; SSTokenOutput: TPascalStringList): TMemoryRaster; overload;
+    procedure SS_ProcessAsync(hnd: TSS_Handle; SSInput: TMemoryRaster; colorPool: TSegmentationColorTable;
       OnResultC: TSS_ProcessOnResultCall; OnResultM: TSS_ProcessOnResultMethod; OnResultP: TSS_ProcessOnResultProc); overload;
     function SS_DebugInfo(hnd: TSS_Handle): U_String;
 {$ENDREGION 'Convolutional Networks for Biomedical Image Segmentation'}
 {$REGION 'correlation tracker'}
-    // video tracker(cpu),multi tracker from TRectV2
+    { video tracker(cpu),multi tracker from TRectV2 }
     function Tracker_Open(mat_hnd: TMatrix_Image_Handle; const track_rect: TRectV2): TTracker_Handle; overload;
     function Tracker_Update(hnd: TTracker_Handle; mat_hnd: TMatrix_Image_Handle; var track_rect: TRectV2): Double; overload;
     function Tracker_Update_NoScale(hnd: TTracker_Handle; mat_hnd: TMatrix_Image_Handle; var track_rect: TRectV2): Double; overload;
-    // video tracker(cpu),single raster tracker from TRect
+    { video tracker(cpu),single raster tracker from TRect }
     function Tracker_Open(Raster: TMemoryRaster; const track_rect: TRect): TTracker_Handle; overload;
     function Tracker_Update(hnd: TTracker_Handle; Raster: TMemoryRaster; var track_rect: TRect): Double; overload;
     function Tracker_Update_NoScale(hnd: TTracker_Handle; Raster: TMemoryRaster; var track_rect: TRect): Double; overload;
-    // video tracker(cpu),single raster tracker from TRectV2
+    { video tracker(cpu),single raster tracker from TRectV2 }
     function Tracker_Open(Raster: TMemoryRaster; const track_rect: TRectV2): TTracker_Handle; overload;
     function Tracker_Update(hnd: TTracker_Handle; Raster: TMemoryRaster; var track_rect: TRectV2): Double; overload;
     function Tracker_Update_NoScale(hnd: TTracker_Handle; Raster: TMemoryRaster; var track_rect: TRectV2): Double; overload;
-    // close tracker handle
+    { close tracker handle }
     function Tracker_Close(var hnd: TTracker_Handle): Boolean;
 {$ENDREGION 'correlation tracker'}
 {$REGION 'OCR'}
@@ -1532,11 +1611,11 @@ type
   TSS_ResultProcessor = class
   private
     SSMatrix: array of WORD;
-    colorPool: TSegmentationColorList;
+    colorPool: TSegmentationColorTable;
 
     SSInput: TMemoryRaster;
     SSOutput: TMemoryRaster;
-    SSToken: TPascalStringList;
+    SSTokenOutput: TPascalStringList;
 
     OnResultC: TSS_ProcessOnResultCall;
     OnResultM: TSS_ProcessOnResultMethod;
@@ -1544,13 +1623,566 @@ type
 
     procedure DoFailed;
     procedure DoSuccessed;
-    procedure ThRun(ThSender: TComputeThread);
+    procedure ThRun(ThSender: TCompute);
   public
     constructor Create;
   end;
 {$ENDREGION 'AI Core'}
+{$REGION 'TAI_DNN_Thread'}
+
+  // AI parallel for GPU/MKL Platform
+  TAI_DNN_Thread = class(TCoreClassObject)
+  protected
+    FAI: TAI;
+    FThread: TCompute;
+    FDevice: Integer;
+    FThreadPost: TThreadPost;
+    FActivted: TAtomBool;
+    FRuning: TAtomBool;
+    FThreadInfo: SystemString;
+    FPSP: TGeoFloat;
+    FMaxPSP: TGeoFloat;
+    FCPUThreadCritical: Integer;
+    FGPUPerformanceCritical: Integer;
+    FName: SystemString;
+    FCustomObject: TCoreClassObject;
+    FCustomData: Pointer;
+    procedure Run_DNN_Thread(Sender: TCompute);
+    procedure ThreadFree; virtual;
+    function GetTaskNum: Integer;
+  public
+    constructor Create; virtual;
+    destructor Destroy; override;
+    class function Build(Owner: TAI_DNN_ThreadPool; AI_LIB_P: PAI_EntryAPI; Device_: Integer; class_: TAI_DNN_Thread_Class): TAI_DNN_Thread; overload;
+    class function Build(Owner: TAI_DNN_ThreadPool; Device_: Integer; class_: TAI_DNN_Thread_Class): TAI_DNN_Thread; overload;
+    procedure CheckGPUPerformanceCritical; overload;
+    function CheckGPUPerformanceCritical(m: TTimeTick): Boolean; overload;
+    function GetCPUAsyncThreadNum: Integer;
+    property TaskNum: Integer read GetTaskNum;
+    function Busy: Boolean; virtual;
+    property Device: Integer read FDevice;
+    property AI: TAI read FAI;
+    property ThreadInfo: SystemString read FThreadInfo;
+    property PSP: TGeoFloat read FPSP;
+    property MaxPSP: TGeoFloat read FMaxPSP;
+    property CPUThreadCritical: Integer read FCPUThreadCritical write FCPUThreadCritical;
+    property GPUPerformanceCritical: Integer read FGPUPerformanceCritical write FGPUPerformanceCritical;
+    property Name: SystemString read FName write FName;
+    property CustomObject: TCoreClassObject read FCustomObject write FCustomObject;
+    property CustomData: Pointer read FCustomData write FCustomData;
+  end;
+
+  TAI_DNN_ThreadPool_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TAI_DNN_Thread>;
+
+  TAI_DNN_ThreadPool = class(TAI_DNN_ThreadPool_Decl)
+  private
+    FCritical: TCritical;
+    FNext_DNNThreadID: Integer;
+    FQueueOptimized: Boolean;
+  public
+    constructor Create;
+    destructor Destroy; override;
+    procedure Remove(obj: TAI_DNN_Thread);
+    procedure Delete(index: Integer);
+    procedure Clear;
+
+    function Next_DNN_Thread: TAI_DNN_Thread;
+    function MinLoad_DNN_Thread: TAI_DNN_Thread;
+    function IDLE_DNN_Thread: TAI_DNN_Thread;
+    procedure BuildDeviceThread(AI_LIB_P: PAI_EntryAPI; Device_, ThNum_: Integer; class_: TAI_DNN_Thread_Class); overload;
+    procedure BuildDeviceThread(Device_, ThNum_: Integer; class_: TAI_DNN_Thread_Class); overload;
+    procedure BuildPerDeviceThread(AI_LIB_P: PAI_EntryAPI; ThNum_: Integer; class_: TAI_DNN_Thread_Class); overload;
+    procedure BuildPerDeviceThread(ThNum_: Integer; class_: TAI_DNN_Thread_Class); overload;
+    procedure BuildPerDeviceThread(class_: TAI_DNN_Thread_Class); overload;
+    function GetMinLoad_DNN_Thread_TaskNum: Integer;
+    function GetTaskNum: Integer;
+    property TaskNum: Integer read GetTaskNum;
+    function Busy: Boolean;
+    function PSP: TGeoFloat;
+    function MaxPSP: TGeoFloat;
+    procedure Wait;
+    function StateInfo: U_String;
+    property QueueOptimized: Boolean read FQueueOptimized write FQueueOptimized;
+  end;
+{$ENDREGION 'TAI_DNN_Thread'}
+{$REGION 'TAI_DNN_Thread_Metric'}
+
+  TAI_DNN_Thread_Metric_AsyncProcess_C = procedure(ThSender: TAI_DNN_Thread_Metric; UserData: Pointer; Input: TMemoryRaster; output: TLVec);
+  TAI_DNN_Thread_Metric_AsyncProcess_M = procedure(ThSender: TAI_DNN_Thread_Metric; UserData: Pointer; Input: TMemoryRaster; output: TLVec) of object;
+{$IFDEF FPC}
+  TAI_DNN_Thread_Metric_AsyncProcess_P = procedure(ThSender: TAI_DNN_Thread_Metric; UserData: Pointer; Input: TMemoryRaster; output: TLVec) is nested;
+{$ELSE FPC}
+  TAI_DNN_Thread_Metric_AsyncProcess_P = reference to procedure(ThSender: TAI_DNN_Thread_Metric; UserData: Pointer; Input: TMemoryRaster; output: TLVec);
+{$ENDIF FPC}
+
+  TAI_DNN_Thread_Metric = class(TAI_DNN_Thread)
+  private type
+    TCMD_SyncProcess = record
+      Done: TAtomBool;
+      Input: TMemoryRaster;
+      output: TLVec;
+    end;
+
+    TCMD_AsyncProcess = record
+      UserData: Pointer;
+      Input: TMemoryRaster;
+      FreeInput: Boolean;
+      OnResult_C: TAI_DNN_Thread_Metric_AsyncProcess_C;
+      OnResult_M: TAI_DNN_Thread_Metric_AsyncProcess_M;
+      OnResult_P: TAI_DNN_Thread_Metric_AsyncProcess_P;
+      output: TLVec;
+    end;
+
+    PCMD_SyncProcess = ^TCMD_SyncProcess;
+    PCMD_AsyncProcess = ^TCMD_AsyncProcess;
+  private
+    MetricHnd: TMetric_Handle;
+    FCPUAsyncThreadNum: Integer;
+    procedure ThreadFree; override;
+    procedure CMD_Open(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
+    procedure CMD_OpenShareFace();
+    procedure CMD_Open_Stream(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
+    procedure CMD_SyncProcess(data: Pointer);
+    procedure OnComputeThreadResult(ThSender: TCompute);
+    procedure CMD_AsyncProcess(data: Pointer);
+  public
+    constructor Create; override;
+    procedure Open(train_file: SystemString);
+    procedure Open_ShareFace();
+    procedure Open_Stream(stream: TMemoryStream64);
+    function Process(Input: TMemoryRaster): TLVec;
+    procedure ProcessC(UserData: Pointer; Input: TMemoryRaster; FreeInput: Boolean; OnResult: TAI_DNN_Thread_Metric_AsyncProcess_C);
+    procedure ProcessM(UserData: Pointer; Input: TMemoryRaster; FreeInput: Boolean; OnResult: TAI_DNN_Thread_Metric_AsyncProcess_M);
+    procedure ProcessP(UserData: Pointer; Input: TMemoryRaster; FreeInput: Boolean; OnResult: TAI_DNN_Thread_Metric_AsyncProcess_P);
+    function Busy(): Boolean; override;
+    property CPUAsyncThreadNum: Integer read FCPUAsyncThreadNum;
+  end;
+{$ENDREGION 'TAI_DNN_Thread_Metric'}
+{$REGION 'TAI_DNN_Thread_LMetric'}
+
+  TAI_DNN_Thread_LMetric_AsyncProcess_C = procedure(ThSender: TAI_DNN_Thread_LMetric; UserData: Pointer; Input: TMemoryRaster; output: TLVec);
+  TAI_DNN_Thread_LMetric_AsyncProcess_M = procedure(ThSender: TAI_DNN_Thread_LMetric; UserData: Pointer; Input: TMemoryRaster; output: TLVec) of object;
+{$IFDEF FPC}
+  TAI_DNN_Thread_LMetric_AsyncProcess_P = procedure(ThSender: TAI_DNN_Thread_LMetric; UserData: Pointer; Input: TMemoryRaster; output: TLVec) is nested;
+{$ELSE FPC}
+  TAI_DNN_Thread_LMetric_AsyncProcess_P = reference to procedure(ThSender: TAI_DNN_Thread_LMetric; UserData: Pointer; Input: TMemoryRaster; output: TLVec);
+{$ENDIF FPC}
+
+  TAI_DNN_Thread_LMetric = class(TAI_DNN_Thread)
+  private type
+    TCMD_SyncProcess = record
+      Done: TAtomBool;
+      Input: TMemoryRaster;
+      output: TLVec;
+    end;
+
+    TCMD_AsyncProcess = record
+      UserData: Pointer;
+      Input: TMemoryRaster;
+      FreeInput: Boolean;
+      OnResult_C: TAI_DNN_Thread_LMetric_AsyncProcess_C;
+      OnResult_M: TAI_DNN_Thread_LMetric_AsyncProcess_M;
+      OnResult_P: TAI_DNN_Thread_LMetric_AsyncProcess_P;
+      output: TLVec;
+    end;
+
+    PCMD_SyncProcess = ^TCMD_SyncProcess;
+    PCMD_AsyncProcess = ^TCMD_AsyncProcess;
+  private
+    LMetricHnd: TLMetric_Handle;
+    FCPUAsyncThreadNum: Integer;
+    procedure ThreadFree; override;
+    procedure CMD_Open(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
+    procedure CMD_Open_Stream(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
+    procedure CMD_SyncProcess(data: Pointer);
+    procedure OnComputeThreadResult(ThSender: TCompute);
+    procedure CMD_AsyncProcess(data: Pointer);
+  public
+    constructor Create; override;
+    procedure Open(train_file: SystemString);
+    procedure Open_Stream(stream: TMemoryStream64);
+    function Process(Input: TMemoryRaster): TLVec;
+    procedure ProcessC(UserData: Pointer; Input: TMemoryRaster; FreeInput: Boolean; OnResult: TAI_DNN_Thread_LMetric_AsyncProcess_C);
+    procedure ProcessM(UserData: Pointer; Input: TMemoryRaster; FreeInput: Boolean; OnResult: TAI_DNN_Thread_LMetric_AsyncProcess_M);
+    procedure ProcessP(UserData: Pointer; Input: TMemoryRaster; FreeInput: Boolean; OnResult: TAI_DNN_Thread_LMetric_AsyncProcess_P);
+    function Busy(): Boolean; override;
+    property CPUAsyncThreadNum: Integer read FCPUAsyncThreadNum;
+  end;
+{$ENDREGION 'TAI_DNN_Thread_LMetric'}
+{$REGION 'TAI_DNN_Thread_MMOD6L'}
+
+  TAI_DNN_Thread_MMOD6L_AsyncProcess_C = procedure(ThSender: TAI_DNN_Thread_MMOD6L; UserData: Pointer; Input: TMemoryRaster; output: TMMOD_Desc);
+  TAI_DNN_Thread_MMOD6L_AsyncProcess_M = procedure(ThSender: TAI_DNN_Thread_MMOD6L; UserData: Pointer; Input: TMemoryRaster; output: TMMOD_Desc) of object;
+{$IFDEF FPC}
+  TAI_DNN_Thread_MMOD6L_AsyncProcess_P = procedure(ThSender: TAI_DNN_Thread_MMOD6L; UserData: Pointer; Input: TMemoryRaster; output: TMMOD_Desc) is nested;
+{$ELSE FPC}
+  TAI_DNN_Thread_MMOD6L_AsyncProcess_P = reference to procedure(ThSender: TAI_DNN_Thread_MMOD6L; UserData: Pointer; Input: TMemoryRaster; output: TMMOD_Desc);
+{$ENDIF FPC}
+
+  TAI_DNN_Thread_MMOD6L = class(TAI_DNN_Thread)
+  private type
+    TCMD_SyncProcess = record
+      Done: TAtomBool;
+      Input: TMemoryRaster;
+      output: TMMOD_Desc;
+    end;
+
+    TCMD_AsyncProcess = record
+      UserData: Pointer;
+      Input: TMemoryRaster;
+      FreeInput: Boolean;
+      OnResult_C: TAI_DNN_Thread_MMOD6L_AsyncProcess_C;
+      OnResult_M: TAI_DNN_Thread_MMOD6L_AsyncProcess_M;
+      OnResult_P: TAI_DNN_Thread_MMOD6L_AsyncProcess_P;
+      output: TMMOD_Desc;
+    end;
+
+    PCMD_SyncProcess = ^TCMD_SyncProcess;
+    PCMD_AsyncProcess = ^TCMD_AsyncProcess;
+  private
+    MMOD6LHnd: TMMOD6L_Handle;
+    FCPUAsyncThreadNum: Integer;
+    procedure ThreadFree; override;
+    procedure CMD_Open(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
+    procedure CMD_OpenFace();
+    procedure CMD_Open_Stream(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
+    procedure CMD_SyncProcess(data: Pointer);
+    procedure OnComputeThreadResult(ThSender: TCompute);
+    procedure CMD_AsyncProcess(data: Pointer);
+  public
+    constructor Create; override;
+    procedure Open(train_file: SystemString);
+    procedure Open_Face();
+    procedure Open_Stream(stream: TMemoryStream64);
+    function Process(Input: TMemoryRaster): TMMOD_Desc;
+    procedure ProcessC(UserData: Pointer; Input: TMemoryRaster; FreeInput: Boolean; OnResult: TAI_DNN_Thread_MMOD6L_AsyncProcess_C);
+    procedure ProcessM(UserData: Pointer; Input: TMemoryRaster; FreeInput: Boolean; OnResult: TAI_DNN_Thread_MMOD6L_AsyncProcess_M);
+    procedure ProcessP(UserData: Pointer; Input: TMemoryRaster; FreeInput: Boolean; OnResult: TAI_DNN_Thread_MMOD6L_AsyncProcess_P);
+    function Busy(): Boolean; override;
+    property CPUAsyncThreadNum: Integer read FCPUAsyncThreadNum;
+  end;
+{$ENDREGION 'TAI_DNN_Thread_MMOD6L'}
+{$REGION 'TAI_DNN_Thread_MMOD3L'}
+
+  TAI_DNN_Thread_MMOD3L_AsyncProcess_C = procedure(ThSender: TAI_DNN_Thread_MMOD3L; UserData: Pointer; Input: TMemoryRaster; output: TMMOD_Desc);
+  TAI_DNN_Thread_MMOD3L_AsyncProcess_M = procedure(ThSender: TAI_DNN_Thread_MMOD3L; UserData: Pointer; Input: TMemoryRaster; output: TMMOD_Desc) of object;
+{$IFDEF FPC}
+  TAI_DNN_Thread_MMOD3L_AsyncProcess_P = procedure(ThSender: TAI_DNN_Thread_MMOD3L; UserData: Pointer; Input: TMemoryRaster; output: TMMOD_Desc) is nested;
+{$ELSE FPC}
+  TAI_DNN_Thread_MMOD3L_AsyncProcess_P = reference to procedure(ThSender: TAI_DNN_Thread_MMOD3L; UserData: Pointer; Input: TMemoryRaster; output: TMMOD_Desc);
+{$ENDIF FPC}
+
+  TAI_DNN_Thread_MMOD3L = class(TAI_DNN_Thread)
+  private type
+    TCMD_SyncProcess = record
+      Done: TAtomBool;
+      Input: TMemoryRaster;
+      output: TMMOD_Desc;
+    end;
+
+    TCMD_AsyncProcess = record
+      UserData: Pointer;
+      Input: TMemoryRaster;
+      FreeInput: Boolean;
+      OnResult_C: TAI_DNN_Thread_MMOD3L_AsyncProcess_C;
+      OnResult_M: TAI_DNN_Thread_MMOD3L_AsyncProcess_M;
+      OnResult_P: TAI_DNN_Thread_MMOD3L_AsyncProcess_P;
+      output: TMMOD_Desc;
+    end;
+
+    PCMD_SyncProcess = ^TCMD_SyncProcess;
+    PCMD_AsyncProcess = ^TCMD_AsyncProcess;
+  private
+    MMOD3LHnd: TMMOD3L_Handle;
+    FCPUAsyncThreadNum: Integer;
+    procedure ThreadFree; override;
+    procedure CMD_Open(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
+    procedure CMD_Open_Stream(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
+    procedure CMD_SyncProcess(data: Pointer);
+    procedure OnComputeThreadResult(ThSender: TCompute);
+    procedure CMD_AsyncProcess(data: Pointer);
+  public
+    constructor Create; override;
+    procedure Open(train_file: SystemString);
+    procedure Open_Stream(stream: TMemoryStream64);
+    function Process(Input: TMemoryRaster): TMMOD_Desc;
+    procedure ProcessC(UserData: Pointer; Input: TMemoryRaster; FreeInput: Boolean; OnResult: TAI_DNN_Thread_MMOD3L_AsyncProcess_C);
+    procedure ProcessM(UserData: Pointer; Input: TMemoryRaster; FreeInput: Boolean; OnResult: TAI_DNN_Thread_MMOD3L_AsyncProcess_M);
+    procedure ProcessP(UserData: Pointer; Input: TMemoryRaster; FreeInput: Boolean; OnResult: TAI_DNN_Thread_MMOD3L_AsyncProcess_P);
+    function Busy(): Boolean; override;
+    property CPUAsyncThreadNum: Integer read FCPUAsyncThreadNum;
+  end;
+{$ENDREGION 'TAI_DNN_Thread_MMOD3L'}
+{$REGION 'TAI_DNN_Thread_RNIC'}
+
+  TAI_DNN_Thread_RNIC_AsyncProcess_C = procedure(ThSender: TAI_DNN_Thread_RNIC; UserData: Pointer; Input: TMemoryRaster; output: TLVec);
+  TAI_DNN_Thread_RNIC_AsyncProcess_M = procedure(ThSender: TAI_DNN_Thread_RNIC; UserData: Pointer; Input: TMemoryRaster; output: TLVec) of object;
+{$IFDEF FPC}
+  TAI_DNN_Thread_RNIC_AsyncProcess_P = procedure(ThSender: TAI_DNN_Thread_RNIC; UserData: Pointer; Input: TMemoryRaster; output: TLVec) is nested;
+{$ELSE FPC}
+  TAI_DNN_Thread_RNIC_AsyncProcess_P = reference to procedure(ThSender: TAI_DNN_Thread_RNIC; UserData: Pointer; Input: TMemoryRaster; output: TLVec);
+{$ENDIF FPC}
+
+  TAI_DNN_Thread_RNIC = class(TAI_DNN_Thread)
+  private type
+    TCMD_SyncProcess = record
+      Done: TAtomBool;
+      Input: TMemoryRaster;
+      num_crops: Integer;
+      output: TLVec;
+    end;
+
+    TCMD_AsyncProcess = record
+      UserData: Pointer;
+      Input: TMemoryRaster;
+      num_crops: Integer;
+      FreeInput: Boolean;
+      OnResult_C: TAI_DNN_Thread_RNIC_AsyncProcess_C;
+      OnResult_M: TAI_DNN_Thread_RNIC_AsyncProcess_M;
+      OnResult_P: TAI_DNN_Thread_RNIC_AsyncProcess_P;
+      output: TLVec;
+    end;
+
+    PCMD_SyncProcess = ^TCMD_SyncProcess;
+    PCMD_AsyncProcess = ^TCMD_AsyncProcess;
+  private
+    RNICHnd: TRNIC_Handle;
+    FCPUAsyncThreadNum: Integer;
+    procedure ThreadFree; override;
+    procedure CMD_Open(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
+    procedure CMD_Open_Stream(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
+    procedure CMD_SyncProcess(data: Pointer);
+    procedure OnComputeThreadResult(ThSender: TCompute);
+    procedure CMD_AsyncProcess(data: Pointer);
+  public
+    constructor Create; override;
+    procedure Open(train_file: SystemString);
+    procedure Open_Stream(stream: TMemoryStream64);
+    function Process(Input: TMemoryRaster; num_crops: Integer): TLVec;
+    procedure ProcessC(UserData: Pointer; Input: TMemoryRaster; num_crops: Integer; FreeInput: Boolean; OnResult: TAI_DNN_Thread_RNIC_AsyncProcess_C);
+    procedure ProcessM(UserData: Pointer; Input: TMemoryRaster; num_crops: Integer; FreeInput: Boolean; OnResult: TAI_DNN_Thread_RNIC_AsyncProcess_M);
+    procedure ProcessP(UserData: Pointer; Input: TMemoryRaster; num_crops: Integer; FreeInput: Boolean; OnResult: TAI_DNN_Thread_RNIC_AsyncProcess_P);
+    function Busy(): Boolean; override;
+    property CPUAsyncThreadNum: Integer read FCPUAsyncThreadNum;
+  end;
+{$ENDREGION 'TAI_DNN_Thread_RNIC'}
+{$REGION 'TAI_DNN_Thread_LRNIC'}
+
+  TAI_DNN_Thread_LRNIC_AsyncProcess_C = procedure(ThSender: TAI_DNN_Thread_LRNIC; UserData: Pointer; Input: TMemoryRaster; output: TLVec);
+  TAI_DNN_Thread_LRNIC_AsyncProcess_M = procedure(ThSender: TAI_DNN_Thread_LRNIC; UserData: Pointer; Input: TMemoryRaster; output: TLVec) of object;
+{$IFDEF FPC}
+  TAI_DNN_Thread_LRNIC_AsyncProcess_P = procedure(ThSender: TAI_DNN_Thread_LRNIC; UserData: Pointer; Input: TMemoryRaster; output: TLVec) is nested;
+{$ELSE FPC}
+  TAI_DNN_Thread_LRNIC_AsyncProcess_P = reference to procedure(ThSender: TAI_DNN_Thread_LRNIC; UserData: Pointer; Input: TMemoryRaster; output: TLVec);
+{$ENDIF FPC}
+
+  TAI_DNN_Thread_LRNIC = class(TAI_DNN_Thread)
+  private type
+    TCMD_SyncProcess = record
+      Done: TAtomBool;
+      Input: TMemoryRaster;
+      num_crops: Integer;
+      output: TLVec;
+    end;
+
+    TCMD_AsyncProcess = record
+      UserData: Pointer;
+      Input: TMemoryRaster;
+      num_crops: Integer;
+      FreeInput: Boolean;
+      OnResult_C: TAI_DNN_Thread_LRNIC_AsyncProcess_C;
+      OnResult_M: TAI_DNN_Thread_LRNIC_AsyncProcess_M;
+      OnResult_P: TAI_DNN_Thread_LRNIC_AsyncProcess_P;
+      output: TLVec;
+    end;
+
+    PCMD_SyncProcess = ^TCMD_SyncProcess;
+    PCMD_AsyncProcess = ^TCMD_AsyncProcess;
+  private
+    LRNICHnd: TLRNIC_Handle;
+    FCPUAsyncThreadNum: Integer;
+    procedure ThreadFree; override;
+    procedure CMD_Open(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
+    procedure CMD_Open_Stream(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
+    procedure CMD_SyncProcess(data: Pointer);
+    procedure OnComputeThreadResult(ThSender: TCompute);
+    procedure CMD_AsyncProcess(data: Pointer);
+  public
+    constructor Create; override;
+    procedure Open(train_file: SystemString);
+    procedure Open_Stream(stream: TMemoryStream64);
+    function Process(Input: TMemoryRaster; num_crops: Integer): TLVec;
+    procedure ProcessC(UserData: Pointer; Input: TMemoryRaster; num_crops: Integer; FreeInput: Boolean; OnResult: TAI_DNN_Thread_LRNIC_AsyncProcess_C);
+    procedure ProcessM(UserData: Pointer; Input: TMemoryRaster; num_crops: Integer; FreeInput: Boolean; OnResult: TAI_DNN_Thread_LRNIC_AsyncProcess_M);
+    procedure ProcessP(UserData: Pointer; Input: TMemoryRaster; num_crops: Integer; FreeInput: Boolean; OnResult: TAI_DNN_Thread_LRNIC_AsyncProcess_P);
+    function Busy(): Boolean; override;
+    property CPUAsyncThreadNum: Integer read FCPUAsyncThreadNum;
+  end;
+{$ENDREGION 'TAI_DNN_Thread_LRNIC'}
+{$REGION 'TAI_DNN_Thread_GDCNIC'}
+
+  TAI_DNN_Thread_GDCNIC_AsyncProcess_C = procedure(ThSender: TAI_DNN_Thread_GDCNIC; UserData: Pointer; Input: TMemoryRaster; output: TLVec);
+  TAI_DNN_Thread_GDCNIC_AsyncProcess_M = procedure(ThSender: TAI_DNN_Thread_GDCNIC; UserData: Pointer; Input: TMemoryRaster; output: TLVec) of object;
+{$IFDEF FPC}
+  TAI_DNN_Thread_GDCNIC_AsyncProcess_P = procedure(ThSender: TAI_DNN_Thread_GDCNIC; UserData: Pointer; Input: TMemoryRaster; output: TLVec) is nested;
+{$ELSE FPC}
+  TAI_DNN_Thread_GDCNIC_AsyncProcess_P = reference to procedure(ThSender: TAI_DNN_Thread_GDCNIC; UserData: Pointer; Input: TMemoryRaster; output: TLVec);
+{$ENDIF FPC}
+
+  TAI_DNN_Thread_GDCNIC = class(TAI_DNN_Thread)
+  private type
+    TCMD_SyncProcess = record
+      Done: TAtomBool;
+      Input: TMemoryRaster;
+      SS_width, SS_height: Integer;
+      output: TLVec;
+    end;
+
+    TCMD_AsyncProcess = record
+      UserData: Pointer;
+      Input: TMemoryRaster;
+      SS_width, SS_height: Integer;
+      FreeInput: Boolean;
+      OnResult_C: TAI_DNN_Thread_GDCNIC_AsyncProcess_C;
+      OnResult_M: TAI_DNN_Thread_GDCNIC_AsyncProcess_M;
+      OnResult_P: TAI_DNN_Thread_GDCNIC_AsyncProcess_P;
+      output: TLVec;
+    end;
+
+    PCMD_SyncProcess = ^TCMD_SyncProcess;
+    PCMD_AsyncProcess = ^TCMD_AsyncProcess;
+  private
+    GDCNICHnd: TGDCNIC_Handle;
+    FCPUAsyncThreadNum: Integer;
+    procedure ThreadFree; override;
+    procedure CMD_Open(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
+    procedure CMD_Open_Stream(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
+    procedure CMD_SyncProcess(data: Pointer);
+    procedure OnComputeThreadResult(ThSender: TCompute);
+    procedure CMD_AsyncProcess(data: Pointer);
+  public
+    constructor Create; override;
+    procedure Open(train_file: SystemString);
+    procedure Open_Stream(stream: TMemoryStream64);
+    function Process(Input: TMemoryRaster; SS_width, SS_height: Integer): TLVec;
+    procedure ProcessC(UserData: Pointer; Input: TMemoryRaster; SS_width, SS_height: Integer; FreeInput: Boolean; OnResult: TAI_DNN_Thread_GDCNIC_AsyncProcess_C);
+    procedure ProcessM(UserData: Pointer; Input: TMemoryRaster; SS_width, SS_height: Integer; FreeInput: Boolean; OnResult: TAI_DNN_Thread_GDCNIC_AsyncProcess_M);
+    procedure ProcessP(UserData: Pointer; Input: TMemoryRaster; SS_width, SS_height: Integer; FreeInput: Boolean; OnResult: TAI_DNN_Thread_GDCNIC_AsyncProcess_P);
+    function Busy(): Boolean; override;
+    property CPUAsyncThreadNum: Integer read FCPUAsyncThreadNum;
+  end;
+{$ENDREGION 'TAI_DNN_Thread_GDCNIC'}
+{$REGION 'TAI_DNN_Thread_GNIC'}
+
+  TAI_DNN_Thread_GNIC_AsyncProcess_C = procedure(ThSender: TAI_DNN_Thread_GNIC; UserData: Pointer; Input: TMemoryRaster; output: TLVec);
+  TAI_DNN_Thread_GNIC_AsyncProcess_M = procedure(ThSender: TAI_DNN_Thread_GNIC; UserData: Pointer; Input: TMemoryRaster; output: TLVec) of object;
+{$IFDEF FPC}
+  TAI_DNN_Thread_GNIC_AsyncProcess_P = procedure(ThSender: TAI_DNN_Thread_GNIC; UserData: Pointer; Input: TMemoryRaster; output: TLVec) is nested;
+{$ELSE FPC}
+  TAI_DNN_Thread_GNIC_AsyncProcess_P = reference to procedure(ThSender: TAI_DNN_Thread_GNIC; UserData: Pointer; Input: TMemoryRaster; output: TLVec);
+{$ENDIF FPC}
+
+  TAI_DNN_Thread_GNIC = class(TAI_DNN_Thread)
+  private type
+    TCMD_SyncProcess = record
+      Done: TAtomBool;
+      Input: TMemoryRaster;
+      SS_width, SS_height: Integer;
+      output: TLVec;
+    end;
+
+    TCMD_AsyncProcess = record
+      UserData: Pointer;
+      Input: TMemoryRaster;
+      SS_width, SS_height: Integer;
+      FreeInput: Boolean;
+      OnResult_C: TAI_DNN_Thread_GNIC_AsyncProcess_C;
+      OnResult_M: TAI_DNN_Thread_GNIC_AsyncProcess_M;
+      OnResult_P: TAI_DNN_Thread_GNIC_AsyncProcess_P;
+      output: TLVec;
+    end;
+
+    PCMD_SyncProcess = ^TCMD_SyncProcess;
+    PCMD_AsyncProcess = ^TCMD_AsyncProcess;
+  private
+    GNICHnd: TGNIC_Handle;
+    FCPUAsyncThreadNum: Integer;
+    procedure ThreadFree; override;
+    procedure CMD_Open(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
+    procedure CMD_Open_Stream(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
+    procedure CMD_SyncProcess(data: Pointer);
+    procedure OnComputeThreadResult(ThSender: TCompute);
+    procedure CMD_AsyncProcess(data: Pointer);
+  public
+    constructor Create; override;
+    procedure Open(train_file: SystemString);
+    procedure Open_Stream(stream: TMemoryStream64);
+    function Process(Input: TMemoryRaster; SS_width, SS_height: Integer): TLVec;
+    procedure ProcessC(UserData: Pointer; Input: TMemoryRaster; SS_width, SS_height: Integer; FreeInput: Boolean; OnResult: TAI_DNN_Thread_GNIC_AsyncProcess_C);
+    procedure ProcessM(UserData: Pointer; Input: TMemoryRaster; SS_width, SS_height: Integer; FreeInput: Boolean; OnResult: TAI_DNN_Thread_GNIC_AsyncProcess_M);
+    procedure ProcessP(UserData: Pointer; Input: TMemoryRaster; SS_width, SS_height: Integer; FreeInput: Boolean; OnResult: TAI_DNN_Thread_GNIC_AsyncProcess_P);
+    function Busy(): Boolean; override;
+    property CPUAsyncThreadNum: Integer read FCPUAsyncThreadNum;
+  end;
+{$ENDREGION 'TAI_DNN_Thread_GNIC'}
+{$REGION 'TAI_DNN_Thread_SS'}
+
+  TAI_DNN_Thread_SS_AsyncProcess_C = procedure(ThSender: TAI_DNN_Thread_SS; UserData: Pointer; Input: TMemoryRaster; SSTokenOutput: TPascalStringList; output: TMemoryRaster);
+  TAI_DNN_Thread_SS_AsyncProcess_M = procedure(ThSender: TAI_DNN_Thread_SS; UserData: Pointer; Input: TMemoryRaster; SSTokenOutput: TPascalStringList; output: TMemoryRaster) of object;
+{$IFDEF FPC}
+  TAI_DNN_Thread_SS_AsyncProcess_P = procedure(ThSender: TAI_DNN_Thread_SS; UserData: Pointer; Input: TMemoryRaster; SSTokenOutput: TPascalStringList; output: TMemoryRaster) is nested;
+{$ELSE FPC}
+  TAI_DNN_Thread_SS_AsyncProcess_P = reference to procedure(ThSender: TAI_DNN_Thread_SS; UserData: Pointer; Input: TMemoryRaster; SSTokenOutput: TPascalStringList; output: TMemoryRaster);
+{$ENDIF FPC}
+
+  TAI_DNN_Thread_SS = class(TAI_DNN_Thread)
+  private type
+    TCMD_SyncProcess = record
+      Done: TAtomBool;
+      Input: TMemoryRaster;
+      colorPool: TSegmentationColorTable;
+      SSTokenOutput: TPascalStringList;
+      output: TMemoryRaster;
+    end;
+
+    TCMD_AsyncProcess = record
+      UserData: Pointer;
+      Input: TMemoryRaster;
+      colorPool: TSegmentationColorTable;
+      FreeInput: Boolean;
+      OnResult_C: TAI_DNN_Thread_SS_AsyncProcess_C;
+      OnResult_M: TAI_DNN_Thread_SS_AsyncProcess_M;
+      OnResult_P: TAI_DNN_Thread_SS_AsyncProcess_P;
+      output: TMemoryRaster;
+      SSTokenOutput: TPascalStringList;
+    end;
+
+    PCMD_SyncProcess = ^TCMD_SyncProcess;
+    PCMD_AsyncProcess = ^TCMD_AsyncProcess;
+  private
+    SSHnd: TSS_Handle;
+    FCPUAsyncThreadNum: Integer;
+    procedure ThreadFree; override;
+    procedure CMD_Open(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
+    procedure CMD_Open_Stream(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
+    procedure CMD_SyncProcess(data: Pointer);
+    procedure OnComputeThreadResult(ThSender: TCompute);
+    procedure CMD_AsyncProcess(data: Pointer);
+  public
+    constructor Create; override;
+    procedure Open(train_file: SystemString);
+    procedure Open_Stream(stream: TMemoryStream64);
+    function Process(Input: TMemoryRaster; colorPool: TSegmentationColorTable; SSTokenOutput: TPascalStringList): TMemoryRaster;
+    procedure ProcessC(UserData: Pointer; Input: TMemoryRaster; colorPool: TSegmentationColorTable; FreeInput: Boolean; OnResult: TAI_DNN_Thread_SS_AsyncProcess_C);
+    procedure ProcessM(UserData: Pointer; Input: TMemoryRaster; colorPool: TSegmentationColorTable; FreeInput: Boolean; OnResult: TAI_DNN_Thread_SS_AsyncProcess_M);
+    procedure ProcessP(UserData: Pointer; Input: TMemoryRaster; colorPool: TSegmentationColorTable; FreeInput: Boolean; OnResult: TAI_DNN_Thread_SS_AsyncProcess_P);
+    function Busy(): Boolean; override;
+    property CPUAsyncThreadNum: Integer read FCPUAsyncThreadNum;
+  end;
+{$ENDREGION 'TAI_DNN_Thread_SS'}
 {$REGION 'Parallel'}
 
+  // AI parallel for CPU Platform
   TAI_Parallel_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TAI>;
 
   TAI_Parallel = class(TAI_Parallel_Decl)
@@ -1568,11 +2200,11 @@ type
     procedure Prepare_Parallel(poolSiz: Integer); overload;
     procedure Prepare_Parallel; overload;
 
-    procedure Prepare_Face;
-    procedure Prepare_OD6L(stream: TMemoryStream64);
-    procedure Prepare_OD3L(stream: TMemoryStream64);
-    procedure Prepare_OD6L_Marshal(stream: TMemoryStream64);
-    procedure Prepare_SP(stream: TMemoryStream64);
+    procedure Prepare_Face;                                  // Prepare OD6L Face Model
+    procedure Prepare_OD6L(stream: TMemoryStream64);         // Prepare OD6L Model
+    procedure Prepare_OD3L(stream: TMemoryStream64);         // Prepare OD3L Face Model
+    procedure Prepare_OD6L_Marshal(stream: TMemoryStream64); // Prepare OD6L Marshal Model
+    procedure Prepare_SP(stream: TMemoryStream64);           // Prepare ShapePredictor Model
     function GetAndLockAI: TAI;
     procedure UnLockAI(AI: TAI);
     function Busy: Integer;
@@ -1582,7 +2214,7 @@ type
 
   TAI_IO_Processor = class;
 
-  // async IO input define
+  { async IO input define }
   TAI_IO = class(TCoreClassInterfacedObject)
   public
     Owner: TAI_IO_Processor;
@@ -1590,11 +2222,12 @@ type
     OutputRaster: TMemoryRaster;
     IndexNumber: UInt64;
 
-    function AI: TAI; virtual;
+    function GetAI: TAI; virtual;
+    function GetAIPool: TAI_Parallel; virtual;
     constructor Create(Owner_: TAI_IO_Processor); virtual;
     destructor Destroy; override;
     procedure ProcessBefore(UserData: Pointer); virtual;
-    function Process(UserData: Pointer): Boolean; virtual;
+    function Process(UserData: Pointer): Boolean; virtual; // return is True then append IO to OutputBuffer
     procedure ProcessAfter(UserData: Pointer); virtual;
   end;
 
@@ -1602,47 +2235,47 @@ type
 
   TAI_IO_Class = class of TAI_IO;
 
-  // async IO processor
+  { async IO processor }
   TAI_IO_Processor = class(TCoreClassInterfacedObject)
   private
     FAI: TAI;
+    FAIPool: TAI_Parallel;
     FIO_Class: TAI_IO_Class;
     FInputBuffer, FOutputBuffer: TAI_IO_Buffer;
-    FRuningThreadCounter: Integer;
+    FIOThreadRuning: TAtomBool;
     FParallelProcessor: Boolean;
     FIndexNumber: UInt64;
     procedure LockInputBuffer;
     procedure UnLockInputBuffer;
-    procedure IOProcessorThreadRun(ThSender: TComputeThread);
-    procedure IOProcessorThreadDone(ThSender: TComputeThread);
+    procedure IOProcessorThreadRun(ThSender: TCompute);
   public
-    constructor Create(AI_: TAI; IO_Class_: TAI_IO_Class); virtual;
+    constructor Create(IO_Class_: TAI_IO_Class);
     destructor Destroy; override;
 
     procedure Clear;
 
-    // input and process
+    { input and process }
     procedure InputPicture(fileName: U_String); overload;
     procedure InputPicture(stream: TCoreClassStream); overload;
     procedure Input(Raster: TMemoryRaster; RasterInstance_: Boolean);
     function InputCount: Integer;
     procedure Process(UserData: Pointer);
     function Finished: Boolean;
+    procedure WaitProcessDone;
     procedure RemoveFirstInput();
 
-    // output
+    { output }
     function LockOutputBuffer: TAI_IO_Buffer;
     procedure UnLockOutputBuffer(freeObj_: Boolean); overload;
     procedure UnLockOutputBuffer; overload;
 
-    // AI Engine
-    property AI: TAI read FAI;
+    { AI Engine }
+    property AI: TAI read FAI write FAI;
+    property AIPool: TAI_Parallel read FAIPool write FAIPool;
 
-    // IO Class
+    { IO Class }
     property IO_Class: TAI_IO_Class read FIO_Class write FIO_Class;
 
-    // Parallel style only work on Object Detector, predictor, video tracker, generic image
-    // warning: no suppport work on GPU-DNN
     property ParallelProcessor: Boolean read FParallelProcessor write FParallelProcessor;
   end;
 
@@ -1667,13 +2300,38 @@ procedure API_FreeDetectorDefineLabel(var p: P_Bytes); stdcall;
 function API_GetDetectorDefinePartNum(hnd: PImage_Handle; detIndex: Integer): Integer; stdcall;
 function API_GetDetectorDefinePart(hnd: PImage_Handle; detIndex, partIndex: Integer; var part_: TAI_Point): Byte; stdcall;
 function API_GetSegmentationMaskMergeImage(hnd: PImage_Handle; var Bits: Pointer; var Width, Height: Integer): Byte; stdcall;
-function API_QuerySegmentationMaskColorID(cl: PSegmentationColorList; color: TRColor; def: WORD): WORD; stdcall;
+function API_QuerySegmentationMaskColorID(cl: PSegmentationColorTable; color: TRColor; def: WORD): WORD; stdcall;
+
+type
+  TMetric_ResNet_SaveToLearnEngine_DT_UserData_ = record
+    lr: TLearn;
+    Snapshot: Boolean;
+    imgData: TAI_Image;
+    detDef: TAI_DetectorDefine;
+  end;
+
+  PMetric_ResNet_SaveToLearnEngine_DT_UserData_ = ^TMetric_ResNet_SaveToLearnEngine_DT_UserData_;
+
+procedure Metric_ResNet_SaveToLearnEngine_DT_Backcall(ThSender: TAI_DNN_Thread_Metric; UserData: Pointer; Input: TMemoryRaster; output: TLVec);
+
+type
+  TLMetric_ResNet_SaveToLearnEngine_DT_UserData_ = record
+    lr: TLearn;
+    Snapshot: Boolean;
+    imgData: TAI_Image;
+    detDef: TAI_DetectorDefine;
+  end;
+
+  PLMetric_ResNet_SaveToLearnEngine_DT_UserData_ = ^TLMetric_ResNet_SaveToLearnEngine_DT_UserData_;
+
+procedure LMetric_ResNet_SaveToLearnEngine_DT_Backcall(ThSender: TAI_DNN_Thread_LMetric; UserData: Pointer; Input: TMemoryRaster; output: TLVec);
+
 {$ENDREGION 'backcall API'}
 {$REGION 'API'}
 procedure Wait_AI_Init;
 
 function CheckZAI(libFile: SystemString): Boolean;
-function Load_ZAI(libFile: SystemString): PAI_EntryAPI; // thread instance support.
+function Load_ZAI(libFile: SystemString): PAI_EntryAPI; { thread instance support. }
 function Prepare_AI_Engine(eng: SystemString): PAI_EntryAPI; overload;
 function Prepare_AI_Engine: PAI_EntryAPI; overload;
 procedure Close_AI_Engine;
@@ -1703,16 +2361,16 @@ function InRect(v: TAI_Point; R: TAI_Rect): Boolean; overload;
 function InRect(v: TSP_Desc; R: TAI_Rect): Boolean; overload;
 function InRect(v: TSP_Desc; R: TRectV2): Boolean; overload;
 
-// sp vector
+{ sp vector }
 procedure SPToVec(v: TSP_Desc; L: TVec2List); overload;
 function GetSPBound(desc: TSP_Desc; endge_threshold: TGeoFloat): TRectV2;
 procedure DrawSPLine(sp_desc: TSP_Desc; bp, ep: Integer; closeLine: Boolean; color: TDEColor; d: TDrawEngine); overload;
 procedure DrawFaceSP(sp_desc: TSP_Desc; color: TDEColor; d: TDrawEngine); overload;
 
-// normal training task
+{ normal training task }
 function RunTrainingTask(Task: TAI_TrainingTask; const AI: TAI; const paramFile: SystemString): Boolean;
 
-// large-scale training task
+{ large-scale training task }
 function RunLargeScaleTrainingTask(
   ImgMatDatasetFile, RasterSerializedFile, Training_RasterSerializedFile, SyncFile, LogFile, StepFile, OutputModel: U_String;
   AI: TAI;
@@ -1723,7 +2381,7 @@ function RunLargeScaleTrainingTask(
 
 
 const
-  // core parameter
+  { core parameter }
   C_Metric_Input_Size: Integer = 150;
   C_Metric_Dim: Integer = 256;
   C_LMetric_Input_Size: Integer = 200;
@@ -1740,30 +2398,42 @@ var
   KeepPerformanceOnTraining: TTimeTick;
   LargeScaleTrainingMemoryRecycleTime: TTimeTick;
   IOProcessorActivtedThreadNum: Integer;
-  // build-in database
+  { build-in database }
   AI_BuildIn_DBEngine: TObjectDataManager;
+  { build-in face shape }
+  build_in_face_shape_memory: Pointer;
+  build_in_face_shape_memory_siz: Int64;
+  { build-in mmod for face }
+  build_in_face_detector_memory: Pointer;
+  build_in_face_detector_memory_siz: Int64;
+  { build-in metric for face }
+  build_in_face_metric_memory: Pointer;
+  build_in_face_metric_memory_siz: Int64;
+  { build-in metric learn (KDTree) for face }
+  build_in_face_metric_learn_memory: Pointer;
+  build_in_face_metric_learn_memory_siz: Int64;
 
 const
-  // The function initializes the state and the mask using the provided rectangle.
-  // After that it runs iterCount iterations of the algorithm.
+  { The function initializes the state and the mask using the provided rectangle. }
+  { After that it runs iterCount iterations of the algorithm. }
   C_CUT_MODE_INIT_WITH_RECT = 0;
 
-  // The function initializes the state using the provided mask.
-  // Note that GC_INIT_WITH_RECT and C_CUT_MODE_INIT_WITH_RECT can be combined.
-  // Then, all the pixels outside of the ROI are automatically initialized with GC_BGD .
+  { The function initializes the state using the provided mask. }
+  { Note that GC_INIT_WITH_RECT and C_CUT_MODE_INIT_WITH_RECT can be combined. }
+  { Then, all the pixels outside of the ROI are automatically initialized with GC_BGD . }
   C_CUT_MODE_INIT_WITH_MASK = 1;
 
-  // The value means that the algorithm should just resume.
+  { The value means that the algorithm should just resume. }
   C_CUT_MODE_GC_EVAL = 2;
 
-  // The value means that the algorithm should just run the grabCut algorithm (a single iteration) with the fixed model
+  { The value means that the algorithm should just run the grabCut algorithm (a single iteration) with the fixed model }
   C_CUT_MODE_EVAL_FREEZE_MODEL = 3;
 
-  // cut raster data type
-  C_CUT_BGD = 0;    // an obvious background pixels
-  C_CUT_FGD = 1;    // an obvious foreground (object) pixel
-  C_CUT_PR_BGD = 2; // possible background pixel
-  C_CUT_PR_FGD = 3; // a possible foreground pixel
+  { cut raster data type }
+  C_CUT_BGD = 0;    { an obvious background pixels }
+  C_CUT_FGD = 1;    { an obvious foreground (object) pixel }
+  C_CUT_PR_BGD = 2; { possible background pixel }
+  C_CUT_PR_FGD = 3; { a possible foreground pixel }
 
 {$ENDREGION 'var and const'}
 {$REGION 'TEST'}
@@ -1831,7 +2501,7 @@ begin
   TCompute.Sleep(1);
 end;
 
-// i_char = unicode encoded char
+{ i_char = unicode encoded char }
 procedure API_StatusIO_Out(Sender: PAI_EntryAPI; i_char: Integer); stdcall;
 var
   buff: TBytes;
@@ -1977,7 +2647,7 @@ begin
   if (detIndex < 0) or (detIndex >= hnd^.image.DetectorDefineList.Count) then
       exit;
   detDef := hnd^.image.DetectorDefineList[detIndex];
-  // using UTF8 format
+  { using UTF8 format }
   p := Alloc_P_Bytes_FromBuff(detDef.Token.Bytes);
   Result := 1;
 end;
@@ -2034,9 +2704,86 @@ begin
   AtomInc(hnd^.AccessMask);
 end;
 
-function API_QuerySegmentationMaskColorID(cl: PSegmentationColorList; color: TRColor; def: WORD): WORD; stdcall;
+function API_QuerySegmentationMaskColorID(cl: PSegmentationColorTable; color: TRColor; def: WORD): WORD; stdcall;
 begin
   cl^.GetColorID(color, def, Result);
+end;
+
+procedure Metric_ResNet_SaveToLearnEngine_DT_Backcall(ThSender: TAI_DNN_Thread_Metric; UserData: Pointer; Input: TMemoryRaster; output: TLVec);
+var
+  p: PMetric_ResNet_SaveToLearnEngine_DT_UserData_;
+  j: Integer;
+  detDef: TAI_DetectorDefine;
+begin
+  p := UserData;
+  if Length(output) <> C_Metric_Dim then
+    begin
+      Dispose(p);
+      DoStatus('Metric-ResNet vector error!');
+      exit;
+    end;
+  if p^.Snapshot then
+    begin
+      for j := 0 to p^.imgData.DetectorDefineList.Count - 1 do
+        begin
+          detDef := p^.imgData.DetectorDefineList[j];
+          if detDef.Token.Len > 0 then
+            begin
+              LockObject(p^.lr);
+              try
+                  p^.lr.AddMemory(output, detDef.Token);
+              except
+              end;
+              UnLockObject(p^.lr);
+            end;
+        end;
+    end
+  else
+    begin
+      detDef := p^.detDef;
+      LockObject(p^.lr);
+      try
+          p^.lr.AddMemory(output, detDef.Token);
+      except
+      end;
+      UnLockObject(p^.lr);
+    end;
+  Dispose(p);
+end;
+
+procedure LMetric_ResNet_SaveToLearnEngine_DT_Backcall(ThSender: TAI_DNN_Thread_LMetric; UserData: Pointer; Input: TMemoryRaster; output: TLVec);
+var
+  p: PLMetric_ResNet_SaveToLearnEngine_DT_UserData_;
+  j: Integer;
+  detDef: TAI_DetectorDefine;
+begin
+  p := UserData;
+  if Length(output) <> C_LMetric_Dim then
+    begin
+      DoStatus('LMetric-ResNet vector error!');
+      exit;
+    end;
+  if p^.Snapshot then
+    begin
+      for j := 0 to p^.imgData.DetectorDefineList.Count - 1 do
+        begin
+          detDef := p^.imgData.DetectorDefineList[j];
+          if detDef.Token.Len > 0 then
+            begin
+              LockObject(p^.lr);
+              p^.lr.AddMemory(output, detDef.Token);
+              UnLockObject(p^.lr);
+            end;
+        end;
+    end
+  else
+    begin
+      detDef := p^.detDef;
+      LockObject(p^.lr);
+      p^.lr.AddMemory(output, detDef.Token);
+      UnLockObject(p^.lr);
+    end;
+  Dispose(p);
 end;
 
 {$ENDREGION 'back caller'}
@@ -2127,10 +2874,14 @@ begin
                 FAI_EntryAPI^.Log := TAI_LogList.Create;
                 FAI_EntryAPI^.RasterSerialized := nil;
                 FAI_EntryAPI^.SerializedTime := GetTimeTick();
+                FAI_EntryAPI^.Critical := TCritical.Create;
+
+                FAI_EntryAPI^.MorphExpIntf := TMorphExpIntf.Create(FAI_EntryAPI);
+                FAI_EntryAPI^.MorphExpIntf.MorphologyExpression_RegData := nil;
                 try
                   proc_init_ai_(FAI_EntryAPI^);
 
-                  if (FAI_EntryAPI^.MajorVer = 1) and (FAI_EntryAPI^.MinorVer = 32) then
+                  if (FAI_EntryAPI^.MajorVer = 1) and (FAI_EntryAPI^.MinorVer = 33) then
                     begin
                       if FAI_EntryAPI^.Authentication = 1 then
                           FAI_EntryAPI^.Key := AIKey(FAI_EntryAPI^.Key);
@@ -2142,11 +2893,8 @@ begin
                         end
                       else
                         begin
-                          DoStatus('Activted Engine: %s', [libFile]);
-                          DoStatus('CUDA: ' + if_(FAI_EntryAPI^.CUDA = 1, 'YES', 'NO'));
-                          DoStatus('Intel-MKL: ' + if_(FAI_EntryAPI^.MKL = 1, 'YES', 'NO'));
-                          DoStatus('Trainer: ' + if_(FAI_EntryAPI^.Training = 1, 'YES', 'NO'));
-                          DoStatus('Licensed: ' + if_(FAI_EntryAPI^.Authentication = 1, 'Authorized', 'Free'));
+                          FAI_EntryAPI^.MorphExpIntf.MorphologyExpression_RegData := RegMorphExpExternalAPI(nil, {$IFDEF FPC}@{$ENDIF FPC}FAI_EntryAPI^.MorphExpIntf.RegMorphExpExternalAPI, nil);
+                          DoStatus(FAI_EntryAPI^.GetVersionInfo());
                         end;
                     end
                   else
@@ -2155,6 +2903,7 @@ begin
                       FAI_EntryAPI^.LibraryFile := '';
                       DisposeObject(FAI_EntryAPI^.OneStepList);
                       DisposeObject(FAI_EntryAPI^.Log);
+                      DisposeObject(FAI_EntryAPI^.Critical);
                       Dispose(FAI_EntryAPI);
                       FreeExtLib(libFile);
                     end;
@@ -2163,6 +2912,7 @@ begin
                   FAI_EntryAPI^.LibraryFile := '';
                   DisposeObject(FAI_EntryAPI^.OneStepList);
                   DisposeObject(FAI_EntryAPI^.Log);
+                  DisposeObject(FAI_EntryAPI^.Critical);
                   Dispose(FAI_EntryAPI);
                   FreeExtLib(libFile);
                 end;
@@ -2212,16 +2962,11 @@ begin
 end;
 
 var
-  // build-in face shape
-  build_in_face_shape_memory: Pointer;
-  build_in_face_shape_memory_siz: Int64;
-  // build-in dnn object detector for face
-  build_in_face_detector_memory: Pointer;
-  build_in_face_detector_memory_siz: Int64;
-  // found build-in data
+  // build-in state
   found_build_in: TAtomBool;
+  done_build_in: TAtomBool;
 
-procedure BuildIn_Thread_Run(Sender: TComputeThread);
+procedure BuildIn_Thread_Run(Sender: TCompute);
 var
   fn: U_String;
   stream: TCoreClassStream;
@@ -2237,6 +2982,7 @@ begin
 {$IFDEF initializationStatus}
     DoStatus('warning: no found resource "zAI_BuildIn"');
 {$ENDIF initializationStatus}
+    done_build_in.v := True;
     exit;
   end;
 {$ELSE Z_AI_Dataset_Build_In}
@@ -2247,19 +2993,19 @@ begin
 {$IFDEF initializationStatus}
       DoStatus('warning: no found resource file: %s', [umlGetFileName(fn).Text]);
 {$ENDIF initializationStatus}
+      done_build_in.v := True;
       exit;
     end;
   stream := TCoreClassFileStream.Create(fn, fmOpenRead or fmShareDenyNone);
 {$ENDIF Z_AI_Dataset_Build_In}
-{$IFDEF initializationStatus}
-  DoStatus('zAI_BuildIn initialization done.');
-{$ENDIF initializationStatus}
   found_build_in.v := True;
   stream.Position := 0;
   m64 := TMemoryStream64.Create;
   DecompressStream(stream, m64);
   DisposeObject(stream);
-
+{$IFDEF initializationStatus}
+  DoStatus('AI_BuildIn_DBEngine initialization done.');
+{$ENDIF initializationStatus}
   m64.Position := 0;
   AI_BuildIn_DBEngine := TObjectDataManagerOfCache.CreateAsStream(m64, '', DBMarshal.ID, True, False, True);
 
@@ -2298,6 +3044,44 @@ begin
       DoStatus('Z-AI buildIn "human_face_detector.svm_dnn_od" error.');
 {$ENDIF initializationStatus}
     end;
+
+  if AI_BuildIn_DBEngine.ItemOpen('/', 'share_face.metric', itmHnd) then
+    begin
+      build_in_face_metric_memory_siz := itmHnd.Item.Size;
+      p := GetMemory(build_in_face_metric_memory_siz);
+      AI_BuildIn_DBEngine.ItemRead(itmHnd, build_in_face_metric_memory_siz, p^);
+      AI_BuildIn_DBEngine.ItemClose(itmHnd);
+      build_in_face_metric_memory := p;
+{$IFDEF initializationStatus}
+      DoStatus('Z-AI "share_face.metric" initialization done.');
+{$ENDIF initializationStatus}
+    end
+  else
+    begin
+{$IFDEF initializationStatus}
+      DoStatus('Z-AI buildIn "share_face.metric" error.');
+{$ENDIF initializationStatus}
+    end;
+
+  if AI_BuildIn_DBEngine.ItemOpen('/', 'share_face.learn', itmHnd) then
+    begin
+      build_in_face_metric_learn_memory_siz := itmHnd.Item.Size;
+      p := GetMemory(build_in_face_metric_learn_memory_siz);
+      AI_BuildIn_DBEngine.ItemRead(itmHnd, build_in_face_metric_learn_memory_siz, p^);
+      AI_BuildIn_DBEngine.ItemClose(itmHnd);
+      build_in_face_metric_learn_memory := p;
+{$IFDEF initializationStatus}
+      DoStatus('Z-AI "share_face.learn" initialization done.');
+{$ENDIF initializationStatus}
+    end
+  else
+    begin
+{$IFDEF initializationStatus}
+      DoStatus('Z-AI buildIn "share_face.learn" error.');
+{$ENDIF initializationStatus}
+    end;
+
+  done_build_in.v := True;
 end;
 
 procedure Init_AI_BuildIn;
@@ -2313,16 +3097,19 @@ begin
   build_in_face_shape_memory_siz := 0;
   build_in_face_detector_memory := nil;
   build_in_face_detector_memory_siz := 0;
+  build_in_face_metric_memory := nil;
+  build_in_face_metric_memory_siz := 0;
+  build_in_face_metric_learn_memory := nil;
+  build_in_face_metric_learn_memory_siz := 0;
   found_build_in := TAtomBool.Create(True);
+  done_build_in := TAtomBool.Create(False);
 
-  TComputeThread.RunC(nil, nil, {$IFDEF FPC}@{$ENDIF FPC}BuildIn_Thread_Run);
+  TCompute.RunC(nil, nil, {$IFDEF FPC}@{$ENDIF FPC}BuildIn_Thread_Run);
 end;
 
 procedure Wait_AI_Init;
 begin
-  while (found_build_in.v) and
-    ((build_in_face_shape_memory = nil) or (build_in_face_shape_memory_siz = 0) or
-    (build_in_face_detector_memory = nil) or (build_in_face_detector_memory_siz = 0)) do
+  while not done_build_in.v do
       CheckThreadSynchronize(10);
 end;
 
@@ -2332,9 +3119,21 @@ begin
   DisposeObject(AI_Entry_Cache);
   DisposeObject(AI_Status_Buffer);
   DisposeObject(AI_Status_Critical);
-  FreeMemory(build_in_face_shape_memory);
-  FreeMemory(build_in_face_detector_memory);
+
+  if build_in_face_shape_memory <> nil then
+      FreeMemory(build_in_face_shape_memory);
+
+  if build_in_face_detector_memory <> nil then
+      FreeMemory(build_in_face_detector_memory);
+
+  if build_in_face_metric_memory <> nil then
+      FreeMemory(build_in_face_metric_memory);
+
+  if build_in_face_metric_learn_memory <> nil then
+      FreeMemory(build_in_face_metric_learn_memory);
+
   DisposeObjectAndNil(found_build_in);
+  DisposeObjectAndNil(done_build_in);
   DisposeObjectAndNil(AI_BuildIn_DBEngine);
 end;
 
@@ -2352,9 +3151,12 @@ procedure Close_AI_Engine;
   procedure Free_ZAI(FAI_EntryAPI: PAI_EntryAPI);
   begin
     try
+      RemoveMorphExpExternalAPI(FAI_EntryAPI^.MorphExpIntf.MorphologyExpression_RegData);
       FAI_EntryAPI^.CloseAI();
       DisposeObject(FAI_EntryAPI^.OneStepList);
       DisposeObject(FAI_EntryAPI^.Log);
+      DisposeObject(FAI_EntryAPI^.Critical);
+      DisposeObject(FAI_EntryAPI^.MorphExpIntf);
       Dispose(FAI_EntryAPI);
     except
     end;
@@ -2615,7 +3417,7 @@ var
 
   param_md5: TMD5;
 
-  // batch free
+  { batch free }
   inputfile1, inputfile2: SystemString;
   inputstream1, inputstream2: TMemoryStream64;
   inputraster1, inputraster2: TMemoryRaster;
@@ -2624,7 +3426,7 @@ var
   inputImgMatrix: TAI_ImageMatrix;
   ResultValues: THashVariantList;
 
-  // manual free
+  { manual free }
   outputstream: TMemoryStream64;
   outputPacalStringList: TPascalStringList;
   OutputRaster: TMemoryRaster;
@@ -2637,7 +3439,7 @@ var
   rnic_param: PRNIC_Train_Parameter;
   GDCNIC_param: PGDCNIC_Train_Parameter;
   GNIC_param: PGNIC_Train_Parameter;
-  ss_colorPool: TSegmentationColorList;
+  ss_colorPool: TSegmentationColorTable;
   SS_param: PSS_Train_Parameter;
   tmpPSL: TPascalStringList;
   tmpM64: TMemoryStream64;
@@ -2895,20 +3697,20 @@ begin
               else
                   Task.Read(inputfile1, inputImgList);
 
-              // init sync file1.
+              { init sync file1. }
               local_sync1 := param.GetDefaultValue('syncfile', 'output' + C_Sync_Ext);
-              sync_file1 := umlCombineFileName(AI.rootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5)) + C_Sync_Ext);
+              sync_file1 := umlCombineFileName(AI.RootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5)) + C_Sync_Ext);
               umlDeleteFile(sync_file1);
               if Task.Exists(local_sync1) then
                   Task.ReadToFile(local_sync1, sync_file1);
-              // init sync file2.
+              { init sync file2. }
               local_sync2 := param.GetDefaultValue('syncfile2', 'output' + C_Sync_Ext2);
-              sync_file2 := umlCombineFileName(AI.rootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5)) + C_Sync_Ext2);
+              sync_file2 := umlCombineFileName(AI.RootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5)) + C_Sync_Ext2);
               umlDeleteFile(sync_file2);
               if Task.Exists(local_sync2) then
                   Task.ReadToFile(local_sync2, sync_file2);
 
-              output_file := umlCombineFileName(AI.rootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5))) + C_Metric_Ext;
+              output_file := umlCombineFileName(AI.RootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5))) + C_Metric_Ext;
 
               metric_resnet_param := TAI.Init_Metric_ResNet_Parameter(sync_file1, output_file);
 
@@ -2937,10 +3739,10 @@ begin
 
               TAI.Free_Metric_ResNet_Parameter(metric_resnet_param);
 
-              // write sync1 to task
+              { write sync1 to task }
               if umlFileExists(sync_file1) then
                   Task.WriteFile(local_sync1, sync_file1);
-              // write sync2 to task
+              { write sync2 to task }
               if umlFileExists(sync_file2) then
                   Task.WriteFile(local_sync2, sync_file2);
 
@@ -2948,19 +3750,29 @@ begin
                 begin
                   Task.write(param.GetDefaultValue('output', 'output' + C_Metric_Ext), outputstream);
 
-                  if param.GetDefaultValue('LearnVec', False) = True then
+                  if (param.GetDefaultValue('LearnVec', False) = True) and (AI.completed_learning_rate > AI.Last_training_learning_rate) then
                     begin
                       learnEng := TLearn.CreateClassifier(ltKDT, zAI.C_Metric_Dim);
                       outputstream.Position := 0;
-                      Metric_hnd := AI.Metric_ResNet_Open_Stream(outputstream);
 
                       DoStatus('build metric to learn-KDTree.');
-                      if umlMultipleMatch('*' + C_ImageMatrix_Ext, inputfile1) then
-                          AI.Metric_ResNet_SaveToLearnEngine(Metric_hnd, param.GetDefaultValue('Snapshot', False), inputImgMatrix, learnEng)
+                      if param.GetDefaultValue('DNNThread', False) = True then
+                        begin
+                          if umlMultipleMatch('*' + C_ImageMatrix_Ext, inputfile1) then
+                              AI.Metric_ResNet_SaveToLearnEngine_DT(outputstream, param.GetDefaultValue('Snapshot', False), inputImgMatrix, learnEng)
+                          else
+                              AI.Metric_ResNet_SaveToLearnEngine_DT(outputstream, param.GetDefaultValue('Snapshot', False), inputImgList, learnEng);
+                        end
                       else
-                          AI.Metric_ResNet_SaveToLearnEngine(Metric_hnd, param.GetDefaultValue('Snapshot', False), inputImgList, learnEng);
+                        begin
+                          Metric_hnd := AI.Metric_ResNet_Open_Stream(outputstream);
+                          if umlMultipleMatch('*' + C_ImageMatrix_Ext, inputfile1) then
+                              AI.Metric_ResNet_SaveToLearnEngine(Metric_hnd, param.GetDefaultValue('Snapshot', False), inputImgMatrix, learnEng)
+                          else
+                              AI.Metric_ResNet_SaveToLearnEngine(Metric_hnd, param.GetDefaultValue('Snapshot', False), inputImgList, learnEng);
+                          AI.Metric_ResNet_Close(Metric_hnd);
+                        end;
                       DoStatus('process metric to learn-KDTree done.');
-                      AI.Metric_ResNet_Close(Metric_hnd);
 
                       tmpM64 := TMemoryStream64.Create;
                       learnEng.SaveToStream(tmpM64);
@@ -2994,20 +3806,20 @@ begin
               else
                   Task.Read(inputfile1, inputImgList);
 
-              // init sync file1.
+              { init sync file1. }
               local_sync1 := param.GetDefaultValue('syncfile', 'output' + C_Sync_Ext);
-              sync_file1 := umlCombineFileName(AI.rootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5)) + C_Sync_Ext);
+              sync_file1 := umlCombineFileName(AI.RootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5)) + C_Sync_Ext);
               umlDeleteFile(sync_file1);
               if Task.Exists(local_sync1) then
                   Task.ReadToFile(local_sync1, sync_file1);
-              // init sync file2.
+              { init sync file2. }
               local_sync2 := param.GetDefaultValue('syncfile2', 'output' + C_Sync_Ext2);
-              sync_file2 := umlCombineFileName(AI.rootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5)) + C_Sync_Ext2);
+              sync_file2 := umlCombineFileName(AI.RootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5)) + C_Sync_Ext2);
               umlDeleteFile(sync_file2);
               if Task.Exists(local_sync2) then
                   Task.ReadToFile(local_sync2, sync_file2);
 
-              output_file := umlCombineFileName(AI.rootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5))) + C_LMetric_Ext;
+              output_file := umlCombineFileName(AI.RootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5))) + C_LMetric_Ext;
 
               LMetric_resnet_param := TAI.Init_LMetric_ResNet_Parameter(sync_file1, output_file);
 
@@ -3036,10 +3848,10 @@ begin
 
               TAI.Free_LMetric_ResNet_Parameter(LMetric_resnet_param);
 
-              // write sync1 to task
+              { write sync1 to task }
               if umlFileExists(sync_file1) then
                   Task.WriteFile(local_sync1, sync_file1);
-              // write sync2 to task
+              { write sync2 to task }
               if umlFileExists(sync_file2) then
                   Task.WriteFile(local_sync2, sync_file2);
 
@@ -3047,19 +3859,29 @@ begin
                 begin
                   Task.write(param.GetDefaultValue('output', 'output' + C_LMetric_Ext), outputstream);
 
-                  if param.GetDefaultValue('LearnVec', False) = True then
+                  if (param.GetDefaultValue('LearnVec', False) = True) and (AI.completed_learning_rate > AI.Last_training_learning_rate) then
                     begin
                       learnEng := TLearn.CreateClassifier(ltKDT, zAI.C_LMetric_Dim);
                       outputstream.Position := 0;
-                      LMetric_hnd := AI.LMetric_ResNet_Open_Stream(outputstream);
 
                       DoStatus('build LMetric to learn-KDTree.');
-                      if umlMultipleMatch('*' + C_ImageMatrix_Ext, inputfile1) then
-                          AI.LMetric_ResNet_SaveToLearnEngine(LMetric_hnd, param.GetDefaultValue('Snapshot', False), inputImgMatrix, learnEng)
+                      if param.GetDefaultValue('DNNThread', False) = True then
+                        begin
+                          if umlMultipleMatch('*' + C_ImageMatrix_Ext, inputfile1) then
+                              AI.LMetric_ResNet_SaveToLearnEngine_DT(outputstream, param.GetDefaultValue('Snapshot', False), inputImgMatrix, learnEng)
+                          else
+                              AI.LMetric_ResNet_SaveToLearnEngine_DT(outputstream, param.GetDefaultValue('Snapshot', False), inputImgList, learnEng);
+                        end
                       else
-                          AI.LMetric_ResNet_SaveToLearnEngine(LMetric_hnd, param.GetDefaultValue('Snapshot', False), inputImgList, learnEng);
+                        begin
+                          LMetric_hnd := AI.LMetric_ResNet_Open_Stream(outputstream);
+                          if umlMultipleMatch('*' + C_ImageMatrix_Ext, inputfile1) then
+                              AI.LMetric_ResNet_SaveToLearnEngine(LMetric_hnd, param.GetDefaultValue('Snapshot', False), inputImgMatrix, learnEng)
+                          else
+                              AI.LMetric_ResNet_SaveToLearnEngine(LMetric_hnd, param.GetDefaultValue('Snapshot', False), inputImgList, learnEng);
+                          AI.LMetric_ResNet_Close(LMetric_hnd);
+                        end;
                       DoStatus('process LMetric to learn-KDTree done.');
-                      AI.LMetric_ResNet_Close(LMetric_hnd);
 
                       tmpM64 := TMemoryStream64.Create;
                       learnEng.SaveToStream(tmpM64);
@@ -3103,22 +3925,22 @@ begin
                       inputImgList.RunScript('True', 'SetLabel(' + #39#39 + ')');
                 end;
 
-              // init sync file1.
+              { init sync file1. }
               local_sync1 := param.GetDefaultValue('syncfile', 'output' + C_Sync_Ext);
-              sync_file1 := umlCombineFileName(AI.rootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5)) + C_Sync_Ext);
+              sync_file1 := umlCombineFileName(AI.RootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5)) + C_Sync_Ext);
               umlDeleteFile(sync_file1);
               if Task.Exists(local_sync1) then
                   Task.ReadToFile(local_sync1, sync_file1);
-              // init sync file2.
+              { init sync file2. }
               local_sync2 := param.GetDefaultValue('syncfile2', 'output' + C_Sync_Ext2);
-              sync_file2 := umlCombineFileName(AI.rootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5)) + C_Sync_Ext2);
+              sync_file2 := umlCombineFileName(AI.RootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5)) + C_Sync_Ext2);
               umlDeleteFile(sync_file2);
               if Task.Exists(local_sync2) then
                   Task.ReadToFile(local_sync2, sync_file2);
 
               TCoreClassThread.Sleep(1);
 
-              output_file := umlCombineFileName(AI.rootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5))) + C_MMOD6L_Ext;
+              output_file := umlCombineFileName(AI.RootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5))) + C_MMOD6L_Ext;
               mmod_param := AI.LargeScale_MMOD6L_DNN_PrepareTrain(sync_file1, output_file);
 
               mmod_param^.timeout := param.GetDefaultValue('timeout', mmod_param^.timeout);
@@ -3151,10 +3973,10 @@ begin
 
               AI.LargeScale_MMOD6L_DNN_FreeTrain(mmod_param);
 
-              // write sync1 to task
+              { write sync1 to task }
               if umlFileExists(sync_file1) then
                   Task.WriteFile(local_sync1, sync_file1);
-              // write sync2 to task
+              { write sync2 to task }
               if umlFileExists(sync_file2) then
                   Task.WriteFile(local_sync2, sync_file2);
 
@@ -3195,22 +4017,22 @@ begin
                       inputImgList.RunScript('True', 'SetLabel(' + #39#39 + ')');
                 end;
 
-              // init sync file1.
+              { init sync file1. }
               local_sync1 := param.GetDefaultValue('syncfile', 'output' + C_Sync_Ext);
-              sync_file1 := umlCombineFileName(AI.rootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5)) + C_Sync_Ext);
+              sync_file1 := umlCombineFileName(AI.RootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5)) + C_Sync_Ext);
               umlDeleteFile(sync_file1);
               if Task.Exists(local_sync1) then
                   Task.ReadToFile(local_sync1, sync_file1);
-              // init sync file2.
+              { init sync file2. }
               local_sync2 := param.GetDefaultValue('syncfile2', 'output' + C_Sync_Ext2);
-              sync_file2 := umlCombineFileName(AI.rootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5)) + C_Sync_Ext2);
+              sync_file2 := umlCombineFileName(AI.RootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5)) + C_Sync_Ext2);
               umlDeleteFile(sync_file2);
               if Task.Exists(local_sync2) then
                   Task.ReadToFile(local_sync2, sync_file2);
 
               TCoreClassThread.Sleep(1);
 
-              output_file := umlCombineFileName(AI.rootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5))) + C_MMOD3L_Ext;
+              output_file := umlCombineFileName(AI.RootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5))) + C_MMOD3L_Ext;
               mmod_param := AI.LargeScale_MMOD3L_DNN_PrepareTrain(sync_file1, output_file);
 
               mmod_param^.timeout := param.GetDefaultValue('timeout', mmod_param^.timeout);
@@ -3243,10 +4065,10 @@ begin
 
               AI.LargeScale_MMOD3L_DNN_FreeTrain(mmod_param);
 
-              // write sync1 to task
+              { write sync1 to task }
               if umlFileExists(sync_file1) then
                   Task.WriteFile(local_sync1, sync_file1);
-              // write sync2 to task
+              { write sync2 to task }
               if umlFileExists(sync_file2) then
                   Task.WriteFile(local_sync2, sync_file2);
 
@@ -3284,20 +4106,20 @@ begin
                   inputImgList.scale(param.GetDefaultValue('scale', 1.0));
                 end;
 
-              // init sync file1.
+              { init sync file1. }
               local_sync1 := param.GetDefaultValue('syncfile', 'output' + C_Sync_Ext);
-              sync_file1 := umlCombineFileName(AI.rootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5)) + C_Sync_Ext);
+              sync_file1 := umlCombineFileName(AI.RootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5)) + C_Sync_Ext);
               umlDeleteFile(sync_file1);
               if Task.Exists(local_sync1) then
                   Task.ReadToFile(local_sync1, sync_file1);
-              // init sync file2.
+              { init sync file2. }
               local_sync2 := param.GetDefaultValue('syncfile2', 'output' + C_Sync_Ext2);
-              sync_file2 := umlCombineFileName(AI.rootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5)) + C_Sync_Ext2);
+              sync_file2 := umlCombineFileName(AI.RootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5)) + C_Sync_Ext2);
               umlDeleteFile(sync_file2);
               if Task.Exists(local_sync2) then
                   Task.ReadToFile(local_sync2, sync_file2);
 
-              output_file := umlCombineFileName(AI.rootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5))) + C_Metric_Ext;
+              output_file := umlCombineFileName(AI.RootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5))) + C_Metric_Ext;
 
               rnic_param := TAI.Init_RNIC_Train_Parameter(sync_file1, output_file);
 
@@ -3323,10 +4145,10 @@ begin
 
               TAI.Free_RNIC_Train_Parameter(rnic_param);
 
-              // write sync1 to task
+              { write sync1 to task }
               if umlFileExists(sync_file1) then
                   Task.WriteFile(local_sync1, sync_file1);
-              // write sync2 to task
+              { write sync2 to task }
               if umlFileExists(sync_file2) then
                   Task.WriteFile(local_sync2, sync_file2);
 
@@ -3366,20 +4188,20 @@ begin
                   inputImgList.scale(param.GetDefaultValue('scale', 1.0));
                 end;
 
-              // init sync file1.
+              { init sync file1. }
               local_sync1 := param.GetDefaultValue('syncfile', 'output' + C_Sync_Ext);
-              sync_file1 := umlCombineFileName(AI.rootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5)) + C_Sync_Ext);
+              sync_file1 := umlCombineFileName(AI.RootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5)) + C_Sync_Ext);
               umlDeleteFile(sync_file1);
               if Task.Exists(local_sync1) then
                   Task.ReadToFile(local_sync1, sync_file1);
-              // init sync file2.
+              { init sync file2. }
               local_sync2 := param.GetDefaultValue('syncfile2', 'output' + C_Sync_Ext2);
-              sync_file2 := umlCombineFileName(AI.rootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5)) + C_Sync_Ext2);
+              sync_file2 := umlCombineFileName(AI.RootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5)) + C_Sync_Ext2);
               umlDeleteFile(sync_file2);
               if Task.Exists(local_sync2) then
                   Task.ReadToFile(local_sync2, sync_file2);
 
-              output_file := umlCombineFileName(AI.rootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5))) + C_Metric_Ext;
+              output_file := umlCombineFileName(AI.RootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5))) + C_Metric_Ext;
 
               rnic_param := TAI.Init_LRNIC_Train_Parameter(sync_file1, output_file);
 
@@ -3405,10 +4227,10 @@ begin
 
               TAI.Free_LRNIC_Train_Parameter(rnic_param);
 
-              // write sync1 to task
+              { write sync1 to task }
               if umlFileExists(sync_file1) then
                   Task.WriteFile(local_sync1, sync_file1);
-              // write sync2 to task
+              { write sync2 to task }
               if umlFileExists(sync_file2) then
                   Task.WriteFile(local_sync2, sync_file2);
 
@@ -3448,20 +4270,20 @@ begin
                   inputImgList.scale(param.GetDefaultValue('scale', 1.0));
                 end;
 
-              // init sync file1.
+              { init sync file1. }
               local_sync1 := param.GetDefaultValue('syncfile', 'output' + C_Sync_Ext);
-              sync_file1 := umlCombineFileName(AI.rootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5)) + C_Sync_Ext);
+              sync_file1 := umlCombineFileName(AI.RootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5)) + C_Sync_Ext);
               umlDeleteFile(sync_file1);
               if Task.Exists(local_sync1) then
                   Task.ReadToFile(local_sync1, sync_file1);
-              // init sync file2.
+              { init sync file2. }
               local_sync2 := param.GetDefaultValue('syncfile2', 'output' + C_Sync_Ext2);
-              sync_file2 := umlCombineFileName(AI.rootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5)) + C_Sync_Ext2);
+              sync_file2 := umlCombineFileName(AI.RootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5)) + C_Sync_Ext2);
               umlDeleteFile(sync_file2);
               if Task.Exists(local_sync2) then
                   Task.ReadToFile(local_sync2, sync_file2);
 
-              output_file := umlCombineFileName(AI.rootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5))) + C_Metric_Ext;
+              output_file := umlCombineFileName(AI.RootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5))) + C_Metric_Ext;
 
               GDCNIC_param := TAI.Init_GDCNIC_Train_Parameter(sync_file1, output_file);
 
@@ -3472,7 +4294,7 @@ begin
               GDCNIC_param^.img_mini_batch := param.GetDefaultValue('img_mini_batch', GDCNIC_param^.img_mini_batch);
 
               if umlMultipleMatch('*' + C_ImageMatrix_Ext, inputfile1) then
-                  outputstream := AI.GDCNIC_Train_Stream(
+                  outputstream := AI.GDCNIC_Train_Stream(param.GetDefaultValue('Snapshot', True),
                   param.GetDefaultValue('SS_Width', 32),
                   param.GetDefaultValue('SS_Height', 32),
                   inputImgMatrix,
@@ -3480,7 +4302,7 @@ begin
                   outputPacalStringList
                   )
               else
-                  outputstream := AI.GDCNIC_Train_Stream(
+                  outputstream := AI.GDCNIC_Train_Stream(param.GetDefaultValue('Snapshot', True),
                   param.GetDefaultValue('SS_Width', 32),
                   param.GetDefaultValue('SS_Height', 32),
                   inputImgList,
@@ -3490,10 +4312,10 @@ begin
 
               TAI.Free_GDCNIC_Train_Parameter(GDCNIC_param);
 
-              // write sync1 to task
+              { write sync1 to task }
               if umlFileExists(sync_file1) then
                   Task.WriteFile(local_sync1, sync_file1);
-              // write sync2 to task
+              { write sync2 to task }
               if umlFileExists(sync_file2) then
                   Task.WriteFile(local_sync2, sync_file2);
 
@@ -3533,20 +4355,20 @@ begin
                   inputImgList.scale(param.GetDefaultValue('scale', 1.0));
                 end;
 
-              // init sync file1.
+              { init sync file1. }
               local_sync1 := param.GetDefaultValue('syncfile', 'output' + C_Sync_Ext);
-              sync_file1 := umlCombineFileName(AI.rootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5)) + C_Sync_Ext);
+              sync_file1 := umlCombineFileName(AI.RootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5)) + C_Sync_Ext);
               umlDeleteFile(sync_file1);
               if Task.Exists(local_sync1) then
                   Task.ReadToFile(local_sync1, sync_file1);
-              // init sync file2.
+              { init sync file2. }
               local_sync2 := param.GetDefaultValue('syncfile2', 'output' + C_Sync_Ext2);
-              sync_file2 := umlCombineFileName(AI.rootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5)) + C_Sync_Ext2);
+              sync_file2 := umlCombineFileName(AI.RootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5)) + C_Sync_Ext2);
               umlDeleteFile(sync_file2);
               if Task.Exists(local_sync2) then
                   Task.ReadToFile(local_sync2, sync_file2);
 
-              output_file := umlCombineFileName(AI.rootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5))) + C_Metric_Ext;
+              output_file := umlCombineFileName(AI.RootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5))) + C_Metric_Ext;
 
               GNIC_param := TAI.Init_GNIC_Train_Parameter(sync_file1, output_file);
 
@@ -3557,7 +4379,7 @@ begin
               GNIC_param^.img_mini_batch := param.GetDefaultValue('img_mini_batch', GNIC_param^.img_mini_batch);
 
               if umlMultipleMatch('*' + C_ImageMatrix_Ext, inputfile1) then
-                  outputstream := AI.GNIC_Train_Stream(
+                  outputstream := AI.GNIC_Train_Stream(param.GetDefaultValue('Snapshot', True),
                   param.GetDefaultValue('SS_Width', 32),
                   param.GetDefaultValue('SS_Height', 32),
                   inputImgMatrix,
@@ -3565,7 +4387,7 @@ begin
                   outputPacalStringList
                   )
               else
-                  outputstream := AI.GNIC_Train_Stream(
+                  outputstream := AI.GNIC_Train_Stream(param.GetDefaultValue('Snapshot', True),
                   param.GetDefaultValue('SS_Width', 32),
                   param.GetDefaultValue('SS_Height', 32),
                   inputImgList,
@@ -3575,10 +4397,10 @@ begin
 
               TAI.Free_GNIC_Train_Parameter(GNIC_param);
 
-              // write sync1 to task
+              { write sync1 to task }
               if umlFileExists(sync_file1) then
                   Task.WriteFile(local_sync1, sync_file1);
-              // write sync2 to task
+              { write sync2 to task }
               if umlFileExists(sync_file2) then
                   Task.WriteFile(local_sync2, sync_file2);
 
@@ -3620,20 +4442,20 @@ begin
                   ss_colorPool := inputImgList.BuildSegmentationColorBuffer;
                 end;
 
-              // init sync file1.
+              { init sync file1. }
               local_sync1 := param.GetDefaultValue('syncfile', 'output' + C_Sync_Ext);
-              sync_file1 := umlCombineFileName(AI.rootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5)) + C_Sync_Ext);
+              sync_file1 := umlCombineFileName(AI.RootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5)) + C_Sync_Ext);
               umlDeleteFile(sync_file1);
               if Task.Exists(local_sync1) then
                   Task.ReadToFile(local_sync1, sync_file1);
-              // init sync file2.
+              { init sync file2. }
               local_sync2 := param.GetDefaultValue('syncfile2', 'output' + C_Sync_Ext2);
-              sync_file2 := umlCombineFileName(AI.rootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5)) + C_Sync_Ext2);
+              sync_file2 := umlCombineFileName(AI.RootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5)) + C_Sync_Ext2);
               umlDeleteFile(sync_file2);
               if Task.Exists(local_sync2) then
                   Task.ReadToFile(local_sync2, sync_file2);
 
-              output_file := umlCombineFileName(AI.rootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5))) + C_SS_Ext;
+              output_file := umlCombineFileName(AI.RootPath, umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5))) + C_SS_Ext;
 
               SS_param := TAI.Init_SS_Train_Parameter(sync_file1, output_file);
 
@@ -3660,10 +4482,10 @@ begin
 
               TAI.Free_SS_Train_Parameter(SS_param);
 
-              // write sync1 to task
+              { write sync1 to task }
               if umlFileExists(sync_file1) then
                   Task.WriteFile(local_sync1, sync_file1);
-              // write sync2 to task
+              { write sync2 to task }
               if umlFileExists(sync_file2) then
                   Task.WriteFile(local_sync2, sync_file2);
 
@@ -3741,35 +4563,35 @@ var
   ComputeFunc: SystemString;
   ImgMatrix: TAI_ImageMatrix;
 
-  // Image Matrix Serialized
+  { Image Matrix Serialized }
   RSeriStream: TCoreClassFileStream;
   RSeri: TRasterSerialized;
 
-  // AI Engine Serialized
+  { AI Engine Serialized }
   Training_RSeriStream: TCoreClassFileStream;
   Training_RSeri: TRasterSerialized;
 
-  // log
+  { log }
   LogData: TPascalStringList;
 
-  // step
+  { step }
   StepData: TOneStepList;
 
-  // temp stream
+  { temp stream }
   m64: TMemoryStream64;
   i: Integer;
 
-  // ai build-in param
+  { ai build-in param }
   metric_resnet_param: PMetric_ResNet_Train_Parameter;
   LMetric_resnet_param: PMetric_ResNet_Train_Parameter;
   mmod_param: PMMOD_Train_Parameter;
   rnic_param: PRNIC_Train_Parameter;
   GDCNIC_param: PGDCNIC_Train_Parameter;
   GNIC_param: PGNIC_Train_Parameter;
-  ss_colorPool: TSegmentationColorList;
+  ss_colorPool: TSegmentationColorTable;
   SS_param: PSS_Train_Parameter;
 
-  // data support
+  { data support }
   output_learn_file: SystemString;
   learnEng: TLearn;
   kd: TKDTree;
@@ -3842,25 +4664,35 @@ begin
       metric_resnet_param^.fullGPU_Training := param.GetDefaultValue('fullGPU_Training', metric_resnet_param^.fullGPU_Training);
       Result := AI.Metric_ResNet_Train(param.GetDefaultValue('Snapshot', False), True, Training_RSeri, ImgMatrix, metric_resnet_param);
       TAI.Free_Metric_ResNet_Parameter(metric_resnet_param);
-      if (Result) and (param.GetDefaultValue('LearnVec', False) = True) then
+      if (Result) and (param.GetDefaultValue('LearnVec', False) = True) and (AI.completed_learning_rate > AI.Last_training_learning_rate) then
         begin
-          learnEng := TLearn.CreateClassifier(ltKDT, zAI.C_Metric_Dim);
-          Metric_hnd := AI.Metric_ResNet_Open(OutputModel);
           DoStatus('build metric to learn-KDTree.');
-          AI.Metric_ResNet_SaveToLearnEngine(Metric_hnd, param.GetDefaultValue('Snapshot', False), RSeri, ImgMatrix, learnEng);
-          DoStatus('process metric to learn-KDTree done.');
-          AI.Metric_ResNet_Close(Metric_hnd);
+          learnEng := TLearn.CreateClassifier(ltKDT, zAI.C_Metric_Dim);
+          if param.GetDefaultValue('DNNThread', False) = True then
+            begin
+              m64 := TMemoryStream64.Create;
+              m64.LoadFromFile(OutputModel);
+              AI.Metric_ResNet_SaveToLearnEngine_DT(m64, param.GetDefaultValue('Snapshot', False), RSeri, ImgMatrix, learnEng);
+              DisposeObject(m64);
+            end
+          else
+            begin
+              Metric_hnd := AI.Metric_ResNet_Open(OutputModel);
+              AI.Metric_ResNet_SaveToLearnEngine(Metric_hnd, param.GetDefaultValue('Snapshot', False), RSeri, ImgMatrix, learnEng);
+              AI.Metric_ResNet_Close(Metric_hnd);
+            end;
           learnEng.SaveToFile(umlChangeFileExt(OutputModel, C_Learn_Ext));
           DisposeObject(learnEng);
+          DoStatus('process metric to learn-KDTree done.');
         end;
-      if (Result) and (param.GetDefaultValue('KDTreeVec', False) = True) then
+      if (Result) and (param.GetDefaultValue('KDTreeVec', False) = True) and (AI.completed_learning_rate > AI.Last_training_learning_rate) then
         begin
           Metric_hnd := AI.Metric_ResNet_Open(OutputModel);
           DoStatus('build metric to KDTree.');
           KD_Data := TKDTreeDataList.Create;
           AI.Metric_ResNet_SaveToKDTree(Metric_hnd, param.GetDefaultValue('Snapshot', False), RSeri, ImgMatrix, KD_Data);
-          DoStatus('process metric to KDTree done.');
           AI.Metric_ResNet_Close(Metric_hnd);
+          DoStatus('process metric to KDTree done.');
           kd := TKDTree.Create(zAI.C_Metric_Dim);
           KD_Data.Build(kd);
           DisposeObject(KD_Data);
@@ -3882,25 +4714,35 @@ begin
       LMetric_resnet_param^.fullGPU_Training := param.GetDefaultValue('fullGPU_Training', LMetric_resnet_param^.fullGPU_Training);
       Result := AI.LMetric_ResNet_Train(param.GetDefaultValue('Snapshot', False), True, Training_RSeri, ImgMatrix, LMetric_resnet_param);
       TAI.Free_LMetric_ResNet_Parameter(LMetric_resnet_param);
-      if (Result) and (param.GetDefaultValue('LearnVec', False) = True) then
+      if (Result) and (param.GetDefaultValue('LearnVec', False) = True) and (AI.completed_learning_rate > AI.Last_training_learning_rate) then
         begin
           learnEng := TLearn.CreateClassifier(ltKDT, zAI.C_LMetric_Dim);
-          LMetric_hnd := AI.LMetric_ResNet_Open(OutputModel);
           DoStatus('build LMetric to learn-KDTree.');
-          AI.LMetric_ResNet_SaveToLearnEngine(LMetric_hnd, param.GetDefaultValue('Snapshot', False), RSeri, ImgMatrix, learnEng);
+          if param.GetDefaultValue('DNNThread', False) = True then
+            begin
+              m64 := TMemoryStream64.Create;
+              m64.LoadFromFile(OutputModel);
+              AI.LMetric_ResNet_SaveToLearnEngine_DT(m64, param.GetDefaultValue('Snapshot', False), RSeri, ImgMatrix, learnEng);
+              DisposeObject(m64);
+            end
+          else
+            begin
+              LMetric_hnd := AI.LMetric_ResNet_Open(OutputModel);
+              AI.LMetric_ResNet_SaveToLearnEngine(LMetric_hnd, param.GetDefaultValue('Snapshot', False), RSeri, ImgMatrix, learnEng);
+              AI.LMetric_ResNet_Close(LMetric_hnd);
+            end;
           DoStatus('process LMetric to learn-KDTree done.');
-          AI.LMetric_ResNet_Close(LMetric_hnd);
           learnEng.SaveToFile(umlChangeFileExt(OutputModel, C_Learn_Ext));
           DisposeObject(learnEng);
         end;
-      if (Result) and (param.GetDefaultValue('KDTreeVec', False) = True) then
+      if (Result) and (param.GetDefaultValue('KDTreeVec', False) = True) and (AI.completed_learning_rate > AI.Last_training_learning_rate) then
         begin
           LMetric_hnd := AI.LMetric_ResNet_Open(OutputModel);
           DoStatus('build LMetric to KDTree.');
           KD_Data := TKDTreeDataList.Create;
           AI.LMetric_ResNet_SaveToKDTree(LMetric_hnd, param.GetDefaultValue('Snapshot', False), RSeri, ImgMatrix, KD_Data);
-          DoStatus('process LMetric to KDTree done.');
           AI.LMetric_ResNet_Close(LMetric_hnd);
+          DoStatus('process LMetric to KDTree done.');
           kd := TKDTree.Create(zAI.C_LMetric_Dim);
           KD_Data.Build(kd);
           DisposeObject(KD_Data);
@@ -3996,7 +4838,7 @@ begin
       GDCNIC_param^.learning_rate := param.GetDefaultValue('learning_rate', GDCNIC_param^.learning_rate);
       GDCNIC_param^.completed_learning_rate := param.GetDefaultValue('completed_learning_rate', GDCNIC_param^.completed_learning_rate);
       GDCNIC_param^.img_mini_batch := param.GetDefaultValue('img_mini_batch', GDCNIC_param^.img_mini_batch);
-      Result := AI.GDCNIC_Train(True, Training_RSeri, param.GetDefaultValue('SS_Width', 32), param.GetDefaultValue('SS_Height', 32), ImgMatrix, GDCNIC_param, umlChangeFileExt(OutputModel, '.index'));
+      Result := AI.GDCNIC_Train(param.GetDefaultValue('Snapshot', True), True, Training_RSeri, param.GetDefaultValue('SS_Width', 32), param.GetDefaultValue('SS_Height', 32), ImgMatrix, GDCNIC_param, umlChangeFileExt(OutputModel, '.index'));
       TAI.Free_GDCNIC_Train_Parameter(GDCNIC_param);
     end
   else if umlMultipleMatch(['TrainGNIC', 'TrainingGNIC'], ComputeFunc) then
@@ -4007,7 +4849,7 @@ begin
       GNIC_param^.learning_rate := param.GetDefaultValue('learning_rate', GNIC_param^.learning_rate);
       GNIC_param^.completed_learning_rate := param.GetDefaultValue('completed_learning_rate', GNIC_param^.completed_learning_rate);
       GNIC_param^.img_mini_batch := param.GetDefaultValue('img_mini_batch', GNIC_param^.img_mini_batch);
-      Result := AI.GNIC_Train(True, Training_RSeri, param.GetDefaultValue('SS_Width', 32), param.GetDefaultValue('SS_Height', 32), ImgMatrix, GNIC_param, umlChangeFileExt(OutputModel, '.index'));
+      Result := AI.GNIC_Train(param.GetDefaultValue('Snapshot', True), True, Training_RSeri, param.GetDefaultValue('SS_Width', 32), param.GetDefaultValue('SS_Height', 32), ImgMatrix, GNIC_param, umlChangeFileExt(OutputModel, '.index'));
       TAI.Free_GNIC_Train_Parameter(GNIC_param);
     end
   else if umlMultipleMatch(['TrainSS', 'TrainingSS'], ComputeFunc) then
@@ -4032,7 +4874,7 @@ begin
       DoStatus('AI Training task failed: no define ComputeFunc.');
     end;
 
-  // save log
+  { save log }
   try
     for i := 0 to AI.API^.Log.Count - 1 do
         LogData.Add(umlDateTimeToStr(AI.API^.Log[i].LogTime) + #9 + AI.API^.Log[i].LogText);
@@ -4041,7 +4883,7 @@ begin
   except
   end;
 
-  // save step
+  { save step }
   try
     for i := 0 to AI.API^.OneStepList.Count - 1 do
         StepData.AddStep(AI.API^.OneStepList[i]);
@@ -4057,11 +4899,11 @@ begin
   end;
 
   try
-    // free ImgMatrix
+    { free ImgMatrix }
     DoStatus('free ImageMatrix.');
     DisposeObject(ImgMatrix);
 
-    // free Rastermization Serialized
+    { free Rastermization Serialized }
     DoStatus('free Rastermization Serialized.');
     DisposeObject(RSeri);
     DoStatus('free Rastermization Serialized of stream.');
@@ -4069,7 +4911,7 @@ begin
     DoStatus('remove Serialized temp file %s', [RasterSerializedFile.Text]);
     umlDeleteFile(RasterSerializedFile);
 
-    // free AI Engine Serialized
+    { free AI Engine Serialized }
     DoStatus('free training Serialized.');
     DisposeObject(Training_RSeri);
     DoStatus('free training Serialized of stream.');
@@ -4077,11 +4919,11 @@ begin
     DoStatus('remove training temp file %s', [Training_RasterSerializedFile.Text]);
     umlDeleteFile(Training_RasterSerializedFile);
 
-    // free log
+    { free log }
     DoStatus('free log');
     DisposeObject(LogData);
 
-    // free step
+    { free step }
     DoStatus('free step');
     DisposeObject(StepData);
   except
@@ -4388,17 +5230,17 @@ begin
     begin
       img := imgList[i];
 
-      // full detector do scale 4x size
+      { full detector do scale 4x size }
       mr := NewRaster();
       mr.ZoomFrom(img.Raster, img.Raster.Width * 4, img.Raster.Height * 4);
-      // extract face
+      { extract face }
       face_hnd := AI.Face_Detector_All(mr);
-      // dispose raster
+      { dispose raster }
       DisposeObject(mr);
 
       if face_hnd <> nil then
         begin
-          // remove overlap detector
+          { remove overlap detector }
           for j := 0 to AI.Face_chips_num(face_hnd) - 1 do
             begin
               sp_desc := AI.Face_Shape(face_hnd, j);
@@ -4421,7 +5263,7 @@ begin
                 end;
             end;
 
-          // make detector
+          { make detector }
           for j := 0 to AI.Face_chips_num(face_hnd) - 1 do
             begin
               sp_desc := AI.Face_Shape(face_hnd, j);
@@ -4468,12 +5310,12 @@ begin
     begin
       img := imgList[i];
 
-      // extract face
+      { extract face }
       face_hnd := AI.Face_Detector_All(img.Raster);
 
       if face_hnd <> nil then
         begin
-          // remove overlap detector
+          { remove overlap detector }
           for j := 0 to AI.Face_chips_num(face_hnd) - 1 do
             begin
               sp_desc := AI.Face_Shape(face_hnd, j);
@@ -4490,7 +5332,7 @@ begin
                 end;
             end;
 
-          // make detector
+          { make detector }
           for j := 0 to AI.Face_chips_num(face_hnd) - 1 do
             begin
               sp_desc := AI.Face_Shape(face_hnd, j);
@@ -4560,11 +5402,11 @@ begin
       od_desc := AI.OD6L_Process(od_hnd, mr, 8192);
       DisposeObject(mr);
 
-      // remove overlap detector
+      { remove overlap detector }
       for j := 0 to Length(od_desc) - 1 do
           img.RemoveDetectorFromRect(RectMul(RectV2(od_desc[j]), 0.25));
 
-      // make detector
+      { make detector }
       for j := 0 to Length(od_desc) - 1 do
         begin
           detDef := TAI_DetectorDefine.Create(img);
@@ -4588,11 +5430,11 @@ begin
       img := imgList[i];
       od_desc := AI.OD6L_Process(od_hnd, img.Raster, 8192);
 
-      // remove overlap detector
+      { remove overlap detector }
       for j := 0 to Length(od_desc) - 1 do
           img.RemoveDetectorFromRect(RectV2(od_desc[j]));
 
-      // make detector
+      { make detector }
       for j := 0 to Length(od_desc) - 1 do
         begin
           detDef := TAI_DetectorDefine.Create(img);
@@ -4620,11 +5462,11 @@ begin
       od_desc := AI.OD3L_Process(od_hnd, mr, 8192);
       DisposeObject(mr);
 
-      // remove overlap detector
+      { remove overlap detector }
       for j := 0 to Length(od_desc) - 1 do
           img.RemoveDetectorFromRect(RectMul(RectV2(od_desc[j]), 0.25));
 
-      // make detector
+      { make detector }
       for j := 0 to Length(od_desc) - 1 do
         begin
           detDef := TAI_DetectorDefine.Create(img);
@@ -4648,11 +5490,11 @@ begin
       img := imgList[i];
       od_desc := AI.OD3L_Process(od_hnd, img.Raster, 8192);
 
-      // remove overlap detector
+      { remove overlap detector }
       for j := 0 to Length(od_desc) - 1 do
           img.RemoveDetectorFromRect(RectV2(od_desc[j]));
 
-      // make detector
+      { make detector }
       for j := 0 to Length(od_desc) - 1 do
         begin
           detDef := TAI_DetectorDefine.Create(img);
@@ -4680,11 +5522,11 @@ begin
       od_desc := AI.OD6L_Marshal_Process(od_hnd, mr);
       DisposeObject(mr);
 
-      // remove overlap detector
+      { remove overlap detector }
       for j := 0 to Length(od_desc) - 1 do
           img.RemoveDetectorFromRect(RectMul(od_desc[j].R, 0.25));
 
-      // make detector
+      { make detector }
       for j := 0 to Length(od_desc) - 1 do
         begin
           detDef := TAI_DetectorDefine.Create(img);
@@ -4709,11 +5551,11 @@ begin
       img := imgList[i];
       od_desc := AI.OD6L_Marshal_Process(od_hnd, img.Raster);
 
-      // remove overlap detector
+      { remove overlap detector }
       for j := 0 to Length(od_desc) - 1 do
           img.RemoveDetectorFromRect(od_desc[j].R);
 
-      // make detector
+      { make detector }
       for j := 0 to Length(od_desc) - 1 do
         begin
           detDef := TAI_DetectorDefine.Create(img);
@@ -4807,11 +5649,11 @@ begin
       MMOD_Desc := AI.MMOD6L_DNN_Process(MMOD_hnd, mr);
       DisposeObject(mr);
 
-      // remove overlap detector
+      { remove overlap detector }
       for j := 0 to Length(MMOD_Desc) - 1 do
           img.RemoveDetectorFromRect(RectMul(MMOD_Desc[j].R, 0.25));
 
-      // make detector
+      { make detector }
       for j := 0 to Length(MMOD_Desc) - 1 do
         begin
           detDef := TAI_DetectorDefine.Create(img);
@@ -4836,11 +5678,11 @@ begin
       img := imgList[i];
       MMOD_Desc := AI.MMOD6L_DNN_Process(MMOD_hnd, img.Raster);
 
-      // remove overlap detector
+      { remove overlap detector }
       for j := 0 to Length(MMOD_Desc) - 1 do
           img.RemoveDetectorFromRect(MMOD_Desc[j].R);
 
-      // make detector
+      { make detector }
       for j := 0 to Length(MMOD_Desc) - 1 do
         begin
           detDef := TAI_DetectorDefine.Create(img);
@@ -4869,11 +5711,11 @@ begin
       MMOD_Desc := AI.MMOD3L_DNN_Process(MMOD_hnd, mr);
       DisposeObject(mr);
 
-      // remove overlap detector
+      { remove overlap detector }
       for j := 0 to Length(MMOD_Desc) - 1 do
           img.RemoveDetectorFromRect(RectMul(MMOD_Desc[j].R, 0.25));
 
-      // make detector
+      { make detector }
       for j := 0 to Length(MMOD_Desc) - 1 do
         begin
           detDef := TAI_DetectorDefine.Create(img);
@@ -4898,11 +5740,11 @@ begin
       img := imgList[i];
       MMOD_Desc := AI.MMOD3L_DNN_Process(MMOD_hnd, img.Raster);
 
-      // remove overlap detector
+      { remove overlap detector }
       for j := 0 to Length(MMOD_Desc) - 1 do
           img.RemoveDetectorFromRect(MMOD_Desc[j].R);
 
-      // make detector
+      { make detector }
       for j := 0 to Length(MMOD_Desc) - 1 do
         begin
           detDef := TAI_DetectorDefine.Create(img);
@@ -4956,11 +5798,160 @@ begin
     end;
 end;
 
+function TMorphExpIntf.MorphExp_HotMap(OpRunTime: TOpCustomRunTime; var param: TOpParam): Variant;
+var
+  meRT: TMorphExpRunTime;
+begin
+  meRT := OpRunTime as TMorphExpRunTime;
+  if (meRT.Step.InData = nil) or (meRT.Step.InData.FoundData = 0) then
+    begin
+      Result := OpRunTime.Trigger^.Name + '[error: data is nil]';
+      exit;
+    end;
+
+  if (meRT.Step.InData.Raster = nil) then
+    begin
+      Result := OpRunTime.Trigger^.Name + '[error: must be raster input]';
+      exit;
+    end;
+
+  meRT.Step.OutData.Assign(meRT.Step.InData);
+  with TAI.OpenEngine(FAI_EntryAPI) do
+    begin
+      HotMap(meRT.Step.OutData.Raster);
+      Free;
+    end;
+
+  Result := OpRunTime.Trigger^.Name + '[ok]';
+end;
+
+function TMorphExpIntf.MorphExp_JetMap(OpRunTime: TOpCustomRunTime; var param: TOpParam): Variant;
+var
+  meRT: TMorphExpRunTime;
+begin
+  meRT := OpRunTime as TMorphExpRunTime;
+  if (meRT.Step.InData = nil) or (meRT.Step.InData.FoundData = 0) then
+    begin
+      Result := OpRunTime.Trigger^.Name + '[error: data is nil]';
+      exit;
+    end;
+
+  if (meRT.Step.InData.Raster = nil) then
+    begin
+      Result := OpRunTime.Trigger^.Name + '[error: must be raster input]';
+      exit;
+    end;
+
+  meRT.Step.OutData.Assign(meRT.Step.InData);
+  with TAI.OpenEngine(FAI_EntryAPI) do
+    begin
+      JetMap(meRT.Step.OutData.Raster);
+      Free;
+    end;
+
+  Result := OpRunTime.Trigger^.Name + '[ok]';
+end;
+
+function TMorphExpIntf.MorphExp_Salient(OpRunTime: TOpCustomRunTime; var param: TOpParam): Variant;
+var
+  meRT: TMorphExpRunTime;
+begin
+  meRT := OpRunTime as TMorphExpRunTime;
+  if (meRT.Step.InData = nil) or (meRT.Step.InData.FoundData = 0) then
+    begin
+      Result := OpRunTime.Trigger^.Name + '[error: data is nil]';
+      exit;
+    end;
+
+  if (meRT.Step.InData.Raster = nil) then
+    begin
+      Result := OpRunTime.Trigger^.Name + '[error: must be raster input]';
+      exit;
+    end;
+
+  with TAI.OpenEngine(FAI_EntryAPI) do
+    begin
+      meRT.Step.OutData.Raster := Salient(meRT.Step.InData.Raster);
+      Free;
+    end;
+
+  Result := OpRunTime.Trigger^.Name + '[ok]';
+end;
+
+procedure TMorphExpIntf.RegMorphExpExternalAPI(Exp: TMorphExpRunTime);
+var
+  prefix: U_String;
+begin
+  Exp.RegObjectOpM('HotMap', 'HotMap(): build Hot rastermization', {$IFDEF FPC}@{$ENDIF FPC}MorphExp_HotMap)^.Category := 'Z-AI Engine';
+  Exp.RegObjectOpM('JetMap', 'JetMap(): build Hot rastermization', {$IFDEF FPC}@{$ENDIF FPC}MorphExp_JetMap)^.Category := 'Z-AI Engine';
+  Exp.RegObjectOpM('Salient', 'Salient(): build Salient rastermization', {$IFDEF FPC}@{$ENDIF FPC}MorphExp_Salient)^.Category := 'Z-AI Engine';
+
+  prefix := umlChangeFileExt(umlGetFileName(FAI_EntryAPI^.LibraryFile), '') + '_';
+  prefix := prefix.ReplaceChar('.', '_');
+  Exp.RegObjectOpM(prefix + 'HotMap', prefix + 'HotMap(): build Hot rastermization', {$IFDEF FPC}@{$ENDIF FPC}MorphExp_HotMap)^.Category := 'Z-AI Engine';
+  Exp.RegObjectOpM(prefix + 'JetMap', prefix + 'JetMap(): build Hot rastermization', {$IFDEF FPC}@{$ENDIF FPC}MorphExp_JetMap)^.Category := 'Z-AI Engine';
+  Exp.RegObjectOpM(prefix + 'Salient', prefix + 'Salient(): build Salient rastermization', {$IFDEF FPC}@{$ENDIF FPC}MorphExp_Salient)^.Category := 'Z-AI Engine';
+end;
+
+constructor TMorphExpIntf.Create(AI_EntryAPI_: PAI_EntryAPI);
+begin
+  inherited Create;;
+  FAI_EntryAPI := AI_EntryAPI_;
+end;
+
+destructor TMorphExpIntf.Destroy;
+begin
+  inherited Destroy;
+end;
+
+procedure TAI_EntryAPI.Lock;
+begin
+  Critical.Lock;
+end;
+
+procedure TAI_EntryAPI.UnLock;
+begin
+  Critical.UnLock;
+end;
+
+function TAI_EntryAPI.GetVersionName: TPascalString;
+begin
+  case VerMode of
+    1: Result := 'Snapshot';
+    2: Result := 'Alpha';
+    3: Result := 'Beta';
+    4: Result := 'Pre';
+    5: Result := 'RC';
+    6: Result := 'GA';
+    7: Result := 'Release';
+    8: Result := 'Stable';
+    9: Result := 'Current';
+    10: Result := 'Eval';
+    11: Result := 'Patch';
+    else Result := '';
+  end;
+end;
+
+function TAI_EntryAPI.GetVersionTitle: TPascalString;
+begin
+  Result := PFormat('Z-AI %d.%d %s%d', [MajorVer, MinorVer, GetVersionName().Text, VerID]);
+end;
+
+function TAI_EntryAPI.GetVersionInfo: TPascalString;
+begin
+  Result := GetVersionTitle() + #13#10;
+  Result.Append('Activted Engine: %s' + #13#10, [LibraryFile]);
+  Result.Append('CUDA: ' + if_(CUDA = 1, 'YES', 'NO') + #13#10);
+  Result.Append('Intel-MKL: ' + if_(MKL = 1, 'YES', 'NO') + #13#10);
+  Result.Append('Trainer: ' + if_(Training = 1, 'YES', 'NO') + #13#10);
+  Result.Append('Licensed: ' + if_(Authentication = 1, 'Authorized', 'Free') + #13#10);
+end;
+
 constructor TAI.Create;
 begin
   inherited Create;
   FAI_EntryAPI := nil;
-  face_sp_hnd := nil;
+  FFace_SP_Hnd := nil;
   TrainingControl.pause := 0;
   TrainingControl.stop := 0;
   Critical := TCritical.Create;
@@ -4970,13 +5961,7 @@ begin
   Parallel_OD_Marshal_Hnd := nil;
   Parallel_SP_Hnd := nil;
 
-{$IFDEF FPC}
-  rootPath := AI_Work_Path;
-{$ELSE FPC}
-  rootPath := System.IOUtils.TPath.GetTempPath;
-{$ENDIF FPC}
-  rootPath := umlCombinePath(rootPath, 'Z_AI_Temp');
-  umlCreateDirectory(rootPath);
+  RootPath := GetAITempDirectory();
 
   Last_training_average_loss := 0;
   Last_training_learning_rate := 0;
@@ -5017,11 +6002,11 @@ end;
 
 destructor TAI.Destroy;
 begin
-  if face_sp_hnd <> nil then
+  if FFace_SP_Hnd <> nil then
     begin
-      if (face_sp_hnd = Parallel_SP_Hnd) then
+      if (FFace_SP_Hnd = Parallel_SP_Hnd) then
           Parallel_SP_Hnd := nil;
-      SP_Close(face_sp_hnd);
+      SP_Close(FFace_SP_Hnd);
     end;
   if Parallel_OD6L_Hnd <> nil then
       OD6L_Close(Parallel_OD6L_Hnd);
@@ -5152,7 +6137,7 @@ end;
 function TAI.MakeSerializedFileName: U_String;
 begin
   repeat
-      Result := umlCombineFileName(rootPath, umlMakeRanName + '.dat');
+      Result := umlCombineFileName(RootPath, umlMakeRanName + '.dat');
   until not umlFileExists(Result);
 end;
 
@@ -5161,7 +6146,7 @@ begin
   Critical.Acquire;
 end;
 
-procedure TAI.Unlock;
+procedure TAI.UnLock;
 begin
   Critical.Release;
 end;
@@ -5586,6 +6571,7 @@ end;
 
 function TAI.Prepare_RGB_Image(Raster: TMemoryRaster): TRGB_Image_Handle;
 begin
+  Raster.ReadyBits();
   Result := nil;
   if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.Prepare_RGB_Image) then
       Result := FAI_EntryAPI^.Prepare_RGB_Image(Raster.Bits, Raster.Width, Raster.Height);
@@ -5599,6 +6585,7 @@ end;
 
 function TAI.Prepare_Matrix_Image(Raster: TMemoryRaster): TMatrix_Image_Handle;
 begin
+  Raster.ReadyBits();
   Result := nil;
   if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.Prepare_Matrix_Image) then
       Result := FAI_EntryAPI^.Prepare_Matrix_Image(Raster.Bits, Raster.Width, Raster.Height);
@@ -5614,6 +6601,7 @@ procedure TAI.HotMap(Raster: TMemoryRaster);
 var
   hnd: TBGRA_Buffer_Handle;
 begin
+  Raster.ReadyBits();
   if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.OpenImageBuffer_Hot) then
     begin
       hnd := FAI_EntryAPI^.OpenImageBuffer_Hot(Raster.Bits, Raster.Width, Raster.Height);
@@ -5629,6 +6617,7 @@ procedure TAI.JetMap(Raster: TMemoryRaster);
 var
   hnd: TBGRA_Buffer_Handle;
 begin
+  Raster.ReadyBits();
   if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.OpenImageBuffer_Jet) then
     begin
       hnd := FAI_EntryAPI^.OpenImageBuffer_Jet(Raster.Bits, Raster.Width, Raster.Height);
@@ -5644,6 +6633,7 @@ function TAI.BuildHotMap(Raster: TMemoryRaster): TMemoryRaster;
 var
   hnd: TBGRA_Buffer_Handle;
 begin
+  Raster.ReadyBits();
   Result := nil;
 
   if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.OpenImageBuffer_Hot) then
@@ -5663,6 +6653,7 @@ function TAI.BuildJetMap(Raster: TMemoryRaster): TMemoryRaster;
 var
   hnd: TBGRA_Buffer_Handle;
 begin
+  Raster.ReadyBits();
   Result := nil;
 
   if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.OpenImageBuffer_Jet) then
@@ -5682,6 +6673,7 @@ function TAI.Segment(Raster: TMemoryRaster; const k: Double; const min_siz: Inte
 var
   hnd: TBGRA_Buffer_Handle;
 begin
+  Raster.ReadyBits();
   Result := nil;
 
   if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.Segment) then
@@ -5706,6 +6698,7 @@ function TAI.Salient(Raster: TMemoryRaster; const iterations: Integer): TMemoryR
 var
   hnd: TBGRA_Buffer_Handle;
 begin
+  Raster.ReadyBits();
   Result := nil;
 
   if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.Salient) then
@@ -5730,6 +6723,7 @@ function TAI.CandidateObject(Raster: TMemoryRaster; const min_size, max_merging_
 var
   n: Integer;
 begin
+  Raster.ReadyBits();
   SetLength(Result, 0);
 
   if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.CandidateObject) then
@@ -5747,6 +6741,7 @@ end;
 
 function TAI.Unmixing_Raster(Raster: TMemoryRaster): PUnmixedData;
 begin
+  Raster.ReadyBits();
   if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.RasterizeUnmixing) then
     begin
       Result := FAI_EntryAPI^.RasterizeUnmixing(Raster.Bits, Raster.Width, Raster.Height);
@@ -5770,6 +6765,8 @@ var
   mm: TMorphMath;
   bin: TMorphBin;
 begin
+  sour.ReadyBits();
+  dest.ReadyBits();
   if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.poisson_blend) then
     begin
       if PaperMethod then
@@ -5801,11 +6798,12 @@ var
   bin: TMorphologyBinaryzation;
   p: PBinaryzationBits;
 begin
+  Raster.ReadyBits();
   L := Raster.Width * Raster.Height;
   SetLength(dataIO, L);
   CopyPtr(@inputData^[0], @dataIO[0], L);
 
-  // calibrate box
+  { calibrate box }
   R := AIRect(ForwardRect(box));
   R.Left := umlClamp(R.Left, 0, Raster.Width0i);
   R.Top := umlClamp(R.Top, 0, Raster.Height0i);
@@ -5899,6 +6897,7 @@ end;
 
 function TAI.fast_surf(Raster: TMemoryRaster; const max_points: Integer; const detection_threshold: Double): TSurf_DescBuffer;
 begin
+  Raster.ReadyBits();
   if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.fast_surf) then
     begin
       SetLength(Result, max_points);
@@ -5935,10 +6934,10 @@ var
     p: PSurfMatched;
   begin
     m_idx := -1;
-    minf := MaxRealNumber;
+    minf := 3.4E+38;
     next_minf := minf;
 
-    // find dsc1 from feat2
+    { find dsc1 from feat2 }
     for j := 0 to sd2_len - 1 do
       begin
         d := Min(surf_sqr(@SD1[pass], @SD2[j]), next_minf);
@@ -5952,11 +6951,11 @@ var
             next_minf := Min(next_minf, d);
       end;
 
-    // bidirectional rejection
+    { bidirectional rejection }
     if (minf > reject_ratio_sqr * next_minf) then
         exit;
 
-    // fix m_idx
+    { fix m_idx }
     for j := 0 to sd1_len - 1 do
       if j <> pass then
         begin
@@ -5964,7 +6963,7 @@ var
           next_minf := Min(next_minf, d);
         end;
 
-    // bidirectional rejection
+    { bidirectional rejection }
     if (minf > reject_ratio_sqr * next_minf) then
         exit;
 
@@ -5993,7 +6992,7 @@ var
         minf := 3.4E+38;
         next_minf := minf;
 
-        // find dsc1 from feat2
+        { find dsc1 from feat2 }
         for j := 0 to sd2_len - 1 do
           begin
             d := Min(surf_sqr(@SD1[pass], @SD2[j]), next_minf);
@@ -6007,11 +7006,11 @@ var
                 next_minf := Min(next_minf, d);
           end;
 
-        // bidirectional rejection
+        { bidirectional rejection }
         if (minf > reject_ratio_sqr * next_minf) then
             continue;
 
-        // fix m_idx
+        { fix m_idx }
         for j := 0 to sd1_len - 1 do
           if j <> pass then
             begin
@@ -6019,7 +7018,7 @@ var
               next_minf := Min(next_minf, d);
             end;
 
-        // bidirectional rejection
+        { bidirectional rejection }
         if (minf > reject_ratio_sqr * next_minf) then
             continue;
 
@@ -6088,7 +7087,7 @@ begin
       minf := MaxRealNumber;
       next_minf := minf;
 
-      // find dsc1 from feat2
+      { find dsc1 from feat2 }
       for j := 0 to sd2_len - 1 do
         begin
           d := Min(surf_sqr(@SD1[pass], @SD2[j]), next_minf);
@@ -6102,11 +7101,11 @@ begin
               next_minf := Min(next_minf, d);
         end;
 
-      // bidirectional rejection
+      { bidirectional rejection }
       if (minf > reject_ratio_sqr * next_minf) then
           exit;
 
-      // fix m_idx
+      { fix m_idx }
       for j := 0 to sd1_len - 1 do
         if j <> pass then
           begin
@@ -6114,7 +7113,7 @@ begin
             next_minf := Min(next_minf, d);
           end;
 
-      // bidirectional rejection
+      { bidirectional rejection }
       if (minf > reject_ratio_sqr * next_minf) then
           exit;
 
@@ -6244,7 +7243,7 @@ var
   tmpFileList: TPascalStringList;
   i: Integer;
 begin
-  ph := rootPath;
+  ph := RootPath;
   tmpFileList := TPascalStringList.Create;
 
   TCoreClassThread.Sleep(1);
@@ -6267,7 +7266,7 @@ var
   tmpFileList: TPascalStringList;
   i: Integer;
 begin
-  ph := rootPath;
+  ph := RootPath;
   tmpFileList := TPascalStringList.Create;
 
   TCoreClassThread.Sleep(1);
@@ -6290,7 +7289,7 @@ var
 begin
   Result := nil;
   TCoreClassThread.Sleep(1);
-  fn := umlCombineFileName(rootPath, PFormat('temp_OD6L_%s' + C_OD6L_Ext, [umlMakeRanName.Text]));
+  fn := umlCombineFileName(RootPath, PFormat('temp_OD6L_%s' + C_OD6L_Ext, [umlMakeRanName.Text]));
 
   if OD6L_Train(imgList, '', fn, window_w, window_h, thread_num) then
     if umlFileExists(fn) then
@@ -6308,7 +7307,7 @@ var
 begin
   Result := nil;
   TCoreClassThread.Sleep(1);
-  fn := umlCombineFileName(rootPath, PFormat('temp_OD6L_%s' + C_OD6L_Ext, [umlMakeRanName.Text]));
+  fn := umlCombineFileName(RootPath, PFormat('temp_OD6L_%s' + C_OD6L_Ext, [umlMakeRanName.Text]));
 
   if OD6L_Train(imgMat, '', fn, window_w, window_h, thread_num) then
     if umlFileExists(fn) then
@@ -6403,7 +7402,7 @@ var
 begin
   Result := nil;
   TCoreClassThread.Sleep(1);
-  fn := umlCombineFileName(rootPath, PFormat('temp_OD6L_%s' + C_OD6L_Ext, [umlMakeRanName.Text]));
+  fn := umlCombineFileName(RootPath, PFormat('temp_OD6L_%s' + C_OD6L_Ext, [umlMakeRanName.Text]));
 
   if LargeScale_OD6L_Train(imgList, fn, window_w, window_h, thread_num) then
     if umlFileExists(fn) then
@@ -6421,7 +7420,7 @@ var
 begin
   Result := nil;
   TCoreClassThread.Sleep(1);
-  fn := umlCombineFileName(rootPath, PFormat('temp_OD6L_%s' + C_OD6L_Ext, [umlMakeRanName.Text]));
+  fn := umlCombineFileName(RootPath, PFormat('temp_OD6L_%s' + C_OD6L_Ext, [umlMakeRanName.Text]));
 
   if LargeScale_OD6L_Train(imgMat, fn, window_w, window_h, thread_num) then
     if umlFileExists(fn) then
@@ -6433,7 +7432,7 @@ begin
   umlDeleteFile(fn);
 end;
 
-function TAI.OD6L_Open(train_file: U_String): TOD6L_Handle;
+function TAI.OD6L_Open(train_file: SystemString): TOD6L_Handle;
 var
   train_file_buff: P_Bytes;
 begin
@@ -6446,7 +7445,7 @@ begin
           Free_P_Bytes(train_file_buff);
       end;
       if Result <> nil then
-          DoStatus('Object detector open: %s', [train_file.Text]);
+          DoStatus('Object detector open: %s', [train_file]);
     end
   else
       Result := nil;
@@ -6464,7 +7463,7 @@ begin
       Result := nil;
 end;
 
-function TAI.OD6L_Open_Stream(train_file: U_String): TOD6L_Handle;
+function TAI.OD6L_Open_Stream(train_file: SystemString): TOD6L_Handle;
 var
   m64: TMemoryStream64;
 begin
@@ -6473,7 +7472,7 @@ begin
   Result := OD6L_Open_Stream(m64);
   DisposeObject(m64);
   if Result <> nil then
-      DoStatus('Object detector open: %s', [train_file.Text]);
+      DoStatus('Object detector open: %s', [train_file]);
 end;
 
 function TAI.OD6L_Close(var hnd: TOD6L_Handle): Boolean;
@@ -6493,6 +7492,7 @@ function TAI.OD6L_Process(hnd: TOD6L_Handle; Raster: TMemoryRaster; const max_AI
 var
   rect_num: Integer;
 begin
+  Raster.ReadyBits();
   SetLength(Result, 0);
   if hnd = nil then
       exit;
@@ -6563,6 +7563,7 @@ var
   buff: TOD_Desc;
   i: Integer;
 begin
+  Raster.ReadyBits();
   nr := NewRaster();
   nr.ZoomFrom(Raster, scale);
 
@@ -6617,7 +7618,7 @@ var
   tmpFileList: TPascalStringList;
   i: Integer;
 begin
-  ph := rootPath;
+  ph := RootPath;
   tmpFileList := TPascalStringList.Create;
 
   TCoreClassThread.Sleep(1);
@@ -6640,7 +7641,7 @@ var
   tmpFileList: TPascalStringList;
   i: Integer;
 begin
-  ph := rootPath;
+  ph := RootPath;
   tmpFileList := TPascalStringList.Create;
 
   TCoreClassThread.Sleep(1);
@@ -6663,7 +7664,7 @@ var
 begin
   Result := nil;
   TCoreClassThread.Sleep(1);
-  fn := umlCombineFileName(rootPath, PFormat('temp_OD3L_%s' + C_OD3L_Ext, [umlMakeRanName.Text]));
+  fn := umlCombineFileName(RootPath, PFormat('temp_OD3L_%s' + C_OD3L_Ext, [umlMakeRanName.Text]));
 
   if OD3L_Train(imgList, '', fn, window_w, window_h, thread_num) then
     if umlFileExists(fn) then
@@ -6681,7 +7682,7 @@ var
 begin
   Result := nil;
   TCoreClassThread.Sleep(1);
-  fn := umlCombineFileName(rootPath, PFormat('temp_OD3L_%s' + C_OD3L_Ext, [umlMakeRanName.Text]));
+  fn := umlCombineFileName(RootPath, PFormat('temp_OD3L_%s' + C_OD3L_Ext, [umlMakeRanName.Text]));
 
   if OD3L_Train(imgMat, '', fn, window_w, window_h, thread_num) then
     if umlFileExists(fn) then
@@ -6776,7 +7777,7 @@ var
 begin
   Result := nil;
   TCoreClassThread.Sleep(1);
-  fn := umlCombineFileName(rootPath, PFormat('temp_OD3L_%s' + C_OD3L_Ext, [umlMakeRanName.Text]));
+  fn := umlCombineFileName(RootPath, PFormat('temp_OD3L_%s' + C_OD3L_Ext, [umlMakeRanName.Text]));
 
   if LargeScale_OD3L_Train(imgList, fn, window_w, window_h, thread_num) then
     if umlFileExists(fn) then
@@ -6794,7 +7795,7 @@ var
 begin
   Result := nil;
   TCoreClassThread.Sleep(1);
-  fn := umlCombineFileName(rootPath, PFormat('temp_OD3L_%s' + C_OD3L_Ext, [umlMakeRanName.Text]));
+  fn := umlCombineFileName(RootPath, PFormat('temp_OD3L_%s' + C_OD3L_Ext, [umlMakeRanName.Text]));
 
   if LargeScale_OD3L_Train(imgMat, fn, window_w, window_h, thread_num) then
     if umlFileExists(fn) then
@@ -6806,7 +7807,7 @@ begin
   umlDeleteFile(fn);
 end;
 
-function TAI.OD3L_Open(train_file: U_String): TOD3L_Handle;
+function TAI.OD3L_Open(train_file: SystemString): TOD3L_Handle;
 var
   train_file_buff: P_Bytes;
 begin
@@ -6819,7 +7820,7 @@ begin
           Free_P_Bytes(train_file_buff);
       end;
       if Result <> nil then
-          DoStatus('Object detector open: %s', [train_file.Text]);
+          DoStatus('Object detector open: %s', [train_file]);
     end
   else
       Result := nil;
@@ -6837,7 +7838,7 @@ begin
       Result := nil;
 end;
 
-function TAI.OD3L_Open_Stream(train_file: U_String): TOD3L_Handle;
+function TAI.OD3L_Open_Stream(train_file: SystemString): TOD3L_Handle;
 var
   m64: TMemoryStream64;
 begin
@@ -6846,7 +7847,7 @@ begin
   Result := OD3L_Open_Stream(m64);
   DisposeObject(m64);
   if Result <> nil then
-      DoStatus('Object detector open: %s', [train_file.Text]);
+      DoStatus('Object detector open: %s', [train_file]);
 end;
 
 function TAI.OD3L_Close(var hnd: TOD3L_Handle): Boolean;
@@ -6866,6 +7867,7 @@ function TAI.OD3L_Process(hnd: TOD3L_Handle; Raster: TMemoryRaster; const max_AI
 var
   rect_num: Integer;
 begin
+  Raster.ReadyBits();
   SetLength(Result, 0);
   if hnd = nil then
       exit;
@@ -6974,7 +7976,7 @@ begin
   for Token in token_arry do
     begin
       TCoreClassThread.Sleep(1);
-      fn := umlCombineFileName(rootPath, PFormat('temp_OD_%s' + C_OD6L_Ext, [umlMakeRanName.Text]));
+      fn := umlCombineFileName(RootPath, PFormat('temp_OD_%s' + C_OD6L_Ext, [umlMakeRanName.Text]));
 
       if OD6L_Train(imgList, Token, fn, window_w, window_h, thread_num) then
         begin
@@ -7022,7 +8024,7 @@ begin
   for Token in token_arry do
     begin
       TCoreClassThread.Sleep(1);
-      fn := umlCombineFileName(rootPath, PFormat('temp_OD_%s' + C_OD6L_Ext, [umlMakeRanName.Text]));
+      fn := umlCombineFileName(RootPath, PFormat('temp_OD_%s' + C_OD6L_Ext, [umlMakeRanName.Text]));
 
       if OD6L_Train(imgMat, Token, fn, window_w, window_h, thread_num) then
         begin
@@ -7074,11 +8076,11 @@ begin
         dbEng.ItemRead(itmHnd, itmHnd.Item.Size, m64.memory^);
         dbEng.ItemClose(itmHnd);
 
-        od_hnd := Result[itmHnd.name];
+        od_hnd := Result[itmHnd.Name];
         if od_hnd <> nil then
             OD6L_Close(od_hnd);
         od_hnd := OD6L_Open_Stream(m64);
-        Result.Add(itmHnd.name, od_hnd, False);
+        Result.Add(itmHnd.Name, od_hnd, False);
         DisposeObject(m64);
 
       until not dbEng.ItemFastFindNext(itmSR);
@@ -7089,7 +8091,7 @@ begin
   DoStatus('Object Detector marshal open memory %s size:%s', [umlPointerToStr(stream.memory).Text, umlSizeToStr(stream.Size).Text]);
 end;
 
-function TAI.OD6L_Marshal_Open_Stream(train_file: U_String): TOD6L_Marshal_Handle;
+function TAI.OD6L_Marshal_Open_Stream(train_file: SystemString): TOD6L_Marshal_Handle;
 var
   m64: TMemoryStream64;
 begin
@@ -7098,7 +8100,7 @@ begin
   Result := OD6L_Marshal_Open_Stream(m64);
   DisposeObject(m64);
   if Result <> nil then
-      DoStatus('Object marshal detector open: %s', [train_file.Text]);
+      DoStatus('Object marshal detector open: %s', [train_file]);
 end;
 
 function TAI.OD6L_Marshal_Close(var hnd: TOD6L_Marshal_Handle): Boolean;
@@ -7181,6 +8183,7 @@ var
   end;
 
 begin
+  Raster.ReadyBits();
   output := TOD_Marshal_List.Create;
   lst := TCoreClassList.Create;
   hnd.GetListData(lst);
@@ -7278,7 +8281,7 @@ var
   tmpFileList: TPascalStringList;
   i: Integer;
 begin
-  ph := rootPath;
+  ph := RootPath;
   tmpFileList := TPascalStringList.Create;
 
   TCoreClassThread.Sleep(1);
@@ -7301,7 +8304,7 @@ var
   tmpFileList: TPascalStringList;
   i: Integer;
 begin
-  ph := rootPath;
+  ph := RootPath;
   tmpFileList := TPascalStringList.Create;
 
   TCoreClassThread.Sleep(1);
@@ -7324,7 +8327,7 @@ var
 begin
   Result := nil;
   TCoreClassThread.Sleep(1);
-  fn := umlCombineFileName(rootPath, PFormat('temp_SP_%s' + C_SP_Ext, [umlMakeRanName.Text]));
+  fn := umlCombineFileName(RootPath, PFormat('temp_SP_%s' + C_SP_Ext, [umlMakeRanName.Text]));
 
   if SP_Train(imgList, fn, oversampling_amount, tree_depth, thread_num) then
     if umlFileExists(fn) then
@@ -7342,7 +8345,7 @@ var
 begin
   Result := nil;
   TCoreClassThread.Sleep(1);
-  fn := umlCombineFileName(rootPath, PFormat('temp_SP_%s' + C_SP_Ext, [umlMakeRanName.Text]));
+  fn := umlCombineFileName(RootPath, PFormat('temp_SP_%s' + C_SP_Ext, [umlMakeRanName.Text]));
 
   if SP_Train(imgMat, fn, oversampling_amount, tree_depth, thread_num) then
     if umlFileExists(fn) then
@@ -7437,7 +8440,7 @@ var
 begin
   Result := nil;
   TCoreClassThread.Sleep(1);
-  fn := umlCombineFileName(rootPath, PFormat('temp_SP_%s' + C_SP_Ext, [umlMakeRanName.Text]));
+  fn := umlCombineFileName(RootPath, PFormat('temp_SP_%s' + C_SP_Ext, [umlMakeRanName.Text]));
 
   if LargeScale_SP_Train(imgList, fn, oversampling_amount, tree_depth, thread_num) then
     if umlFileExists(fn) then
@@ -7455,7 +8458,7 @@ var
 begin
   Result := nil;
   TCoreClassThread.Sleep(1);
-  fn := umlCombineFileName(rootPath, PFormat('temp_SP_%s' + C_SP_Ext, [umlMakeRanName.Text]));
+  fn := umlCombineFileName(RootPath, PFormat('temp_SP_%s' + C_SP_Ext, [umlMakeRanName.Text]));
 
   if LargeScale_SP_Train(imgMat, fn, oversampling_amount, tree_depth, thread_num) then
     if umlFileExists(fn) then
@@ -7467,7 +8470,7 @@ begin
   umlDeleteFile(fn);
 end;
 
-function TAI.SP_Open(train_file: U_String): TSP_Handle;
+function TAI.SP_Open(train_file: SystemString): TSP_Handle;
 var
   train_file_buff: P_Bytes;
 begin
@@ -7477,7 +8480,7 @@ begin
       Result := FAI_EntryAPI^.SP_Init(train_file_buff);
       Free_P_Bytes(train_file_buff);
       if Result <> nil then
-          DoStatus('shape predictor open: %s', [train_file.Text]);
+          DoStatus('shape predictor open: %s', [train_file]);
     end
   else
       Result := nil;
@@ -7495,7 +8498,7 @@ begin
       Result := nil;
 end;
 
-function TAI.SP_Open_Stream(train_file: U_String): TSP_Handle;
+function TAI.SP_Open_Stream(train_file: SystemString): TSP_Handle;
 var
   m64: TMemoryStream64;
 begin
@@ -7504,7 +8507,7 @@ begin
   Result := SP_Open_Stream(m64);
   DisposeObject(m64);
   if Result <> nil then
-      DoStatus('shape predictor open: %s', [train_file.Text]);
+      DoStatus('shape predictor open: %s', [train_file]);
 end;
 
 function TAI.SP_Close(var hnd: TSP_Handle): Boolean;
@@ -7524,6 +8527,7 @@ function TAI.SP_Process(hnd: TSP_Handle; Raster: TMemoryRaster; const AI_Rect: T
 var
   point_num: Integer;
 begin
+  Raster.ReadyBits();
   SetLength(Result, 0);
   if hnd = nil then
       exit;
@@ -7588,24 +8592,30 @@ begin
       Result[i] := Vec2(desc[i]);
 end;
 
+function TAI.SP_Process_Face(Raster: TMemoryRaster; const R: TRectV2): TArrayVec2;
+begin
+  PrepareFaceDataSource;
+  Result := SP_Process_Vec2(FFace_SP_Hnd, Raster, R);
+end;
+
 procedure TAI.PrepareFaceDataSource;
 var
   m64: TMemoryStream64;
 begin
   Wait_AI_Init;
   try
-    if (face_sp_hnd = nil) then
+    if (FFace_SP_Hnd = nil) then
       begin
         m64 := TMemoryStream64.Create;
         m64.SetPointerWithProtectedMode(build_in_face_shape_memory, build_in_face_shape_memory_siz);
         m64.Position := 0;
-        face_sp_hnd := SP_Open_Stream(m64);
+        FFace_SP_Hnd := SP_Open_Stream(m64);
         SP_Close(Parallel_SP_Hnd);
-        Parallel_SP_Hnd := face_sp_hnd;
+        Parallel_SP_Hnd := FFace_SP_Hnd;
         DisposeObject(m64);
       end;
   except
-      face_sp_hnd := nil;
+      FFace_SP_Hnd := nil;
   end;
 end;
 
@@ -7624,6 +8634,7 @@ var
   i: Integer;
   fixed_desc: TAI_Rect_Desc;
 begin
+  Raster.ReadyBits();
   Result := nil;
   if FAI_EntryAPI = nil then
       exit;
@@ -7638,7 +8649,7 @@ begin
       fixed_desc[i] := AIRect(RectScaleSpace(RectV2(desc[i]), extract_face_size, extract_face_size));
 
   try
-      Result := FAI_EntryAPI^.SP_extract_face_rect_desc_chips(face_sp_hnd, Raster.Bits, Raster.Width, Raster.Height, extract_face_size, @fixed_desc[0], Length(desc));
+      Result := FAI_EntryAPI^.SP_extract_face_rect_desc_chips(FFace_SP_Hnd, Raster.Bits, Raster.Width, Raster.Height, extract_face_size, @fixed_desc[0], Length(desc));
   except
       Result := nil;
   end;
@@ -7691,6 +8702,7 @@ end;
 
 function TAI.Face_Detector_All(Raster: TMemoryRaster; extract_face_size: Integer): TFACE_Handle;
 begin
+  Raster.ReadyBits();
   Result := nil;
   if FAI_EntryAPI = nil then
       exit;
@@ -7698,7 +8710,7 @@ begin
       exit;
   PrepareFaceDataSource;
   try
-      Result := FAI_EntryAPI^.SP_extract_face_rect_chips(face_sp_hnd, Raster.Bits, Raster.Width, Raster.Height, extract_face_size);
+      Result := FAI_EntryAPI^.SP_extract_face_rect_chips(FFace_SP_Hnd, Raster.Bits, Raster.Width, Raster.Height, extract_face_size);
   except
       Result := nil;
   end;
@@ -7706,6 +8718,7 @@ end;
 
 function TAI.Face_Detector_Rect(Raster: TMemoryRaster): TFACE_Handle;
 begin
+  Raster.ReadyBits();
   Result := nil;
   if FAI_EntryAPI = nil then
       exit;
@@ -7765,6 +8778,27 @@ begin
   FAI_EntryAPI^.SP_get_face_chips_size(hnd, index, w, h);
   Result.SetSize(w, h);
   FAI_EntryAPI^.SP_get_face_chips_bits(hnd, index, Result.Bits);
+end;
+
+function TAI.Face_GetCentreRectIndex(Raster: TMemoryRaster; hnd: TFACE_Handle): Integer;
+var
+  i: Integer;
+  axis, tmp: TVec2;
+begin
+  Result := -1;
+  if Face_Rect_Num(hnd) <= 0 then
+      exit;
+  Result := 0;
+  axis := RectCentre(Face_RectV2(hnd, Result));
+  for i := 1 to Face_Rect_Num(hnd) - 1 do
+    begin
+      tmp := RectCentre(Face_RectV2(hnd, i));
+      if Vec2Distance(axis, Raster.Centre) > Vec2Distance(tmp, Raster.Centre) then
+        begin
+          Result := i;
+          axis := tmp;
+        end;
+    end;
 end;
 
 function TAI.Face_Rect_Num(hnd: TFACE_Handle): Integer;
@@ -7928,7 +8962,7 @@ begin
   if imgSum = 0 then
       exit;
 
-  // process sequence
+  { process sequence }
   SetLength(rArry, imgSum);
   ri := 0;
   for i := 0 to Length(imgList) - 1 do
@@ -7953,12 +8987,12 @@ begin
         end;
     end;
 
-  // set arry
+  { set arry }
   param^.imgArry_ptr := PAI_Raster_Data_Array(@rArry[0]);
   param^.img_num := Length(rArry);
   param^.control := @TrainingControl;
 
-  // execute training
+  { execute training }
   TrainingControl.pause := 0;
   TrainingControl.stop := 0;
 
@@ -7974,7 +9008,7 @@ begin
 
   FAI_EntryAPI^.SerializedTime := GetTimeTick();
 
-  // run training
+  { run training }
   try
     if param^.fullGPU_Training then
         Result := FAI_EntryAPI^.MDNN_ResNet_Full_GPU_Train(param) >= 0
@@ -7995,11 +9029,11 @@ begin
   Last_training_learning_rate := param^.training_learning_rate;
   completed_learning_rate := param^.completed_learning_rate;
 
-  // reset arry
+  { reset arry }
   param^.imgArry_ptr := nil;
   param^.img_num := 0;
 
-  // free res
+  { free res }
   for i := 0 to Length(rArry) - 1 do
       Dispose(rArry[i].raster_Hnd);
   SetLength(rArry, 0);
@@ -8017,9 +9051,14 @@ begin
       exit;
 
   if Snapshot_ then
-      imgBuff := imgList.ExtractDetectorDefineAsSnapshotProjection(C_Metric_Input_Size, C_Metric_Input_Size)
+    begin
+      imgList.CalibrationNoDetectorDefine('');
+      imgBuff := imgList.ExtractDetectorDefineAsSnapshotProjection(C_Metric_Input_Size, C_Metric_Input_Size);
+    end
   else
+    begin
       imgBuff := imgList.ExtractDetectorDefineAsPrepareRaster(C_Metric_Input_Size, C_Metric_Input_Size);
+    end;
 
   if Length(imgBuff) = 0 then
       exit;
@@ -8069,6 +9108,7 @@ begin
       for i := 0 to imgMat.Count - 1 do
         begin
           imgL := imgMat[i];
+          imgL.CalibrationNoDetectorDefine(imgL.FileInfo);
           imgL.CalibrationNullToken(imgL.FileInfo);
           for j := 0 to imgL.Count - 1 do
             if imgL[j].DetectorDefineList.Count = 0 then
@@ -8132,6 +9172,7 @@ begin
       for i := 0 to imgMat.Count - 1 do
         begin
           imgL := imgMat[i];
+          imgL.CalibrationNoDetectorDefine(imgL.FileInfo);
           imgL.CalibrationNullToken(imgL.FileInfo);
           for j := 0 to imgL.Count - 1 do
             if imgL[j].DetectorDefineList.Count = 0 then
@@ -8185,7 +9226,40 @@ begin
     end;
 end;
 
-function TAI.Metric_ResNet_Open(train_file: U_String): TMetric_Handle;
+class function TAI.BuildShareFaceLearn(): TLearn;
+var
+  m64: TMemoryStream64;
+  L: TLearn;
+begin
+  Wait_AI_Init;
+  m64 := TMemoryStream64.Create;
+  m64.SetPointerWithProtectedMode(build_in_face_metric_learn_memory, build_in_face_metric_learn_memory_siz);
+  L := Build_Metric_ResNet_Learn();
+  L.LoadFromStream(m64);
+  DisposeObject(m64);
+  Result := L;
+end;
+
+class function TAI.Build_Metric_ResNet_Learn(): TLearn;
+var
+  L: TLearn;
+begin
+  L := TLearn.CreateClassifier(ltKDT, zAI.C_Metric_Dim);
+  Result := L;
+end;
+
+function TAI.Metric_ResNet_Open_ShareFace(): TMetric_Handle;
+var
+  m64: TMemoryStream64;
+begin
+  Wait_AI_Init;
+  m64 := TMemoryStream64.Create;
+  m64.SetPointerWithProtectedMode(build_in_face_metric_memory, build_in_face_metric_memory_siz);
+  Result := Metric_ResNet_Open_Stream(m64);
+  DisposeObject(m64);
+end;
+
+function TAI.Metric_ResNet_Open(train_file: SystemString): TMetric_Handle;
 var
   train_file_buff: P_Bytes;
 begin
@@ -8195,7 +9269,7 @@ begin
       Result := FAI_EntryAPI^.MDNN_ResNet_Init(train_file_buff);
       Free_P_Bytes(train_file_buff);
       if Result <> nil then
-          DoStatus('MDNN-ResNet(ResNet metric DNN) open: %s', [train_file.Text]);
+          DoStatus('MDNN-ResNet(ResNet metric DNN) open: %s', [train_file]);
     end
   else
       Result := nil;
@@ -8213,7 +9287,7 @@ begin
       Result := nil;
 end;
 
-function TAI.Metric_ResNet_Open_Stream(train_file: U_String): TMetric_Handle;
+function TAI.Metric_ResNet_Open_Stream(train_file: SystemString): TMetric_Handle;
 var
   m64: TMemoryStream64;
 begin
@@ -8222,7 +9296,7 @@ begin
   Result := Metric_ResNet_Open_Stream(m64);
   DisposeObject(m64);
   if Result <> nil then
-      DoStatus('MDNN-ResNet(ResNet metric DNN) open: %s', [train_file.Text]);
+      DoStatus('MDNN-ResNet(ResNet metric DNN) open: %s', [train_file]);
 end;
 
 function TAI.Metric_ResNet_Close(var hnd: TMetric_Handle): Boolean;
@@ -8253,7 +9327,7 @@ begin
 
           nr := NewRaster();
 
-          // projection
+          { projection }
           if (RasterArray[i].Width <> C_Metric_Input_Size) or (RasterArray[i].Height <> C_Metric_Input_Size) then
             begin
               nr.SetSize(C_Metric_Input_Size, C_Metric_Input_Size);
@@ -8262,7 +9336,7 @@ begin
                 TV2Rect4.Init(nr.BoundsRectV2, 0),
                 True, 1.0);
             end
-          else // fast assign
+          else { fast assign }
               nr.SetWorkMemory(RasterArray[i]);
 
           rArry[i].raster_Hnd^.Raster := nr;
@@ -8312,6 +9386,7 @@ function TAI.Metric_ResNet_Process(hnd: TMetric_Handle; Raster: TMemoryRaster): 
 var
   rArry: TMemoryRasterArray;
 begin
+  Raster.ReadyBits();
   SetLength(Result, C_Metric_Dim);
   SetLength(rArry, 1);
   rArry[0] := Raster;
@@ -8319,149 +9394,162 @@ begin
       SetLength(Result, 0);
 end;
 
+procedure TAI.Metric_ResNet_SaveToLearnEngine_DT(pool_: TAI_DNN_ThreadPool; Snapshot_: Boolean; RSeri: TRasterSerialized; imgList: TAI_ImageList; lr: TLearn);
+var
+  i, j: Integer;
+  imgData: TAI_Image;
+  detDef: TAI_DetectorDefine;
+  p: PMetric_ResNet_SaveToLearnEngine_DT_UserData_;
+begin
+  for i := 0 to imgList.Count - 1 do
+    begin
+      imgData := imgList[i];
+      if RSeri <> nil then
+          imgData.UnserializedMemory(RSeri);
+      if Snapshot_ then
+        begin
+          new(p);
+          p^.lr := lr;
+          p^.Snapshot := True;
+          p^.imgData := imgData;
+          p^.detDef := nil;
+          TAI_DNN_Thread_Metric(pool_.MinLoad_DNN_Thread).ProcessC(p, imgData.Raster.Clone, True, {$IFDEF FPC}@{$ENDIF FPC}Metric_ResNet_SaveToLearnEngine_DT_Backcall);
+        end
+      else
+        for j := 0 to imgData.DetectorDefineList.Count - 1 do
+          begin
+            detDef := imgData.DetectorDefineList[j];
+            if detDef.Token.Len > 0 then
+              begin
+                new(p);
+                p^.lr := lr;
+                p^.Snapshot := False;
+                p^.imgData := nil;
+                p^.detDef := detDef;
+
+                if detDef.PrepareRaster.Empty then
+                    TAI_DNN_Thread_Metric(pool_.MinLoad_DNN_Thread).ProcessC(p,
+                    detDef.Owner.Raster.BuildAreaOffsetScaleSpace(detDef.R, C_Metric_Input_Size, C_Metric_Input_Size),
+                    True, {$IFDEF FPC}@{$ENDIF FPC}Metric_ResNet_SaveToLearnEngine_DT_Backcall)
+                else
+                    TAI_DNN_Thread_Metric(pool_.MinLoad_DNN_Thread).ProcessC(p,
+                    detDef.PrepareRaster.Clone,
+                    True, {$IFDEF FPC}@{$ENDIF FPC}Metric_ResNet_SaveToLearnEngine_DT_Backcall);
+              end;
+          end;
+      if RSeri <> nil then
+          imgData.SerializedAndRecycleMemory(RSeri);
+    end;
+end;
+
+procedure TAI.Metric_ResNet_SaveToLearnEngine_DT(Metric_stream: TMemoryStream64; Snapshot_: Boolean; RSeri: TRasterSerialized; imgList: TAI_ImageList; lr: TLearn);
+var
+  pool_: TAI_DNN_ThreadPool;
+  i: Integer;
+begin
+  if lr.InSize <> C_Metric_Dim then
+      RaiseInfo('Learn Engine Insize illegal');
+  pool_ := TAI_DNN_ThreadPool.Create;
+  pool_.BuildPerDeviceThread(FAI_EntryAPI, 4, TAI_DNN_Thread_Metric);
+  for i := 0 to pool_.Count - 1 do
+      TAI_DNN_Thread_Metric(pool_[i]).Open_Stream(Metric_stream);
+  Metric_ResNet_SaveToLearnEngine_DT(pool_, Snapshot_, RSeri, imgList, lr);
+  pool_.Wait();
+  DisposeObject(pool_);
+end;
+
+procedure TAI.Metric_ResNet_SaveToLearnEngine_DT(Metric_stream: TMemoryStream64; Snapshot_: Boolean; RSeri: TRasterSerialized; imgMat: TAI_ImageMatrix; lr: TLearn);
+var
+  pool_: TAI_DNN_ThreadPool;
+  i: Integer;
+begin
+  if lr.InSize <> C_Metric_Dim then
+      RaiseInfo('Learn Engine Insize illegal');
+  pool_ := TAI_DNN_ThreadPool.Create;
+  pool_.BuildPerDeviceThread(FAI_EntryAPI, 4, TAI_DNN_Thread_Metric);
+  for i := 0 to pool_.Count - 1 do
+      TAI_DNN_Thread_Metric(pool_[i]).Open_Stream(Metric_stream);
+  for i := 0 to imgMat.Count - 1 do
+      Metric_ResNet_SaveToLearnEngine_DT(pool_, Snapshot_, RSeri, imgMat[i], lr);
+  pool_.Wait();
+  DisposeObject(pool_);
+end;
+
+procedure TAI.Metric_ResNet_SaveToLearnEngine_DT(Metric_stream: TMemoryStream64; Snapshot_: Boolean; imgList: TAI_ImageList; lr: TLearn);
+begin
+  Metric_ResNet_SaveToLearnEngine_DT(Metric_stream, Snapshot_, nil, imgList, lr);
+end;
+
+procedure TAI.Metric_ResNet_SaveToLearnEngine_DT(Metric_stream: TMemoryStream64; Snapshot_: Boolean; imgMat: TAI_ImageMatrix; lr: TLearn);
+begin
+  Metric_ResNet_SaveToLearnEngine_DT(Metric_stream, Snapshot_, nil, imgMat, lr);
+end;
+
 procedure TAI.Metric_ResNet_SaveToLearnEngine(Metric_hnd: TMetric_Handle; Snapshot_: Boolean; RSeri: TRasterSerialized; imgList: TAI_ImageList; lr: TLearn);
 var
-  i: Integer;
+  i, j: Integer;
   imgData: TAI_Image;
-  L: TRasterList;
-
-{$IFDEF Parallel}
-{$IFDEF FPC}
-  procedure Nested_ParallelFor(pass: Integer);
-  var
-    detDef: TAI_DetectorDefine;
-    mr: TRaster;
-  begin
-    detDef := imgData.DetectorDefineList[pass];
-    if detDef.Token.Len > 0 then
-      begin
-        if detDef.PrepareRaster.Empty then
-          begin
-            mr := detDef.Owner.Raster.BuildAreaOffsetScaleSpace(detDef.R, C_Metric_Input_Size, C_Metric_Input_Size);
-          end
-        else
-          begin
-            mr := NewRaster();
-            mr.SetWorkMemory(detDef.PrepareRaster);
-          end;
-        mr.UserToken := detDef.Token;
-        LockObject(L);
-        L.Add(mr);
-        UnLockObject(L);
-      end;
-  end;
-{$ENDIF FPC}
-{$ELSE Parallel}
-  procedure DoFor;
-  var
-    pass: Integer;
-    detDef: TAI_DetectorDefine;
-    mr: TRaster;
-  begin
-    for pass := 0 to imgData.DetectorDefineList.Count - 1 do
-      begin
-        detDef := imgData.DetectorDefineList[pass];
-        if detDef.Token.Len > 0 then
-          begin
-            if detDef.PrepareRaster.Empty then
-              begin
-                mr := detDef.Owner.Raster.BuildAreaOffsetScaleSpace(detDef.R, C_Metric_Input_Size, C_Metric_Input_Size);
-              end
-            else
-              begin
-                mr := NewRaster();
-                mr.SetWorkMemory(detDef.PrepareRaster);
-              end;
-            mr.UserToken := detDef.Token;
-            L.Add(mr);
-          end;
-      end;
-  end;
-{$ENDIF Parallel}
-  procedure DoProcessMetric_;
-  var
-    j: Integer;
-    InputArry: TMemoryRasterArray;
-    OutputMatrix: TLMatrix;
-  begin
-    SetLength(InputArry, L.Count);
-    for j := 0 to L.Count - 1 do
-        InputArry[j] := L[j];
-    OutputMatrix := Metric_ResNet_Process(Metric_hnd, InputArry);
-    DoStatus('Fill Metric Input to Learn: %d', [L.Count]);
-    for j := 0 to Length(OutputMatrix) - 1 do
-        lr.AddMemory(OutputMatrix[j], L[j].UserToken);
-
-    for j := 0 to L.Count - 1 do
-        DisposeObject(L[j]);
-    DisposeObjectAndNil(L);
-    SetLength(InputArry, 0);
-    SetLength(OutputMatrix, 0);
-  end;
-
+  detDef: TAI_DetectorDefine;
+  mr: TMemoryRaster;
+  v: TLVec;
 begin
-  if RSeri <> nil then
-      imgList.UnserializedMemory(RSeri);
-
-  if Snapshot_ then
+  if lr.InSize <> C_Metric_Dim then
+      RaiseInfo('Learn Engine Insize illegal');
+  for i := 0 to imgList.Count - 1 do
     begin
-      for i := 0 to imgList.Count - 1 do
-          lr.AddMemory(Metric_ResNet_Process(Metric_hnd, imgList[i].Raster), imgList.FileInfo);
-    end
-  else
-    begin
-      L := TRasterList.Create;
-      for i := 0 to imgList.Count - 1 do
+      imgData := imgList[i];
+      if RSeri <> nil then
+          imgData.UnserializedMemory(RSeri);
+      if Snapshot_ then
         begin
-          imgData := imgList[i];
-
-{$IFDEF Parallel}
-{$IFDEF FPC}
-          FPCParallelFor(@Nested_ParallelFor, 0, imgData.DetectorDefineList.Count - 1);
-{$ELSE FPC}
-          DelphiParallelFor(0, imgData.DetectorDefineList.Count - 1, procedure(pass: Integer)
-            var
-              detDef: TAI_DetectorDefine;
-              mr: TRaster;
+          mr := imgData.Raster;
+          v := Metric_ResNet_Process(Metric_hnd, mr);
+          if Length(v) <> C_Metric_Dim then
+              DoStatus('Metric-ResNet vector error!')
+          else
             begin
-              detDef := imgData.DetectorDefineList[pass];
-              if detDef.Token.Len > 0 then
+              for j := 0 to imgData.DetectorDefineList.Count - 1 do
                 begin
-                  if detDef.PrepareRaster.Empty then
-                    begin
-                      mr := detDef.Owner.Raster.BuildAreaOffsetScaleSpace(detDef.R, C_Metric_Input_Size, C_Metric_Input_Size);
-                    end
-                  else
-                    begin
-                      mr := NewRaster();
-                      mr.SetWorkMemory(detDef.PrepareRaster);
-                    end;
-                  mr.UserToken := detDef.Token;
-                  LockObject(L);
-                  L.Add(mr);
-                  UnLockObject(L);
+                  detDef := imgData.DetectorDefineList[j];
+                  if detDef.Token.Len > 0 then
+                      lr.AddMemory(v, detDef.Token);
                 end;
-            end);
-{$ENDIF FPC}
-{$ELSE Parallel}
-          DoFor;
-{$ENDIF Parallel}
-        end;
-      DoProcessMetric_;
+            end;
+        end
+      else
+        for j := 0 to imgData.DetectorDefineList.Count - 1 do
+          begin
+            detDef := imgData.DetectorDefineList[j];
+            if detDef.Token.Len > 0 then
+              begin
+                if detDef.PrepareRaster.Empty then
+                  begin
+                    mr := detDef.Owner.Raster.BuildAreaOffsetScaleSpace(detDef.R, C_Metric_Input_Size, C_Metric_Input_Size);
+                    v := Metric_ResNet_Process(Metric_hnd, mr);
+                    DisposeObject(mr);
+                  end
+                else
+                  begin
+                    mr := detDef.PrepareRaster;
+                    v := Metric_ResNet_Process(Metric_hnd, mr);
+                  end;
+                if Length(v) <> C_Metric_Dim then
+                    DoStatus('Metric-ResNet vector error!')
+                else
+                    lr.AddMemory(v, detDef.Token);
+              end;
+          end;
+      if RSeri <> nil then
+          imgData.SerializedAndRecycleMemory(RSeri);
     end;
-
-  if RSeri <> nil then
-      imgList.SerializedAndRecycleMemory(RSeri);
 end;
 
 procedure TAI.Metric_ResNet_SaveToLearnEngine(Metric_hnd: TMetric_Handle; Snapshot_: Boolean; RSeri: TRasterSerialized; imgMat: TAI_ImageMatrix; lr: TLearn);
 var
-  pass: Integer;
+  i: Integer;
 begin
-  for pass := 0 to imgMat.Count - 1 do
-    begin
-      Metric_ResNet_SaveToLearnEngine(Metric_hnd, Snapshot_, RSeri, imgMat[pass], lr);
-    end;
+  for i := 0 to imgMat.Count - 1 do
+      Metric_ResNet_SaveToLearnEngine(Metric_hnd, Snapshot_, RSeri, imgMat[i], lr);
 end;
 
 procedure TAI.Metric_ResNet_SaveToLearnEngine(Metric_hnd: TMetric_Handle; Snapshot_: Boolean; imgList: TAI_ImageList; lr: TLearn);
@@ -8476,146 +9564,69 @@ end;
 
 procedure TAI.Metric_ResNet_SaveToKDTree(Metric_hnd: TMetric_Handle; Snapshot_: Boolean; RSeri: TRasterSerialized; imgList: TAI_ImageList; kd: TKDTreeDataList);
 var
-  i: Integer;
+  i, j: Integer;
   imgData: TAI_Image;
-  L: TRasterList;
-
-{$IFDEF Parallel}
-{$IFDEF FPC}
-  procedure Nested_ParallelFor(pass: Integer);
-  var
-    detDef: TAI_DetectorDefine;
-    mr: TRaster;
-  begin
-    detDef := imgData.DetectorDefineList[pass];
-    if detDef.Token.Len > 0 then
-      begin
-        if detDef.PrepareRaster.Empty then
-          begin
-            mr := detDef.Owner.Raster.BuildAreaOffsetScaleSpace(detDef.R, C_Metric_Input_Size, C_Metric_Input_Size);
-          end
-        else
-          begin
-            mr := NewRaster();
-            mr.SetWorkMemory(detDef.PrepareRaster);
-          end;
-        mr.UserToken := detDef.Token;
-        LockObject(L);
-        L.Add(mr);
-        UnLockObject(L);
-      end;
-  end;
-{$ENDIF FPC}
-{$ELSE Parallel}
-  procedure DoFor;
-  var
-    pass: Integer;
-    detDef: TAI_DetectorDefine;
-    mr: TRaster;
-  begin
-    for pass := 0 to imgData.DetectorDefineList.Count - 1 do
-      begin
-        detDef := imgData.DetectorDefineList[pass];
-        if detDef.Token.Len > 0 then
-          begin
-            if detDef.PrepareRaster.Empty then
-              begin
-                mr := detDef.Owner.Raster.BuildAreaOffsetScaleSpace(detDef.R, C_Metric_Input_Size, C_Metric_Input_Size);
-              end
-            else
-              begin
-                mr := NewRaster();
-                mr.SetWorkMemory(detDef.PrepareRaster);
-              end;
-            mr.UserToken := detDef.Token;
-            L.Add(mr);
-          end;
-      end;
-  end;
-{$ENDIF Parallel}
-  procedure DoProcessMetric_;
-  var
-    j: Integer;
-    InputArry: TMemoryRasterArray;
-    OutputMatrix: TLMatrix;
-  begin
-    SetLength(InputArry, L.Count);
-    for j := 0 to L.Count - 1 do
-        InputArry[j] := L[j];
-    OutputMatrix := Metric_ResNet_Process(Metric_hnd, InputArry);
-    DoStatus('Fill Metric Input to KD-Tree: %d', [L.Count]);
-    for j := 0 to Length(OutputMatrix) - 1 do
-        kd.Add(OutputMatrix[j], L[j].UserToken);
-
-    for j := 0 to L.Count - 1 do
-        DisposeObject(L[j]);
-    DisposeObjectAndNil(L);
-    SetLength(InputArry, 0);
-    SetLength(OutputMatrix, 0);
-  end;
-
+  detDef: TAI_DetectorDefine;
+  mr: TMemoryRaster;
+  v: TLVec;
 begin
-  if RSeri <> nil then
-      imgList.UnserializedMemory(RSeri);
-
-  if Snapshot_ then
+  for i := 0 to imgList.Count - 1 do
     begin
-      for i := 0 to imgList.Count - 1 do
-          kd.Add(Metric_ResNet_Process(Metric_hnd, imgList[i].Raster), imgList.FileInfo);
-    end
-  else
-    begin
-      L := TRasterList.Create;
-      for i := 0 to imgList.Count - 1 do
+      imgData := imgList[i];
+      if RSeri <> nil then
+          imgData.UnserializedMemory(RSeri);
+      if Snapshot_ then
         begin
-          imgData := imgList[i];
-
-{$IFDEF Parallel}
-{$IFDEF FPC}
-          FPCParallelFor(@Nested_ParallelFor, 0, imgData.DetectorDefineList.Count - 1);
-{$ELSE FPC}
-          DelphiParallelFor(0, imgData.DetectorDefineList.Count - 1, procedure(pass: Integer)
-            var
-              detDef: TAI_DetectorDefine;
-              mr: TRaster;
+          mr := imgData.Raster;
+          v := Metric_ResNet_Process(Metric_hnd, mr);
+          if Length(v) <> C_Metric_Dim then
+              DoStatus('Metric-ResNet vector error!')
+          else
             begin
-              detDef := imgData.DetectorDefineList[pass];
-              if detDef.Token.Len > 0 then
+              for j := 0 to imgData.DetectorDefineList.Count - 1 do
                 begin
-                  if detDef.PrepareRaster.Empty then
-                    begin
-                      mr := detDef.Owner.Raster.BuildAreaOffsetScaleSpace(detDef.R, C_Metric_Input_Size, C_Metric_Input_Size);
-                    end
-                  else
-                    begin
-                      mr := NewRaster();
-                      mr.SetWorkMemory(detDef.PrepareRaster);
-                    end;
-                  mr.UserToken := detDef.Token;
-                  LockObject(L);
-                  L.Add(mr);
-                  UnLockObject(L);
+                  detDef := imgData.DetectorDefineList[j];
+                  if detDef.Token.Len > 0 then
+                      kd.Add(v, detDef.Token);
                 end;
-            end);
-{$ENDIF FPC}
-{$ELSE Parallel}
-          DoFor;
-{$ENDIF Parallel}
-        end;
-      DoProcessMetric_;
-    end;
+            end;
+        end
+      else
+        for j := 0 to imgData.DetectorDefineList.Count - 1 do
+          begin
+            detDef := imgData.DetectorDefineList[j];
+            if detDef.Token.Len > 0 then
+              begin
+                if detDef.PrepareRaster.Empty then
+                  begin
+                    mr := detDef.Owner.Raster.BuildAreaOffsetScaleSpace(detDef.R, C_Metric_Input_Size, C_Metric_Input_Size);
+                    v := Metric_ResNet_Process(Metric_hnd, mr);
+                    DisposeObject(mr);
+                  end
+                else
+                  begin
+                    mr := detDef.PrepareRaster;
+                    v := Metric_ResNet_Process(Metric_hnd, mr);
+                  end;
 
-  if RSeri <> nil then
-      imgList.SerializedAndRecycleMemory(RSeri);
+                if Length(v) <> C_Metric_Dim then
+                    DoStatus('Metric-ResNet vector error!')
+                else
+                    kd.Add(v, detDef.Token);
+              end;
+          end;
+      if RSeri <> nil then
+          imgData.SerializedAndRecycleMemory(RSeri);
+    end;
 end;
 
 procedure TAI.Metric_ResNet_SaveToKDTree(Metric_hnd: TMetric_Handle; Snapshot_: Boolean; RSeri: TRasterSerialized; imgMat: TAI_ImageMatrix; kd: TKDTreeDataList);
 var
-  pass: Integer;
+  i: Integer;
 begin
-  for pass := 0 to imgMat.Count - 1 do
+  for i := 0 to imgMat.Count - 1 do
     begin
-      Metric_ResNet_SaveToKDTree(Metric_hnd, Snapshot_, RSeri, imgMat[pass], kd);
+      Metric_ResNet_SaveToKDTree(Metric_hnd, Snapshot_, RSeri, imgMat[i], kd);
     end;
 end;
 
@@ -8695,7 +9706,7 @@ begin
   if imgSum = 0 then
       exit;
 
-  // process sequence
+  { process sequence }
   SetLength(rArry, imgSum);
   ri := 0;
   for i := 0 to Length(imgList) - 1 do
@@ -8720,12 +9731,12 @@ begin
         end;
     end;
 
-  // set arry
+  { set arry }
   param^.imgArry_ptr := PAI_Raster_Data_Array(@rArry[0]);
   param^.img_num := Length(rArry);
   param^.control := @TrainingControl;
 
-  // execute training
+  { execute training }
   TrainingControl.pause := 0;
   TrainingControl.stop := 0;
 
@@ -8741,7 +9752,7 @@ begin
   FAI_EntryAPI^.SerializedTime := GetTimeTick();
 
   try
-    // run training
+    { run training }
     if param^.fullGPU_Training then
         Result := FAI_EntryAPI^.LMDNN_ResNet_Full_GPU_Train(param) >= 0
     else
@@ -8761,11 +9772,11 @@ begin
   Last_training_learning_rate := param^.training_learning_rate;
   completed_learning_rate := param^.completed_learning_rate;
 
-  // reset arry
+  { reset arry }
   param^.imgArry_ptr := nil;
   param^.img_num := 0;
 
-  // free res
+  { free res }
   for i := 0 to Length(rArry) - 1 do
       Dispose(rArry[i].raster_Hnd);
   SetLength(rArry, 0);
@@ -8783,9 +9794,14 @@ begin
       exit;
 
   if Snapshot_ then
-      imgBuff := imgList.ExtractDetectorDefineAsSnapshotProjection(C_LMetric_Input_Size, C_LMetric_Input_Size)
+    begin
+      imgList.CalibrationNoDetectorDefine('');
+      imgBuff := imgList.ExtractDetectorDefineAsSnapshotProjection(C_LMetric_Input_Size, C_LMetric_Input_Size);
+    end
   else
+    begin
       imgBuff := imgList.ExtractDetectorDefineAsPrepareRaster(C_LMetric_Input_Size, C_LMetric_Input_Size);
+    end;
 
   if Length(imgBuff) = 0 then
       exit;
@@ -8835,6 +9851,7 @@ begin
       for i := 0 to imgMat.Count - 1 do
         begin
           imgL := imgMat[i];
+          imgL.CalibrationNoDetectorDefine(imgL.FileInfo);
           imgL.CalibrationNullToken(imgL.FileInfo);
           for j := 0 to imgL.Count - 1 do
             if imgL[j].DetectorDefineList.Count = 0 then
@@ -8898,6 +9915,7 @@ begin
       for i := 0 to imgMat.Count - 1 do
         begin
           imgL := imgMat[i];
+          imgL.CalibrationNoDetectorDefine(imgL.FileInfo);
           imgL.CalibrationNullToken(imgL.FileInfo);
           for j := 0 to imgL.Count - 1 do
             if imgL[j].DetectorDefineList.Count = 0 then
@@ -8951,7 +9969,15 @@ begin
     end;
 end;
 
-function TAI.LMetric_ResNet_Open(train_file: U_String): TLMetric_Handle;
+class function TAI.Build_LMetric_ResNet_Learn(): TLearn;
+var
+  L: TLearn;
+begin
+  L := TLearn.CreateClassifier(ltKDT, zAI.C_LMetric_Dim);
+  Result := L;
+end;
+
+function TAI.LMetric_ResNet_Open(train_file: SystemString): TLMetric_Handle;
 var
   train_file_buff: P_Bytes;
 begin
@@ -8961,7 +9987,7 @@ begin
       Result := FAI_EntryAPI^.LMDNN_ResNet_Init(train_file_buff);
       Free_P_Bytes(train_file_buff);
       if Result <> nil then
-          DoStatus('Large-MDNN-ResNet(ResNet metric DNN) open: %s', [train_file.Text]);
+          DoStatus('Large-MDNN-ResNet(ResNet metric DNN) open: %s', [train_file]);
     end
   else
       Result := nil;
@@ -8979,7 +10005,7 @@ begin
       Result := nil;
 end;
 
-function TAI.LMetric_ResNet_Open_Stream(train_file: U_String): TLMetric_Handle;
+function TAI.LMetric_ResNet_Open_Stream(train_file: SystemString): TLMetric_Handle;
 var
   m64: TMemoryStream64;
 begin
@@ -8988,7 +10014,7 @@ begin
   Result := LMetric_ResNet_Open_Stream(m64);
   DisposeObject(m64);
   if Result <> nil then
-      DoStatus('Large-MDNN-ResNet(ResNet metric DNN) open: %s', [train_file.Text]);
+      DoStatus('Large-MDNN-ResNet(ResNet metric DNN) open: %s', [train_file]);
 end;
 
 function TAI.LMetric_ResNet_Close(var hnd: TLMetric_Handle): Boolean;
@@ -9019,7 +10045,7 @@ begin
 
           nr := NewRaster();
 
-          // projection
+          { projection }
           if (RasterArray[i].Width <> C_LMetric_Input_Size) or (RasterArray[i].Height <> C_LMetric_Input_Size) then
             begin
               nr.SetSize(C_LMetric_Input_Size, C_LMetric_Input_Size);
@@ -9028,7 +10054,7 @@ begin
                 TV2Rect4.Init(nr.BoundsRectV2, 0),
                 True, 1.0);
             end
-          else // fast assign
+          else { fast assign }
               nr.SetWorkMemory(RasterArray[i]);
 
           rArry[i].raster_Hnd^.Raster := nr;
@@ -9075,6 +10101,7 @@ function TAI.LMetric_ResNet_Process(hnd: TLMetric_Handle; Raster: TMemoryRaster)
 var
   rArry: TMemoryRasterArray;
 begin
+  Raster.ReadyBits();
   SetLength(Result, C_LMetric_Dim);
   SetLength(rArry, 1);
   rArry[0] := Raster;
@@ -9082,149 +10109,159 @@ begin
       SetLength(Result, 0);
 end;
 
+procedure TAI.LMetric_ResNet_SaveToLearnEngine_DT(pool_: TAI_DNN_ThreadPool; Snapshot_: Boolean; RSeri: TRasterSerialized; imgList: TAI_ImageList; lr: TLearn);
+var
+  i, j: Integer;
+  imgData: TAI_Image;
+  detDef: TAI_DetectorDefine;
+  p: PLMetric_ResNet_SaveToLearnEngine_DT_UserData_;
+begin
+  for i := 0 to imgList.Count - 1 do
+    begin
+      imgData := imgList[i];
+      if RSeri <> nil then
+          imgData.UnserializedMemory(RSeri);
+      if Snapshot_ then
+        begin
+          new(p);
+          p^.lr := lr;
+          p^.Snapshot := True;
+          p^.imgData := imgData;
+          p^.detDef := nil;
+          TAI_DNN_Thread_LMetric(pool_.MinLoad_DNN_Thread).ProcessC(p, imgData.Raster.Clone, True, {$IFDEF FPC}@{$ENDIF FPC}LMetric_ResNet_SaveToLearnEngine_DT_Backcall);
+        end
+      else
+        for j := 0 to imgData.DetectorDefineList.Count - 1 do
+          begin
+            detDef := imgData.DetectorDefineList[j];
+            if detDef.Token.Len > 0 then
+              begin
+                new(p);
+                p^.lr := lr;
+                p^.Snapshot := False;
+                p^.imgData := nil;
+                p^.detDef := detDef;
+
+                if detDef.PrepareRaster.Empty then
+                    TAI_DNN_Thread_LMetric(pool_.MinLoad_DNN_Thread).ProcessC(p, detDef.Owner.Raster.BuildAreaOffsetScaleSpace(detDef.R, C_LMetric_Input_Size, C_LMetric_Input_Size),
+                    True, {$IFDEF FPC}@{$ENDIF FPC}LMetric_ResNet_SaveToLearnEngine_DT_Backcall)
+                else
+                    TAI_DNN_Thread_LMetric(pool_.MinLoad_DNN_Thread).ProcessC(p, detDef.PrepareRaster.Clone, True, {$IFDEF FPC}@{$ENDIF FPC}LMetric_ResNet_SaveToLearnEngine_DT_Backcall);
+              end;
+          end;
+      if RSeri <> nil then
+          imgData.SerializedAndRecycleMemory(RSeri);
+    end;
+end;
+
+procedure TAI.LMetric_ResNet_SaveToLearnEngine_DT(LMetric_stream: TMemoryStream64; Snapshot_: Boolean; RSeri: TRasterSerialized; imgList: TAI_ImageList; lr: TLearn);
+var
+  pool_: TAI_DNN_ThreadPool;
+  i: Integer;
+begin
+  if lr.InSize <> C_LMetric_Dim then
+      RaiseInfo('Learn Engine Insize illegal');
+  pool_ := TAI_DNN_ThreadPool.Create;
+  pool_.BuildPerDeviceThread(FAI_EntryAPI, 4, TAI_DNN_Thread_LMetric);
+  for i := 0 to pool_.Count - 1 do
+      TAI_DNN_Thread_LMetric(pool_[i]).Open_Stream(LMetric_stream);
+  LMetric_ResNet_SaveToLearnEngine_DT(pool_, Snapshot_, RSeri, imgList, lr);
+  pool_.Wait();
+  DisposeObject(pool_);
+end;
+
+procedure TAI.LMetric_ResNet_SaveToLearnEngine_DT(LMetric_stream: TMemoryStream64; Snapshot_: Boolean; RSeri: TRasterSerialized; imgMat: TAI_ImageMatrix; lr: TLearn);
+var
+  pool_: TAI_DNN_ThreadPool;
+  i: Integer;
+begin
+  if lr.InSize <> C_LMetric_Dim then
+      RaiseInfo('Learn Engine Insize illegal');
+  pool_ := TAI_DNN_ThreadPool.Create;
+  pool_.BuildPerDeviceThread(FAI_EntryAPI, 4, TAI_DNN_Thread_LMetric);
+  for i := 0 to pool_.Count - 1 do
+      TAI_DNN_Thread_LMetric(pool_[i]).Open_Stream(LMetric_stream);
+  for i := 0 to imgMat.Count - 1 do
+      LMetric_ResNet_SaveToLearnEngine_DT(pool_, Snapshot_, RSeri, imgMat[i], lr);
+  pool_.Wait();
+  DisposeObject(pool_);
+end;
+
+procedure TAI.LMetric_ResNet_SaveToLearnEngine_DT(LMetric_stream: TMemoryStream64; Snapshot_: Boolean; imgList: TAI_ImageList; lr: TLearn);
+begin
+  LMetric_ResNet_SaveToLearnEngine_DT(LMetric_stream, Snapshot_, nil, imgList, lr);
+end;
+
+procedure TAI.LMetric_ResNet_SaveToLearnEngine_DT(LMetric_stream: TMemoryStream64; Snapshot_: Boolean; imgMat: TAI_ImageMatrix; lr: TLearn);
+begin
+  LMetric_ResNet_SaveToLearnEngine_DT(LMetric_stream, Snapshot_, nil, imgMat, lr);
+end;
+
 procedure TAI.LMetric_ResNet_SaveToLearnEngine(LMetric_hnd: TLMetric_Handle; Snapshot_: Boolean; RSeri: TRasterSerialized; imgList: TAI_ImageList; lr: TLearn);
 var
-  i: Integer;
+  i, j: Integer;
   imgData: TAI_Image;
-  L: TRasterList;
-
-{$IFDEF Parallel}
-{$IFDEF FPC}
-  procedure Nested_ParallelFor(pass: Integer);
-  var
-    detDef: TAI_DetectorDefine;
-    mr: TRaster;
-  begin
-    detDef := imgData.DetectorDefineList[pass];
-    if detDef.Token.Len > 0 then
-      begin
-        if detDef.PrepareRaster.Empty then
-          begin
-            mr := detDef.Owner.Raster.BuildAreaOffsetScaleSpace(detDef.R, C_LMetric_Input_Size, C_LMetric_Input_Size);
-          end
-        else
-          begin
-            mr := NewRaster();
-            mr.SetWorkMemory(detDef.PrepareRaster);
-          end;
-        mr.UserToken := detDef.Token;
-        LockObject(L);
-        L.Add(mr);
-        UnLockObject(L);
-      end;
-  end;
-{$ENDIF FPC}
-{$ELSE Parallel}
-  procedure DoFor;
-  var
-    pass: Integer;
-    detDef: TAI_DetectorDefine;
-    mr: TRaster;
-  begin
-    for pass := 0 to imgData.DetectorDefineList.Count - 1 do
-      begin
-        detDef := imgData.DetectorDefineList[pass];
-        if detDef.Token.Len > 0 then
-          begin
-            if detDef.PrepareRaster.Empty then
-              begin
-                mr := detDef.Owner.Raster.BuildAreaOffsetScaleSpace(detDef.R, C_LMetric_Input_Size, C_LMetric_Input_Size);
-              end
-            else
-              begin
-                mr := NewRaster();
-                mr.SetWorkMemory(detDef.PrepareRaster);
-              end;
-            mr.UserToken := detDef.Token;
-            L.Add(mr);
-          end;
-      end;
-  end;
-{$ENDIF Parallel}
-  procedure DoProcessLMetric_;
-  var
-    j: Integer;
-    InputArry: TMemoryRasterArray;
-    OutputMatrix: TLMatrix;
-  begin
-    SetLength(InputArry, L.Count);
-    for j := 0 to L.Count - 1 do
-        InputArry[j] := L[j];
-    OutputMatrix := LMetric_ResNet_Process(LMetric_hnd, InputArry);
-    DoStatus('Fill LMetric Input to Learn: %d', [L.Count]);
-    for j := 0 to Length(OutputMatrix) - 1 do
-        lr.AddMemory(OutputMatrix[j], L[j].UserToken);
-
-    for j := 0 to L.Count - 1 do
-        DisposeObject(L[j]);
-    DisposeObjectAndNil(L);
-    SetLength(InputArry, 0);
-    SetLength(OutputMatrix, 0);
-  end;
-
+  detDef: TAI_DetectorDefine;
+  mr: TMemoryRaster;
+  v: TLVec;
 begin
-  if RSeri <> nil then
-      imgList.UnserializedMemory(RSeri);
-
-  if Snapshot_ then
+  if lr.InSize <> C_LMetric_Dim then
+      RaiseInfo('Learn Engine Insize illegal');
+  for i := 0 to imgList.Count - 1 do
     begin
-      for i := 0 to imgList.Count - 1 do
-          lr.AddMemory(LMetric_ResNet_Process(LMetric_hnd, imgList[i].Raster), imgList.FileInfo);
-    end
-  else
-    begin
-      L := TRasterList.Create;
-      for i := 0 to imgList.Count - 1 do
+      imgData := imgList[i];
+      if RSeri <> nil then
+          imgData.UnserializedMemory(RSeri);
+      if Snapshot_ then
         begin
-          imgData := imgList[i];
-
-{$IFDEF Parallel}
-{$IFDEF FPC}
-          FPCParallelFor(@Nested_ParallelFor, 0, imgData.DetectorDefineList.Count - 1);
-{$ELSE FPC}
-          DelphiParallelFor(0, imgData.DetectorDefineList.Count - 1, procedure(pass: Integer)
-            var
-              detDef: TAI_DetectorDefine;
-              mr: TRaster;
+          mr := imgData.Raster;
+          v := LMetric_ResNet_Process(LMetric_hnd, mr);
+          if Length(v) <> C_LMetric_Dim then
+              DoStatus('LMetric-ResNet vector error!')
+          else
             begin
-              detDef := imgData.DetectorDefineList[pass];
-              if detDef.Token.Len > 0 then
+              for j := 0 to imgData.DetectorDefineList.Count - 1 do
                 begin
-                  if detDef.PrepareRaster.Empty then
-                    begin
-                      mr := detDef.Owner.Raster.BuildAreaOffsetScaleSpace(detDef.R, C_LMetric_Input_Size, C_LMetric_Input_Size);
-                    end
-                  else
-                    begin
-                      mr := NewRaster();
-                      mr.SetWorkMemory(detDef.PrepareRaster);
-                    end;
-                  mr.UserToken := detDef.Token;
-                  LockObject(L);
-                  L.Add(mr);
-                  UnLockObject(L);
+                  detDef := imgData.DetectorDefineList[j];
+                  if detDef.Token.Len > 0 then
+                      lr.AddMemory(v, detDef.Token);
                 end;
-            end);
-{$ENDIF FPC}
-{$ELSE Parallel}
-          DoFor;
-{$ENDIF Parallel}
-        end;
-      DoProcessLMetric_;
+            end;
+        end
+      else
+        for j := 0 to imgData.DetectorDefineList.Count - 1 do
+          begin
+            detDef := imgData.DetectorDefineList[j];
+            if detDef.Token.Len > 0 then
+              begin
+                if detDef.PrepareRaster.Empty then
+                  begin
+                    mr := detDef.Owner.Raster.BuildAreaOffsetScaleSpace(detDef.R, C_LMetric_Input_Size, C_LMetric_Input_Size);
+                    v := LMetric_ResNet_Process(LMetric_hnd, mr);
+                    DisposeObject(mr);
+                  end
+                else
+                  begin
+                    mr := detDef.PrepareRaster;
+                    v := LMetric_ResNet_Process(LMetric_hnd, mr);
+                  end;
+                if Length(v) <> C_LMetric_Dim then
+                    DoStatus('LMetric-ResNet vector error!')
+                else
+                    lr.AddMemory(v, detDef.Token);
+              end;
+          end;
+      if RSeri <> nil then
+          imgData.SerializedAndRecycleMemory(RSeri);
     end;
-
-  if RSeri <> nil then
-      imgList.SerializedAndRecycleMemory(RSeri);
 end;
 
 procedure TAI.LMetric_ResNet_SaveToLearnEngine(LMetric_hnd: TLMetric_Handle; Snapshot_: Boolean; RSeri: TRasterSerialized; imgMat: TAI_ImageMatrix; lr: TLearn);
 var
-  pass: Integer;
+  i: Integer;
 begin
-  for pass := 0 to imgMat.Count - 1 do
-    begin
-      LMetric_ResNet_SaveToLearnEngine(LMetric_hnd, Snapshot_, RSeri, imgMat[pass], lr);
-    end;
+  for i := 0 to imgMat.Count - 1 do
+      LMetric_ResNet_SaveToLearnEngine(LMetric_hnd, Snapshot_, RSeri, imgMat[i], lr);
 end;
 
 procedure TAI.LMetric_ResNet_SaveToLearnEngine(LMetric_hnd: TLMetric_Handle; Snapshot_: Boolean; imgList: TAI_ImageList; lr: TLearn);
@@ -9239,146 +10276,69 @@ end;
 
 procedure TAI.LMetric_ResNet_SaveToKDTree(LMetric_hnd: TLMetric_Handle; Snapshot_: Boolean; RSeri: TRasterSerialized; imgList: TAI_ImageList; kd: TKDTreeDataList);
 var
-  i: Integer;
+  i, j: Integer;
   imgData: TAI_Image;
-  L: TRasterList;
-
-{$IFDEF Parallel}
-{$IFDEF FPC}
-  procedure Nested_ParallelFor(pass: Integer);
-  var
-    detDef: TAI_DetectorDefine;
-    mr: TRaster;
-  begin
-    detDef := imgData.DetectorDefineList[pass];
-    if detDef.Token.Len > 0 then
-      begin
-        if detDef.PrepareRaster.Empty then
-          begin
-            mr := detDef.Owner.Raster.BuildAreaOffsetScaleSpace(detDef.R, C_LMetric_Input_Size, C_LMetric_Input_Size);
-          end
-        else
-          begin
-            mr := NewRaster();
-            mr.SetWorkMemory(detDef.PrepareRaster);
-          end;
-        mr.UserToken := detDef.Token;
-        LockObject(L);
-        L.Add(mr);
-        UnLockObject(L);
-      end;
-  end;
-{$ENDIF FPC}
-{$ELSE Parallel}
-  procedure DoFor;
-  var
-    pass: Integer;
-    detDef: TAI_DetectorDefine;
-    mr: TRaster;
-  begin
-    for pass := 0 to imgData.DetectorDefineList.Count - 1 do
-      begin
-        detDef := imgData.DetectorDefineList[pass];
-        if detDef.Token.Len > 0 then
-          begin
-            if detDef.PrepareRaster.Empty then
-              begin
-                mr := detDef.Owner.Raster.BuildAreaOffsetScaleSpace(detDef.R, C_LMetric_Input_Size, C_LMetric_Input_Size);
-              end
-            else
-              begin
-                mr := NewRaster();
-                mr.SetWorkMemory(detDef.PrepareRaster);
-              end;
-            mr.UserToken := detDef.Token;
-            L.Add(mr);
-          end;
-      end;
-  end;
-{$ENDIF Parallel}
-  procedure DoProcessLMetric_;
-  var
-    j: Integer;
-    InputArry: TMemoryRasterArray;
-    OutputMatrix: TLMatrix;
-  begin
-    SetLength(InputArry, L.Count);
-    for j := 0 to L.Count - 1 do
-        InputArry[j] := L[j];
-    OutputMatrix := LMetric_ResNet_Process(LMetric_hnd, InputArry);
-    DoStatus('Fill LMetric Input to KD-Tree: %d', [L.Count]);
-    for j := 0 to Length(OutputMatrix) - 1 do
-        kd.Add(OutputMatrix[j], L[j].UserToken);
-
-    for j := 0 to L.Count - 1 do
-        DisposeObject(L[j]);
-    DisposeObjectAndNil(L);
-    SetLength(InputArry, 0);
-    SetLength(OutputMatrix, 0);
-  end;
-
+  detDef: TAI_DetectorDefine;
+  mr: TMemoryRaster;
+  v: TLVec;
 begin
-  if RSeri <> nil then
-      imgList.UnserializedMemory(RSeri);
-
-  if Snapshot_ then
+  for i := 0 to imgList.Count - 1 do
     begin
-      for i := 0 to imgList.Count - 1 do
-          kd.Add(LMetric_ResNet_Process(LMetric_hnd, imgList[i].Raster), imgList.FileInfo);
-    end
-  else
-    begin
-      L := TRasterList.Create;
-      for i := 0 to imgList.Count - 1 do
+      imgData := imgList[i];
+      if RSeri <> nil then
+          imgData.UnserializedMemory(RSeri);
+      if Snapshot_ then
         begin
-          imgData := imgList[i];
-
-{$IFDEF Parallel}
-{$IFDEF FPC}
-          FPCParallelFor(@Nested_ParallelFor, 0, imgData.DetectorDefineList.Count - 1);
-{$ELSE FPC}
-          DelphiParallelFor(0, imgData.DetectorDefineList.Count - 1, procedure(pass: Integer)
-            var
-              detDef: TAI_DetectorDefine;
-              mr: TRaster;
+          mr := imgData.Raster;
+          v := LMetric_ResNet_Process(LMetric_hnd, mr);
+          if Length(v) <> C_LMetric_Dim then
+              DoStatus('LMetric-ResNet vector error!')
+          else
             begin
-              detDef := imgData.DetectorDefineList[pass];
-              if detDef.Token.Len > 0 then
+              for j := 0 to imgData.DetectorDefineList.Count - 1 do
                 begin
-                  if detDef.PrepareRaster.Empty then
-                    begin
-                      mr := detDef.Owner.Raster.BuildAreaOffsetScaleSpace(detDef.R, C_LMetric_Input_Size, C_LMetric_Input_Size);
-                    end
-                  else
-                    begin
-                      mr := NewRaster();
-                      mr.SetWorkMemory(detDef.PrepareRaster);
-                    end;
-                  mr.UserToken := detDef.Token;
-                  LockObject(L);
-                  L.Add(mr);
-                  UnLockObject(L);
+                  detDef := imgData.DetectorDefineList[j];
+                  if detDef.Token.Len > 0 then
+                      kd.Add(v, detDef.Token);
                 end;
-            end);
-{$ENDIF FPC}
-{$ELSE Parallel}
-          DoFor;
-{$ENDIF Parallel}
-        end;
-      DoProcessLMetric_;
-    end;
+            end;
+        end
+      else
+        for j := 0 to imgData.DetectorDefineList.Count - 1 do
+          begin
+            detDef := imgData.DetectorDefineList[j];
+            if detDef.Token.Len > 0 then
+              begin
+                if detDef.PrepareRaster.Empty then
+                  begin
+                    mr := detDef.Owner.Raster.BuildAreaOffsetScaleSpace(detDef.R, C_LMetric_Input_Size, C_LMetric_Input_Size);
+                    v := LMetric_ResNet_Process(LMetric_hnd, mr);
+                    DisposeObject(mr);
+                  end
+                else
+                  begin
+                    mr := detDef.PrepareRaster;
+                    v := LMetric_ResNet_Process(LMetric_hnd, mr);
+                  end;
 
-  if RSeri <> nil then
-      imgList.SerializedAndRecycleMemory(RSeri);
+                if Length(v) <> C_LMetric_Dim then
+                    DoStatus('LMetric-ResNet vector error!')
+                else
+                    kd.Add(v, detDef.Token);
+              end;
+          end;
+      if RSeri <> nil then
+          imgData.SerializedAndRecycleMemory(RSeri);
+    end;
 end;
 
 procedure TAI.LMetric_ResNet_SaveToKDTree(LMetric_hnd: TLMetric_Handle; Snapshot_: Boolean; RSeri: TRasterSerialized; imgMat: TAI_ImageMatrix; kd: TKDTreeDataList);
 var
-  pass: Integer;
+  i: Integer;
 begin
-  for pass := 0 to imgMat.Count - 1 do
+  for i := 0 to imgMat.Count - 1 do
     begin
-      LMetric_ResNet_SaveToKDTree(LMetric_hnd, Snapshot_, RSeri, imgMat[pass], kd);
+      LMetric_ResNet_SaveToKDTree(LMetric_hnd, Snapshot_, RSeri, imgMat[i], kd);
     end;
 end;
 
@@ -9441,7 +10401,7 @@ begin
   Result^.training_average_loss := 0;
   Result^.training_learning_rate := 0;
 
-  // internal
+  { internal }
   Result^.TempFiles := nil;
 end;
 
@@ -9458,7 +10418,7 @@ var
   ph, fn, prefix, train_out: U_String;
   tmpFileList: TPascalStringList;
 begin
-  ph := rootPath;
+  ph := RootPath;
   tmpFileList := TPascalStringList.Create;
   TCoreClassThread.Sleep(1);
   prefix := 'MMOD6L_DNN_' + umlMakeRanName + '_';
@@ -9475,7 +10435,7 @@ var
   ph, fn, prefix, train_out: U_String;
   tmpFileList: TPascalStringList;
 begin
-  ph := rootPath;
+  ph := RootPath;
   tmpFileList := TPascalStringList.Create;
   TCoreClassThread.Sleep(1);
   prefix := 'MMOD6L_DNN_' + umlMakeRanName + '_';
@@ -9496,7 +10456,7 @@ begin
       TrainingControl.stop := 0;
       FAI_EntryAPI^.RasterSerialized := nil;
       FAI_EntryAPI^.SerializedTime := GetTimeTick();
-      param^.saveMemory := 0; // normal MMOD trainer.
+      param^.saveMemory := 0; { normal MMOD trainer. }
       Result := FAI_EntryAPI^.MMOD6L_DNN_Train(param);
       Last_training_average_loss := param^.training_average_loss;
       Last_training_learning_rate := param^.training_learning_rate;
@@ -9563,7 +10523,7 @@ begin
   if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.LargeScale_MMOD6L_Train) then
     begin
       param^.control := @TrainingControl;
-      param^.saveMemory := 0; // normal MMOD trainer.
+      param^.saveMemory := 0; { normal MMOD trainer. }
       try
           Result := FAI_EntryAPI^.LargeScale_MMOD6L_Train(param, @imgArry_P[0], imgList.Count);
       except
@@ -9604,7 +10564,7 @@ begin
   if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.LargeScale_MMOD6L_Train) then
     begin
       param^.control := @TrainingControl;
-      param^.saveMemory := 0; // normal MMOD trainer.
+      param^.saveMemory := 0; { normal MMOD trainer. }
       try
           Result := FAI_EntryAPI^.LargeScale_MMOD6L_Train(param, @imgArry_P[0], imgL.Count);
       except
@@ -9644,7 +10604,7 @@ begin
     begin
       param^.control := @TrainingControl;
 
-      param^.saveMemory := 1; // large-scale MMOD trainer.
+      param^.saveMemory := 1; { large-scale MMOD trainer. }
       RSeri.ClearHistory;
       RSeri.EnabledReadHistory := True;
       FAI_EntryAPI^.RasterSerialized := RSeri;
@@ -9696,7 +10656,7 @@ begin
     begin
       param^.control := @TrainingControl;
 
-      param^.saveMemory := 1; // large-scale MMOD trainer.
+      param^.saveMemory := 1; { large-scale MMOD trainer. }
       RSeri.ClearHistory;
       RSeri.EnabledReadHistory := True;
       FAI_EntryAPI^.RasterSerialized := RSeri;
@@ -9783,22 +10743,6 @@ begin
   Free_MMOD6L_DNN_TrainParam(param);
 end;
 
-function TAI.MMOD6L_DNN_Open(train_file: U_String): TMMOD6L_Handle;
-var
-  train_file_buff: P_Bytes;
-begin
-  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.MMOD6L_DNN_Init) then
-    begin
-      train_file_buff := Alloc_P_Bytes(train_file);
-      Result := FAI_EntryAPI^.MMOD6L_DNN_Init(train_file_buff);
-      Free_P_Bytes(train_file_buff);
-      if Result <> nil then
-          DoStatus('MMOD-DNN(DNN+SVM:max-margin object detector) open: %s', [train_file.Text]);
-    end
-  else
-      Result := nil;
-end;
-
 function TAI.MMOD6L_DNN_Open_Face(): TMMOD6L_Handle;
 var
   m64: TMemoryStream64;
@@ -9808,6 +10752,22 @@ begin
   m64.SetPointerWithProtectedMode(build_in_face_detector_memory, build_in_face_detector_memory_siz);
   Result := MMOD6L_DNN_Open_Stream(m64);
   DisposeObject(m64);
+end;
+
+function TAI.MMOD6L_DNN_Open(train_file: SystemString): TMMOD6L_Handle;
+var
+  train_file_buff: P_Bytes;
+begin
+  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.MMOD6L_DNN_Init) then
+    begin
+      train_file_buff := Alloc_P_Bytes(train_file);
+      Result := FAI_EntryAPI^.MMOD6L_DNN_Init(train_file_buff);
+      Free_P_Bytes(train_file_buff);
+      if Result <> nil then
+          DoStatus('MMOD-DNN(DNN+SVM:max-margin object detector) open: %s', [train_file]);
+    end
+  else
+      Result := nil;
 end;
 
 function TAI.MMOD6L_DNN_Open_Stream(stream: TMemoryStream64): TMMOD6L_Handle;
@@ -9822,7 +10782,7 @@ begin
       Result := nil;
 end;
 
-function TAI.MMOD6L_DNN_Open_Stream(train_file: U_String): TMMOD6L_Handle;
+function TAI.MMOD6L_DNN_Open_Stream(train_file: SystemString): TMMOD6L_Handle;
 var
   m64: TMemoryStream64;
 begin
@@ -9831,7 +10791,7 @@ begin
   Result := MMOD6L_DNN_Open_Stream(m64);
   DisposeObject(m64);
   if Result <> nil then
-      DoStatus('MMOD-DNN(DNN+SVM:max-margin object detector) open: %s', [train_file.Text]);
+      DoStatus('MMOD-DNN(DNN+SVM:max-margin object detector) open: %s', [train_file]);
 end;
 
 function TAI.MMOD6L_DNN_Close(var hnd: TMMOD6L_Handle): Boolean;
@@ -9853,6 +10813,7 @@ var
   buff: TAI_MMOD_Desc;
   i: Integer;
 begin
+  Raster.ReadyBits();
   SetLength(Result, 0);
   if hnd = nil then
       exit;
@@ -9957,7 +10918,7 @@ begin
   Result^.training_average_loss := 0;
   Result^.training_learning_rate := 0;
 
-  // internal
+  { internal }
   Result^.TempFiles := nil;
 end;
 
@@ -9974,7 +10935,7 @@ var
   ph, fn, prefix, train_out: U_String;
   tmpFileList: TPascalStringList;
 begin
-  ph := rootPath;
+  ph := RootPath;
   tmpFileList := TPascalStringList.Create;
   TCoreClassThread.Sleep(1);
   prefix := 'MMOD3L_DNN_' + umlMakeRanName + '_';
@@ -9991,7 +10952,7 @@ var
   ph, fn, prefix, train_out: U_String;
   tmpFileList: TPascalStringList;
 begin
-  ph := rootPath;
+  ph := RootPath;
   tmpFileList := TPascalStringList.Create;
   TCoreClassThread.Sleep(1);
   prefix := 'MMOD3L_DNN_' + umlMakeRanName + '_';
@@ -10012,7 +10973,7 @@ begin
       TrainingControl.stop := 0;
       FAI_EntryAPI^.RasterSerialized := nil;
       FAI_EntryAPI^.SerializedTime := GetTimeTick();
-      param^.saveMemory := 0; // normal MMOD trainer.
+      param^.saveMemory := 0; { normal MMOD trainer. }
       Result := FAI_EntryAPI^.MMOD3L_DNN_Train(param);
       Last_training_average_loss := param^.training_average_loss;
       Last_training_learning_rate := param^.training_learning_rate;
@@ -10079,7 +11040,7 @@ begin
   if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.LargeScale_MMOD3L_Train) then
     begin
       param^.control := @TrainingControl;
-      param^.saveMemory := 0; // normal MMOD trainer.
+      param^.saveMemory := 0; { normal MMOD trainer. }
       try
           Result := FAI_EntryAPI^.LargeScale_MMOD3L_Train(param, @imgArry_P[0], imgList.Count);
       except
@@ -10120,7 +11081,7 @@ begin
   if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.LargeScale_MMOD3L_Train) then
     begin
       param^.control := @TrainingControl;
-      param^.saveMemory := 0; // normal MMOD trainer.
+      param^.saveMemory := 0; { normal MMOD trainer. }
       try
           Result := FAI_EntryAPI^.LargeScale_MMOD3L_Train(param, @imgArry_P[0], imgL.Count);
       except
@@ -10160,7 +11121,7 @@ begin
     begin
       param^.control := @TrainingControl;
 
-      param^.saveMemory := 1; // large-scale MMOD trainer.
+      param^.saveMemory := 1; { large-scale MMOD trainer. }
       RSeri.ClearHistory;
       RSeri.EnabledReadHistory := True;
       FAI_EntryAPI^.RasterSerialized := RSeri;
@@ -10212,7 +11173,7 @@ begin
     begin
       param^.control := @TrainingControl;
 
-      param^.saveMemory := 1; // large-scale MMOD trainer.
+      param^.saveMemory := 1; { large-scale MMOD trainer. }
       RSeri.ClearHistory;
       RSeri.EnabledReadHistory := True;
       FAI_EntryAPI^.RasterSerialized := RSeri;
@@ -10299,7 +11260,7 @@ begin
   Free_MMOD3L_DNN_TrainParam(param);
 end;
 
-function TAI.MMOD3L_DNN_Open(train_file: U_String): TMMOD3L_Handle;
+function TAI.MMOD3L_DNN_Open(train_file: SystemString): TMMOD3L_Handle;
 var
   train_file_buff: P_Bytes;
 begin
@@ -10309,21 +11270,10 @@ begin
       Result := FAI_EntryAPI^.MMOD3L_DNN_Init(train_file_buff);
       Free_P_Bytes(train_file_buff);
       if Result <> nil then
-          DoStatus('MMOD-DNN(DNN+SVM:max-margin object detector) open: %s', [train_file.Text]);
+          DoStatus('MMOD-DNN(DNN+SVM:max-margin object detector) open: %s', [train_file]);
     end
   else
       Result := nil;
-end;
-
-function TAI.MMOD3L_DNN_Open_Face(): TMMOD3L_Handle;
-var
-  m64: TMemoryStream64;
-begin
-  Wait_AI_Init;
-  m64 := TMemoryStream64.Create;
-  m64.SetPointerWithProtectedMode(build_in_face_detector_memory, build_in_face_detector_memory_siz);
-  Result := MMOD3L_DNN_Open_Stream(m64);
-  DisposeObject(m64);
 end;
 
 function TAI.MMOD3L_DNN_Open_Stream(stream: TMemoryStream64): TMMOD3L_Handle;
@@ -10338,7 +11288,7 @@ begin
       Result := nil;
 end;
 
-function TAI.MMOD3L_DNN_Open_Stream(train_file: U_String): TMMOD3L_Handle;
+function TAI.MMOD3L_DNN_Open_Stream(train_file: SystemString): TMMOD3L_Handle;
 var
   m64: TMemoryStream64;
 begin
@@ -10347,7 +11297,7 @@ begin
   Result := MMOD3L_DNN_Open_Stream(m64);
   DisposeObject(m64);
   if Result <> nil then
-      DoStatus('MMOD-DNN(DNN+SVM:max-margin object detector) open: %s', [train_file.Text]);
+      DoStatus('MMOD-DNN(DNN+SVM:max-margin object detector) open: %s', [train_file]);
 end;
 
 function TAI.MMOD3L_DNN_Close(var hnd: TMMOD3L_Handle): Boolean;
@@ -10369,6 +11319,7 @@ var
   buff: TAI_MMOD_Desc;
   i: Integer;
 begin
+  Raster.ReadyBits();
   SetLength(Result, 0);
   if hnd = nil then
       exit;
@@ -10561,7 +11512,7 @@ begin
   param^.img_num := 0;
   param^.control := nil;
 
-  // free res
+  { free res }
   for i := 0 to Length(imgInfo_arry) - 1 do
       Dispose(imgInfo_arry[i].raster_Hnd);
   SetLength(imgInfo_arry, 0);
@@ -10580,6 +11531,7 @@ begin
       exit;
 
   Train_OutputIndex.Clear;
+  imgList.CalibrationNoDetectorDefine('');
   imgBuff := imgList.ExtractDetectorDefineAsSnapshot();
   out_index := TMemoryRasterList.Create;
   Result := RNIC_Train(False, nil, imgBuff, param, out_index);
@@ -10642,6 +11594,7 @@ begin
   for i := 0 to imgMat.Count - 1 do
     begin
       imgL := imgMat[i];
+      imgL.CalibrationNoDetectorDefine(imgL.FileInfo);
       imgL.CalibrationNullToken(imgL.FileInfo);
       for j := 0 to imgL.Count - 1 do
         if imgL[j].DetectorDefineList.Count = 0 then
@@ -10716,6 +11669,7 @@ begin
   for i := 0 to imgMat.Count - 1 do
     begin
       imgL := imgMat[i];
+      imgL.CalibrationNoDetectorDefine(imgL.FileInfo);
       imgL.CalibrationNullToken(imgL.FileInfo);
       for j := 0 to imgL.Count - 1 do
         if imgL[j].DetectorDefineList.Count = 0 then
@@ -10779,7 +11733,7 @@ begin
     end;
 end;
 
-function TAI.RNIC_Open(train_file: U_String): TRNIC_Handle;
+function TAI.RNIC_Open(train_file: SystemString): TRNIC_Handle;
 var
   train_file_buff: P_Bytes;
 begin
@@ -10789,7 +11743,7 @@ begin
       Result := FAI_EntryAPI^.RNIC_Init(train_file_buff);
       Free_P_Bytes(train_file_buff);
       if Result <> nil then
-          DoStatus('ResNet-Image-Classifier open: %s', [train_file.Text]);
+          DoStatus('ResNet-Image-Classifier open: %s', [train_file]);
     end
   else
       Result := nil;
@@ -10806,7 +11760,7 @@ begin
       Result := nil;
 end;
 
-function TAI.RNIC_Open_Stream(train_file: U_String): TRNIC_Handle;
+function TAI.RNIC_Open_Stream(train_file: SystemString): TRNIC_Handle;
 var
   m64: TMemoryStream64;
 begin
@@ -10815,7 +11769,7 @@ begin
   Result := RNIC_Open_Stream(m64);
   DisposeObject(m64);
   if Result <> nil then
-      DoStatus('ResNet-Image-Classifier open: %s', [train_file.Text]);
+      DoStatus('ResNet-Image-Classifier open: %s', [train_file]);
 end;
 
 function TAI.RNIC_Close(var hnd: TRNIC_Handle): Boolean;
@@ -10835,6 +11789,7 @@ function TAI.RNIC_Process(hnd: TRNIC_Handle; Raster: TMemoryRaster; num_crops: I
 var
   R: Integer;
 begin
+  Raster.ReadyBits();
   SetLength(Result, 0);
   if hnd = nil then
       exit;
@@ -11029,6 +11984,7 @@ begin
       exit;
 
   Train_OutputIndex.Clear;
+  imgList.CalibrationNoDetectorDefine('');
   imgBuff := imgList.ExtractDetectorDefineAsSnapshot();
   out_index := TMemoryRasterList.Create;
   Result := LRNIC_Train(False, nil, imgBuff, param, out_index);
@@ -11091,6 +12047,7 @@ begin
   for i := 0 to imgMat.Count - 1 do
     begin
       imgL := imgMat[i];
+      imgL.CalibrationNoDetectorDefine(imgL.FileInfo);
       imgL.CalibrationNullToken(imgL.FileInfo);
       for j := 0 to imgL.Count - 1 do
         if imgL[j].DetectorDefineList.Count = 0 then
@@ -11165,6 +12122,7 @@ begin
   for i := 0 to imgMat.Count - 1 do
     begin
       imgL := imgMat[i];
+      imgL.CalibrationNoDetectorDefine(imgL.FileInfo);
       imgL.CalibrationNullToken(imgL.FileInfo);
       for j := 0 to imgL.Count - 1 do
         if imgL[j].DetectorDefineList.Count = 0 then
@@ -11228,7 +12186,7 @@ begin
     end;
 end;
 
-function TAI.LRNIC_Open(train_file: U_String): TLRNIC_Handle;
+function TAI.LRNIC_Open(train_file: SystemString): TLRNIC_Handle;
 var
   train_file_buff: P_Bytes;
 begin
@@ -11238,7 +12196,7 @@ begin
       Result := FAI_EntryAPI^.LRNIC_Init(train_file_buff);
       Free_P_Bytes(train_file_buff);
       if Result <> nil then
-          DoStatus('ResNet-Image-Classifier open: %s', [train_file.Text]);
+          DoStatus('ResNet-Image-Classifier open: %s', [train_file]);
     end
   else
       Result := nil;
@@ -11255,7 +12213,7 @@ begin
       Result := nil;
 end;
 
-function TAI.LRNIC_Open_Stream(train_file: U_String): TLRNIC_Handle;
+function TAI.LRNIC_Open_Stream(train_file: SystemString): TLRNIC_Handle;
 var
   m64: TMemoryStream64;
 begin
@@ -11264,7 +12222,7 @@ begin
   Result := LRNIC_Open_Stream(m64);
   DisposeObject(m64);
   if Result <> nil then
-      DoStatus('ResNet-Image-Classifier open: %s', [train_file.Text]);
+      DoStatus('ResNet-Image-Classifier open: %s', [train_file]);
 end;
 
 function TAI.LRNIC_Close(var hnd: TLRNIC_Handle): Boolean;
@@ -11284,6 +12242,7 @@ function TAI.LRNIC_Process(hnd: TLRNIC_Handle; Raster: TMemoryRaster; num_crops:
 var
   R: Integer;
 begin
+  Raster.ReadyBits();
   SetLength(Result, 0);
   if hnd = nil then
       exit;
@@ -11364,7 +12323,7 @@ begin
   Dispose(param);
 end;
 
-function TAI.GDCNIC_Train(LargeScale_: Boolean; RSeri: TRasterSerialized; imgList: TMemoryRaster2DArray; param: PGDCNIC_Train_Parameter; Train_OutputIndex: TMemoryRasterList): Boolean;
+function TAI.GDCNIC_Train_(LargeScale_: Boolean; RSeri: TRasterSerialized; imgList: TMemoryRaster2DArray; param: PGDCNIC_Train_Parameter; Train_OutputIndex: TMemoryRasterList): Boolean;
 var
   i, j, imgSum, ri: Integer;
   imgArry: TMemoryRasterArray;
@@ -11457,13 +12416,13 @@ begin
   param^.img_num := 0;
   param^.control := nil;
 
-  // free res
+  { free res }
   for i := 0 to Length(imgInfo_arry) - 1 do
       Dispose(imgInfo_arry[i].raster_Hnd);
   SetLength(imgInfo_arry, 0);
 end;
 
-function TAI.GDCNIC_Train(SS_width, SS_height: Integer; imgList: TAI_ImageList; param: PGDCNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): Boolean;
+function TAI.GDCNIC_Train(Snapshot_: Boolean; SS_width, SS_height: Integer; imgList: TAI_ImageList; param: PGDCNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): Boolean;
 var
   imgBuff: TMemoryRaster2DArray;
   i, j: Integer;
@@ -11476,162 +12435,184 @@ begin
       exit;
 
   Train_OutputIndex.Clear;
-  imgBuff := imgList.ExtractDetectorDefineAsSnapshotProjection(SS_width, SS_height);
-  out_index := TMemoryRasterList.Create;
-  Result := GDCNIC_Train(False, nil, imgBuff, param, out_index);
-  if Result then
-    for i := 0 to out_index.Count - 1 do
-      if Train_OutputIndex.ExistsValue(out_index[i].UserToken) < 0 then
-          Train_OutputIndex.Add(out_index[i].UserToken);
-  DisposeObject(out_index);
 
-  for i := 0 to Length(imgBuff) - 1 do
-    for j := 0 to Length(imgBuff[i]) - 1 do
-        DisposeObject(imgBuff[i, j]);
-  SetLength(imgBuff, 0, 0);
-end;
+  imgList.CalibrationNoDetectorDefine('');
 
-function TAI.GDCNIC_Train(SS_width, SS_height: Integer; imgList: TAI_ImageList; param: PGDCNIC_Train_Parameter; train_index_output: U_String): Boolean;
-var
-  TrainIndex: TPascalStringList;
-begin
-  TrainIndex := TPascalStringList.Create;
-  Result := GDCNIC_Train(SS_width, SS_height, imgList, param, TrainIndex);
-  if Result then
-      TrainIndex.SaveToFile(train_index_output);
-  DisposeObject(TrainIndex);
-end;
-
-function TAI.GDCNIC_Train_Stream(SS_width, SS_height: Integer; imgList: TAI_ImageList; param: PGDCNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): TMemoryStream64;
-var
-  fn: U_String;
-begin
-  Result := nil;
-
-  if GDCNIC_Train(SS_width, SS_height, imgList, param, Train_OutputIndex) then
-    begin
-      fn := Get_P_Bytes_String(param^.train_output);
-      if umlFileExists(fn) then
-        begin
-          Result := TMemoryStream64.Create;
-          Result.LoadFromFile(fn);
-          Result.Position := 0;
-        end;
-    end;
-end;
-
-function TAI.GDCNIC_Train(SS_width, SS_height: Integer; imgMat: TAI_ImageMatrix; param: PGDCNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): Boolean;
-var
-  imgBuff: TMemoryRaster2DArray;
-  i, j: Integer;
-  out_index: TMemoryRasterList;
-  imgL: TAI_ImageList;
-  detDef: TAI_DetectorDefine;
-begin
-  Result := False;
-  if FAI_EntryAPI = nil then
-      exit;
-  if not Assigned(FAI_EntryAPI^.GDCNIC_Train) then
-      exit;
-
-  DoStatus('Calibration GDCNIC dataset.');
-  for i := 0 to imgMat.Count - 1 do
-    begin
-      imgL := imgMat[i];
-      imgL.CalibrationNullToken(imgL.FileInfo);
-      for j := 0 to imgL.Count - 1 do
-        if imgL[j].DetectorDefineList.Count = 0 then
-          begin
-            detDef := TAI_DetectorDefine.Create(imgL[j]);
-            detDef.R := imgL[j].Raster.BoundsRect;
-            detDef.Token := imgL.FileInfo;
-            imgL[j].DetectorDefineList.Add(detDef);
-          end;
-    end;
-
-  Train_OutputIndex.Clear;
-  imgBuff := imgMat.ExtractDetectorDefineAsSnapshotProjection(SS_width, SS_height);
-  out_index := TMemoryRasterList.Create;
-  Result := GDCNIC_Train(False, nil, imgBuff, param, out_index);
-  if Result then
-    for i := 0 to out_index.Count - 1 do
-      if Train_OutputIndex.ExistsValue(out_index[i].UserToken) < 0 then
-          Train_OutputIndex.Add(out_index[i].UserToken);
-  DisposeObject(out_index);
-
-  for i := 0 to Length(imgBuff) - 1 do
-    for j := 0 to Length(imgBuff[i]) - 1 do
-        DisposeObject(imgBuff[i, j]);
-  SetLength(imgBuff, 0, 0);
-end;
-
-function TAI.GDCNIC_Train(SS_width, SS_height: Integer; imgMat: TAI_ImageMatrix; param: PGDCNIC_Train_Parameter; train_index_output: U_String): Boolean;
-var
-  TrainIndex: TPascalStringList;
-begin
-  TrainIndex := TPascalStringList.Create;
-  Result := GDCNIC_Train(SS_width, SS_height, imgMat, param, TrainIndex);
-  if Result then
-      TrainIndex.SaveToFile(train_index_output);
-  DisposeObject(TrainIndex);
-end;
-
-function TAI.GDCNIC_Train_Stream(SS_width, SS_height: Integer; imgMat: TAI_ImageMatrix; param: PGDCNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): TMemoryStream64;
-var
-  fn: U_String;
-begin
-  Result := nil;
-
-  if GDCNIC_Train(SS_width, SS_height, imgMat, param, Train_OutputIndex) then
-    begin
-      fn := Get_P_Bytes_String(param^.train_output);
-      if umlFileExists(fn) then
-        begin
-          Result := TMemoryStream64.Create;
-          Result.LoadFromFile(fn);
-          Result.Position := 0;
-        end;
-    end;
-end;
-
-function TAI.GDCNIC_Train(LargeScale_: Boolean; RSeri: TRasterSerialized; SS_width, SS_height: Integer; imgMat: TAI_ImageMatrix; param: PGDCNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): Boolean;
-var
-  imgBuff: TMemoryRaster2DArray;
-  i, j: Integer;
-  out_index: TMemoryRasterList;
-  imgL: TAI_ImageList;
-  detDef: TAI_DetectorDefine;
-begin
-  Result := False;
-  if FAI_EntryAPI = nil then
-      exit;
-  if not Assigned(FAI_EntryAPI^.GDCNIC_Train) then
-      exit;
-
-  DoStatus('Calibration GDCNIC dataset.');
-  for i := 0 to imgMat.Count - 1 do
-    begin
-      imgL := imgMat[i];
-      imgL.CalibrationNullToken(imgL.FileInfo);
-      for j := 0 to imgL.Count - 1 do
-        if imgL[j].DetectorDefineList.Count = 0 then
-          begin
-            detDef := TAI_DetectorDefine.Create(imgL[j]);
-            detDef.R := imgL[j].Raster.BoundsRect;
-            detDef.Token := imgL.FileInfo;
-            imgL[j].DetectorDefineList.Add(detDef);
-          end;
-    end;
-  Train_OutputIndex.Clear;
-
-  if LargeScale_ then
-      imgBuff := imgMat.LargeScale_ExtractDetectorDefineAsSnapshotProjection(RSeri, SS_width, SS_height)
+  if Snapshot_ then
+      imgBuff := imgList.ExtractDetectorDefineAsSnapshotProjection(SS_width, SS_height)
   else
-      imgBuff := imgMat.ExtractDetectorDefineAsSnapshotProjection(SS_width, SS_height);
+      imgBuff := imgList.ExtractDetectorDefineAsPrepareRaster(SS_width, SS_height);
+
+  out_index := TMemoryRasterList.Create;
+  Result := GDCNIC_Train_(False, nil, imgBuff, param, out_index);
+  if Result then
+    for i := 0 to out_index.Count - 1 do
+      if Train_OutputIndex.ExistsValue(out_index[i].UserToken) < 0 then
+          Train_OutputIndex.Add(out_index[i].UserToken);
+  DisposeObject(out_index);
+
+  for i := 0 to Length(imgBuff) - 1 do
+    for j := 0 to Length(imgBuff[i]) - 1 do
+        DisposeObject(imgBuff[i, j]);
+  SetLength(imgBuff, 0, 0);
+end;
+
+function TAI.GDCNIC_Train(Snapshot_: Boolean; SS_width, SS_height: Integer; imgList: TAI_ImageList; param: PGDCNIC_Train_Parameter; train_index_output: U_String): Boolean;
+var
+  TrainIndex: TPascalStringList;
+begin
+  TrainIndex := TPascalStringList.Create;
+  Result := GDCNIC_Train(Snapshot_, SS_width, SS_height, imgList, param, TrainIndex);
+  if Result then
+      TrainIndex.SaveToFile(train_index_output);
+  DisposeObject(TrainIndex);
+end;
+
+function TAI.GDCNIC_Train_Stream(Snapshot_: Boolean; SS_width, SS_height: Integer; imgList: TAI_ImageList; param: PGDCNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): TMemoryStream64;
+var
+  fn: U_String;
+begin
+  Result := nil;
+
+  if GDCNIC_Train(Snapshot_, SS_width, SS_height, imgList, param, Train_OutputIndex) then
+    begin
+      fn := Get_P_Bytes_String(param^.train_output);
+      if umlFileExists(fn) then
+        begin
+          Result := TMemoryStream64.Create;
+          Result.LoadFromFile(fn);
+          Result.Position := 0;
+        end;
+    end;
+end;
+
+function TAI.GDCNIC_Train(Snapshot_: Boolean; SS_width, SS_height: Integer; imgMat: TAI_ImageMatrix; param: PGDCNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): Boolean;
+var
+  imgBuff: TMemoryRaster2DArray;
+  i, j: Integer;
+  out_index: TMemoryRasterList;
+  imgL: TAI_ImageList;
+  detDef: TAI_DetectorDefine;
+begin
+  Result := False;
+  if FAI_EntryAPI = nil then
+      exit;
+  if not Assigned(FAI_EntryAPI^.GDCNIC_Train) then
+      exit;
+
+  DoStatus('Calibration GDCNIC dataset.');
+  for i := 0 to imgMat.Count - 1 do
+    begin
+      imgL := imgMat[i];
+      imgL.CalibrationNoDetectorDefine(imgL.FileInfo);
+      imgL.CalibrationNullToken(imgL.FileInfo);
+      for j := 0 to imgL.Count - 1 do
+        if imgL[j].DetectorDefineList.Count = 0 then
+          begin
+            detDef := TAI_DetectorDefine.Create(imgL[j]);
+            detDef.R := imgL[j].Raster.BoundsRect;
+            detDef.Token := imgL.FileInfo;
+            imgL[j].DetectorDefineList.Add(detDef);
+          end;
+    end;
+
+  Train_OutputIndex.Clear;
+  if Snapshot_ then
+      imgBuff := imgMat.ExtractDetectorDefineAsSnapshotProjection(SS_width, SS_height)
+  else
+      imgBuff := imgMat.ExtractDetectorDefineAsPrepareRaster(SS_width, SS_height);
+  out_index := TMemoryRasterList.Create;
+  Result := GDCNIC_Train_(False, nil, imgBuff, param, out_index);
+  if Result then
+    for i := 0 to out_index.Count - 1 do
+      if Train_OutputIndex.ExistsValue(out_index[i].UserToken) < 0 then
+          Train_OutputIndex.Add(out_index[i].UserToken);
+  DisposeObject(out_index);
+
+  for i := 0 to Length(imgBuff) - 1 do
+    for j := 0 to Length(imgBuff[i]) - 1 do
+        DisposeObject(imgBuff[i, j]);
+  SetLength(imgBuff, 0, 0);
+end;
+
+function TAI.GDCNIC_Train(Snapshot_: Boolean; SS_width, SS_height: Integer; imgMat: TAI_ImageMatrix; param: PGDCNIC_Train_Parameter; train_index_output: U_String): Boolean;
+var
+  TrainIndex: TPascalStringList;
+begin
+  TrainIndex := TPascalStringList.Create;
+  Result := GDCNIC_Train(Snapshot_, SS_width, SS_height, imgMat, param, TrainIndex);
+  if Result then
+      TrainIndex.SaveToFile(train_index_output);
+  DisposeObject(TrainIndex);
+end;
+
+function TAI.GDCNIC_Train_Stream(Snapshot_: Boolean; SS_width, SS_height: Integer; imgMat: TAI_ImageMatrix; param: PGDCNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): TMemoryStream64;
+var
+  fn: U_String;
+begin
+  Result := nil;
+
+  if GDCNIC_Train(Snapshot_, SS_width, SS_height, imgMat, param, Train_OutputIndex) then
+    begin
+      fn := Get_P_Bytes_String(param^.train_output);
+      if umlFileExists(fn) then
+        begin
+          Result := TMemoryStream64.Create;
+          Result.LoadFromFile(fn);
+          Result.Position := 0;
+        end;
+    end;
+end;
+
+function TAI.GDCNIC_Train(Snapshot_, LargeScale_: Boolean; RSeri: TRasterSerialized; SS_width, SS_height: Integer; imgMat: TAI_ImageMatrix; param: PGDCNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): Boolean;
+var
+  imgBuff: TMemoryRaster2DArray;
+  i, j: Integer;
+  out_index: TMemoryRasterList;
+  imgL: TAI_ImageList;
+  detDef: TAI_DetectorDefine;
+begin
+  Result := False;
+  if FAI_EntryAPI = nil then
+      exit;
+  if not Assigned(FAI_EntryAPI^.GDCNIC_Train) then
+      exit;
+
+  DoStatus('Calibration GDCNIC dataset.');
+  for i := 0 to imgMat.Count - 1 do
+    begin
+      imgL := imgMat[i];
+      imgL.CalibrationNoDetectorDefine(imgL.FileInfo);
+      imgL.CalibrationNullToken(imgL.FileInfo);
+      for j := 0 to imgL.Count - 1 do
+        if imgL[j].DetectorDefineList.Count = 0 then
+          begin
+            detDef := TAI_DetectorDefine.Create(imgL[j]);
+            detDef.R := imgL[j].Raster.BoundsRect;
+            detDef.Token := imgL.FileInfo;
+            imgL[j].DetectorDefineList.Add(detDef);
+          end;
+    end;
+  Train_OutputIndex.Clear;
+
+  if Snapshot_ then
+    begin
+      if LargeScale_ then
+          imgBuff := imgMat.LargeScale_ExtractDetectorDefineAsSnapshotProjection(RSeri, SS_width, SS_height)
+      else
+          imgBuff := imgMat.ExtractDetectorDefineAsSnapshotProjection(SS_width, SS_height);
+    end
+  else
+    begin
+      if LargeScale_ then
+          imgBuff := imgMat.LargeScale_ExtractDetectorDefineAsPrepareRaster(RSeri, SS_width, SS_height)
+      else
+          imgBuff := imgMat.ExtractDetectorDefineAsPrepareRaster(SS_width, SS_height);
+    end;
 
   out_index := TMemoryRasterList.Create;
 
-  Result := GDCNIC_Train(LargeScale_, RSeri, imgBuff, param, out_index);
+  Result := GDCNIC_Train_(LargeScale_, RSeri, imgBuff, param, out_index);
 
   if Result then
     for i := 0 to out_index.Count - 1 do
@@ -11646,24 +12627,24 @@ begin
   SetLength(imgBuff, 0, 0);
 end;
 
-function TAI.GDCNIC_Train(LargeScale_: Boolean; RSeri: TRasterSerialized; SS_width, SS_height: Integer; imgMat: TAI_ImageMatrix; param: PGDCNIC_Train_Parameter; train_index_output: U_String): Boolean;
+function TAI.GDCNIC_Train(Snapshot_, LargeScale_: Boolean; RSeri: TRasterSerialized; SS_width, SS_height: Integer; imgMat: TAI_ImageMatrix; param: PGDCNIC_Train_Parameter; train_index_output: U_String): Boolean;
 var
   TrainIndex: TPascalStringList;
 begin
   TrainIndex := TPascalStringList.Create;
-  Result := GDCNIC_Train(LargeScale_, RSeri, SS_width, SS_height, imgMat, param, TrainIndex);
+  Result := GDCNIC_Train(Snapshot_, LargeScale_, RSeri, SS_width, SS_height, imgMat, param, TrainIndex);
   if Result then
       TrainIndex.SaveToFile(train_index_output);
   DisposeObject(TrainIndex);
 end;
 
-function TAI.GDCNIC_Train_Stream(LargeScale_: Boolean; RSeri: TRasterSerialized; SS_width, SS_height: Integer; imgMat: TAI_ImageMatrix; param: PGDCNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): TMemoryStream64;
+function TAI.GDCNIC_Train_Stream(Snapshot_, LargeScale_: Boolean; RSeri: TRasterSerialized; SS_width, SS_height: Integer; imgMat: TAI_ImageMatrix; param: PGDCNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): TMemoryStream64;
 var
   fn: U_String;
 begin
   Result := nil;
 
-  if GDCNIC_Train(LargeScale_, RSeri, SS_width, SS_height, imgMat, param, Train_OutputIndex) then
+  if GDCNIC_Train(Snapshot_, LargeScale_, RSeri, SS_width, SS_height, imgMat, param, Train_OutputIndex) then
     begin
       fn := Get_P_Bytes_String(param^.train_output);
       if umlFileExists(fn) then
@@ -11675,7 +12656,7 @@ begin
     end;
 end;
 
-function TAI.GDCNIC_Open(train_file: U_String): TGDCNIC_Handle;
+function TAI.GDCNIC_Open(train_file: SystemString): TGDCNIC_Handle;
 var
   train_file_buff: P_Bytes;
 begin
@@ -11685,7 +12666,7 @@ begin
       Result := FAI_EntryAPI^.GDCNIC_Init(train_file_buff);
       Free_P_Bytes(train_file_buff);
       if Result <> nil then
-          DoStatus('ResNet-Image-Classifier open: %s', [train_file.Text]);
+          DoStatus('ResNet-Image-Classifier open: %s', [train_file]);
     end
   else
       Result := nil;
@@ -11702,7 +12683,7 @@ begin
       Result := nil;
 end;
 
-function TAI.GDCNIC_Open_Stream(train_file: U_String): TGDCNIC_Handle;
+function TAI.GDCNIC_Open_Stream(train_file: SystemString): TGDCNIC_Handle;
 var
   m64: TMemoryStream64;
 begin
@@ -11711,7 +12692,7 @@ begin
   Result := GDCNIC_Open_Stream(m64);
   DisposeObject(m64);
   if Result <> nil then
-      DoStatus('ResNet-Image-Classifier open: %s', [train_file.Text]);
+      DoStatus('ResNet-Image-Classifier open: %s', [train_file]);
 end;
 
 function TAI.GDCNIC_Close(var hnd: TGDCNIC_Handle): Boolean;
@@ -11732,6 +12713,7 @@ var
   R: Integer;
   nr: TMemoryRaster;
 begin
+  Raster.ReadyBits();
   SetLength(Result, 0);
   if hnd = nil then
       exit;
@@ -11741,11 +12723,13 @@ begin
       exit;
   SetLength(Result, C_GDCNIC_Dim);
 
-  // projection
+  { projection }
+  nr := nil;
   if (Raster.Width <> SS_width) or (Raster.Height <> SS_height) then
     begin
       nr := NewRaster();
       nr.SetSize(SS_width, SS_height);
+      Raster.ReadyBits();
       Raster.ProjectionTo(nr,
         TV2Rect4.Init(RectFit(SS_width, SS_height, Raster.BoundsRectV2), 0),
         TV2Rect4.Init(nr.BoundsRectV2, 0),
@@ -11803,7 +12787,7 @@ begin
   Dispose(param);
 end;
 
-function TAI.GNIC_Train(LargeScale_: Boolean; RSeri: TRasterSerialized; imgList: TMemoryRaster2DArray; param: PGNIC_Train_Parameter; Train_OutputIndex: TMemoryRasterList): Boolean;
+function TAI.GNIC_Train_(LargeScale_: Boolean; RSeri: TRasterSerialized; imgList: TMemoryRaster2DArray; param: PGNIC_Train_Parameter; Train_OutputIndex: TMemoryRasterList): Boolean;
 var
   i, j, imgSum, ri: Integer;
   imgArry: TMemoryRasterArray;
@@ -11896,13 +12880,13 @@ begin
   param^.img_num := 0;
   param^.control := nil;
 
-  // free res
+  { free res }
   for i := 0 to Length(imgInfo_arry) - 1 do
       Dispose(imgInfo_arry[i].raster_Hnd);
   SetLength(imgInfo_arry, 0);
 end;
 
-function TAI.GNIC_Train(SS_width, SS_height: Integer; imgList: TAI_ImageList; param: PGNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): Boolean;
+function TAI.GNIC_Train(Snapshot_: Boolean; SS_width, SS_height: Integer; imgList: TAI_ImageList; param: PGNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): Boolean;
 var
   imgBuff: TMemoryRaster2DArray;
   i, j: Integer;
@@ -11915,162 +12899,184 @@ begin
       exit;
 
   Train_OutputIndex.Clear;
-  imgBuff := imgList.ExtractDetectorDefineAsSnapshotProjection(SS_width, SS_height);
-  out_index := TMemoryRasterList.Create;
-  Result := GNIC_Train(False, nil, imgBuff, param, out_index);
-  if Result then
-    for i := 0 to out_index.Count - 1 do
-      if Train_OutputIndex.ExistsValue(out_index[i].UserToken) < 0 then
-          Train_OutputIndex.Add(out_index[i].UserToken);
-  DisposeObject(out_index);
+  imgList.CalibrationNoDetectorDefine('');
 
-  for i := 0 to Length(imgBuff) - 1 do
-    for j := 0 to Length(imgBuff[i]) - 1 do
-        DisposeObject(imgBuff[i, j]);
-  SetLength(imgBuff, 0, 0);
-end;
-
-function TAI.GNIC_Train(SS_width, SS_height: Integer; imgList: TAI_ImageList; param: PGNIC_Train_Parameter; train_index_output: U_String): Boolean;
-var
-  TrainIndex: TPascalStringList;
-begin
-  TrainIndex := TPascalStringList.Create;
-  Result := GNIC_Train(SS_width, SS_height, imgList, param, TrainIndex);
-  if Result then
-      TrainIndex.SaveToFile(train_index_output);
-  DisposeObject(TrainIndex);
-end;
-
-function TAI.GNIC_Train_Stream(SS_width, SS_height: Integer; imgList: TAI_ImageList; param: PGNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): TMemoryStream64;
-var
-  fn: U_String;
-begin
-  Result := nil;
-
-  if GNIC_Train(SS_width, SS_height, imgList, param, Train_OutputIndex) then
-    begin
-      fn := Get_P_Bytes_String(param^.train_output);
-      if umlFileExists(fn) then
-        begin
-          Result := TMemoryStream64.Create;
-          Result.LoadFromFile(fn);
-          Result.Position := 0;
-        end;
-    end;
-end;
-
-function TAI.GNIC_Train(SS_width, SS_height: Integer; imgMat: TAI_ImageMatrix; param: PGNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): Boolean;
-var
-  imgBuff: TMemoryRaster2DArray;
-  i, j: Integer;
-  out_index: TMemoryRasterList;
-  imgL: TAI_ImageList;
-  detDef: TAI_DetectorDefine;
-begin
-  Result := False;
-  if FAI_EntryAPI = nil then
-      exit;
-  if not Assigned(FAI_EntryAPI^.GNIC_Train) then
-      exit;
-
-  DoStatus('Calibration GNIC dataset.');
-  for i := 0 to imgMat.Count - 1 do
-    begin
-      imgL := imgMat[i];
-      imgL.CalibrationNullToken(imgL.FileInfo);
-      for j := 0 to imgL.Count - 1 do
-        if imgL[j].DetectorDefineList.Count = 0 then
-          begin
-            detDef := TAI_DetectorDefine.Create(imgL[j]);
-            detDef.R := imgL[j].Raster.BoundsRect;
-            detDef.Token := imgL.FileInfo;
-            imgL[j].DetectorDefineList.Add(detDef);
-          end;
-    end;
-
-  Train_OutputIndex.Clear;
-  imgBuff := imgMat.ExtractDetectorDefineAsSnapshotProjection(SS_width, SS_height);
-  out_index := TMemoryRasterList.Create;
-  Result := GNIC_Train(False, nil, imgBuff, param, out_index);
-  if Result then
-    for i := 0 to out_index.Count - 1 do
-      if Train_OutputIndex.ExistsValue(out_index[i].UserToken) < 0 then
-          Train_OutputIndex.Add(out_index[i].UserToken);
-  DisposeObject(out_index);
-
-  for i := 0 to Length(imgBuff) - 1 do
-    for j := 0 to Length(imgBuff[i]) - 1 do
-        DisposeObject(imgBuff[i, j]);
-  SetLength(imgBuff, 0, 0);
-end;
-
-function TAI.GNIC_Train(SS_width, SS_height: Integer; imgMat: TAI_ImageMatrix; param: PGNIC_Train_Parameter; train_index_output: U_String): Boolean;
-var
-  TrainIndex: TPascalStringList;
-begin
-  TrainIndex := TPascalStringList.Create;
-  Result := GNIC_Train(SS_width, SS_height, imgMat, param, TrainIndex);
-  if Result then
-      TrainIndex.SaveToFile(train_index_output);
-  DisposeObject(TrainIndex);
-end;
-
-function TAI.GNIC_Train_Stream(SS_width, SS_height: Integer; imgMat: TAI_ImageMatrix; param: PGNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): TMemoryStream64;
-var
-  fn: U_String;
-begin
-  Result := nil;
-
-  if GNIC_Train(SS_width, SS_height, imgMat, param, Train_OutputIndex) then
-    begin
-      fn := Get_P_Bytes_String(param^.train_output);
-      if umlFileExists(fn) then
-        begin
-          Result := TMemoryStream64.Create;
-          Result.LoadFromFile(fn);
-          Result.Position := 0;
-        end;
-    end;
-end;
-
-function TAI.GNIC_Train(LargeScale_: Boolean; RSeri: TRasterSerialized; SS_width, SS_height: Integer; imgMat: TAI_ImageMatrix; param: PGNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): Boolean;
-var
-  imgBuff: TMemoryRaster2DArray;
-  i, j: Integer;
-  out_index: TMemoryRasterList;
-  imgL: TAI_ImageList;
-  detDef: TAI_DetectorDefine;
-begin
-  Result := False;
-  if FAI_EntryAPI = nil then
-      exit;
-  if not Assigned(FAI_EntryAPI^.GNIC_Train) then
-      exit;
-
-  DoStatus('Calibration GNIC dataset.');
-  for i := 0 to imgMat.Count - 1 do
-    begin
-      imgL := imgMat[i];
-      imgL.CalibrationNullToken(imgL.FileInfo);
-      for j := 0 to imgL.Count - 1 do
-        if imgL[j].DetectorDefineList.Count = 0 then
-          begin
-            detDef := TAI_DetectorDefine.Create(imgL[j]);
-            detDef.R := imgL[j].Raster.BoundsRect;
-            detDef.Token := imgL.FileInfo;
-            imgL[j].DetectorDefineList.Add(detDef);
-          end;
-    end;
-  Train_OutputIndex.Clear;
-
-  if LargeScale_ then
-      imgBuff := imgMat.LargeScale_ExtractDetectorDefineAsSnapshotProjection(RSeri, SS_width, SS_height)
+  if Snapshot_ then
+      imgBuff := imgList.ExtractDetectorDefineAsSnapshotProjection(SS_width, SS_height)
   else
-      imgBuff := imgMat.ExtractDetectorDefineAsSnapshotProjection(SS_width, SS_height);
+      imgBuff := imgList.ExtractDetectorDefineAsPrepareRaster(SS_width, SS_height);
+
+  out_index := TMemoryRasterList.Create;
+  Result := GNIC_Train_(False, nil, imgBuff, param, out_index);
+  if Result then
+    for i := 0 to out_index.Count - 1 do
+      if Train_OutputIndex.ExistsValue(out_index[i].UserToken) < 0 then
+          Train_OutputIndex.Add(out_index[i].UserToken);
+  DisposeObject(out_index);
+
+  for i := 0 to Length(imgBuff) - 1 do
+    for j := 0 to Length(imgBuff[i]) - 1 do
+        DisposeObject(imgBuff[i, j]);
+  SetLength(imgBuff, 0, 0);
+end;
+
+function TAI.GNIC_Train(Snapshot_: Boolean; SS_width, SS_height: Integer; imgList: TAI_ImageList; param: PGNIC_Train_Parameter; train_index_output: U_String): Boolean;
+var
+  TrainIndex: TPascalStringList;
+begin
+  TrainIndex := TPascalStringList.Create;
+  Result := GNIC_Train(Snapshot_, SS_width, SS_height, imgList, param, TrainIndex);
+  if Result then
+      TrainIndex.SaveToFile(train_index_output);
+  DisposeObject(TrainIndex);
+end;
+
+function TAI.GNIC_Train_Stream(Snapshot_: Boolean; SS_width, SS_height: Integer; imgList: TAI_ImageList; param: PGNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): TMemoryStream64;
+var
+  fn: U_String;
+begin
+  Result := nil;
+
+  if GNIC_Train(Snapshot_, SS_width, SS_height, imgList, param, Train_OutputIndex) then
+    begin
+      fn := Get_P_Bytes_String(param^.train_output);
+      if umlFileExists(fn) then
+        begin
+          Result := TMemoryStream64.Create;
+          Result.LoadFromFile(fn);
+          Result.Position := 0;
+        end;
+    end;
+end;
+
+function TAI.GNIC_Train(Snapshot_: Boolean; SS_width, SS_height: Integer; imgMat: TAI_ImageMatrix; param: PGNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): Boolean;
+var
+  imgBuff: TMemoryRaster2DArray;
+  i, j: Integer;
+  out_index: TMemoryRasterList;
+  imgL: TAI_ImageList;
+  detDef: TAI_DetectorDefine;
+begin
+  Result := False;
+  if FAI_EntryAPI = nil then
+      exit;
+  if not Assigned(FAI_EntryAPI^.GNIC_Train) then
+      exit;
+
+  DoStatus('Calibration GNIC dataset.');
+  for i := 0 to imgMat.Count - 1 do
+    begin
+      imgL := imgMat[i];
+      imgL.CalibrationNoDetectorDefine(imgL.FileInfo);
+      imgL.CalibrationNullToken(imgL.FileInfo);
+      for j := 0 to imgL.Count - 1 do
+        if imgL[j].DetectorDefineList.Count = 0 then
+          begin
+            detDef := TAI_DetectorDefine.Create(imgL[j]);
+            detDef.R := imgL[j].Raster.BoundsRect;
+            detDef.Token := imgL.FileInfo;
+            imgL[j].DetectorDefineList.Add(detDef);
+          end;
+    end;
+
+  Train_OutputIndex.Clear;
+  if Snapshot_ then
+      imgBuff := imgMat.ExtractDetectorDefineAsSnapshotProjection(SS_width, SS_height)
+  else
+      imgBuff := imgMat.ExtractDetectorDefineAsPrepareRaster(SS_width, SS_height);
+
+  out_index := TMemoryRasterList.Create;
+  Result := GNIC_Train_(False, nil, imgBuff, param, out_index);
+  if Result then
+    for i := 0 to out_index.Count - 1 do
+      if Train_OutputIndex.ExistsValue(out_index[i].UserToken) < 0 then
+          Train_OutputIndex.Add(out_index[i].UserToken);
+  DisposeObject(out_index);
+
+  for i := 0 to Length(imgBuff) - 1 do
+    for j := 0 to Length(imgBuff[i]) - 1 do
+        DisposeObject(imgBuff[i, j]);
+  SetLength(imgBuff, 0, 0);
+end;
+
+function TAI.GNIC_Train(Snapshot_: Boolean; SS_width, SS_height: Integer; imgMat: TAI_ImageMatrix; param: PGNIC_Train_Parameter; train_index_output: U_String): Boolean;
+var
+  TrainIndex: TPascalStringList;
+begin
+  TrainIndex := TPascalStringList.Create;
+  Result := GNIC_Train(Snapshot_, SS_width, SS_height, imgMat, param, TrainIndex);
+  if Result then
+      TrainIndex.SaveToFile(train_index_output);
+  DisposeObject(TrainIndex);
+end;
+
+function TAI.GNIC_Train_Stream(Snapshot_: Boolean; SS_width, SS_height: Integer; imgMat: TAI_ImageMatrix; param: PGNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): TMemoryStream64;
+var
+  fn: U_String;
+begin
+  Result := nil;
+
+  if GNIC_Train(Snapshot_, SS_width, SS_height, imgMat, param, Train_OutputIndex) then
+    begin
+      fn := Get_P_Bytes_String(param^.train_output);
+      if umlFileExists(fn) then
+        begin
+          Result := TMemoryStream64.Create;
+          Result.LoadFromFile(fn);
+          Result.Position := 0;
+        end;
+    end;
+end;
+
+function TAI.GNIC_Train(Snapshot_, LargeScale_: Boolean; RSeri: TRasterSerialized; SS_width, SS_height: Integer; imgMat: TAI_ImageMatrix; param: PGNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): Boolean;
+var
+  imgBuff: TMemoryRaster2DArray;
+  i, j: Integer;
+  out_index: TMemoryRasterList;
+  imgL: TAI_ImageList;
+  detDef: TAI_DetectorDefine;
+begin
+  Result := False;
+  if FAI_EntryAPI = nil then
+      exit;
+  if not Assigned(FAI_EntryAPI^.GNIC_Train) then
+      exit;
+
+  DoStatus('Calibration GNIC dataset.');
+  for i := 0 to imgMat.Count - 1 do
+    begin
+      imgL := imgMat[i];
+      imgL.CalibrationNoDetectorDefine(imgL.FileInfo);
+      imgL.CalibrationNullToken(imgL.FileInfo);
+      for j := 0 to imgL.Count - 1 do
+        if imgL[j].DetectorDefineList.Count = 0 then
+          begin
+            detDef := TAI_DetectorDefine.Create(imgL[j]);
+            detDef.R := imgL[j].Raster.BoundsRect;
+            detDef.Token := imgL.FileInfo;
+            imgL[j].DetectorDefineList.Add(detDef);
+          end;
+    end;
+  Train_OutputIndex.Clear;
+
+  if Snapshot_ then
+    begin
+      if LargeScale_ then
+          imgBuff := imgMat.LargeScale_ExtractDetectorDefineAsSnapshotProjection(RSeri, SS_width, SS_height)
+      else
+          imgBuff := imgMat.ExtractDetectorDefineAsSnapshotProjection(SS_width, SS_height);
+    end
+  else
+    begin
+      if LargeScale_ then
+          imgBuff := imgMat.LargeScale_ExtractDetectorDefineAsPrepareRaster(RSeri, SS_width, SS_height)
+      else
+          imgBuff := imgMat.ExtractDetectorDefineAsPrepareRaster(SS_width, SS_height);
+    end;
 
   out_index := TMemoryRasterList.Create;
 
-  Result := GNIC_Train(LargeScale_, RSeri, imgBuff, param, out_index);
+  Result := GNIC_Train_(LargeScale_, RSeri, imgBuff, param, out_index);
 
   if Result then
     for i := 0 to out_index.Count - 1 do
@@ -12085,24 +13091,24 @@ begin
   SetLength(imgBuff, 0, 0);
 end;
 
-function TAI.GNIC_Train(LargeScale_: Boolean; RSeri: TRasterSerialized; SS_width, SS_height: Integer; imgMat: TAI_ImageMatrix; param: PGNIC_Train_Parameter; train_index_output: U_String): Boolean;
+function TAI.GNIC_Train(Snapshot_, LargeScale_: Boolean; RSeri: TRasterSerialized; SS_width, SS_height: Integer; imgMat: TAI_ImageMatrix; param: PGNIC_Train_Parameter; train_index_output: U_String): Boolean;
 var
   TrainIndex: TPascalStringList;
 begin
   TrainIndex := TPascalStringList.Create;
-  Result := GNIC_Train(LargeScale_, RSeri, SS_width, SS_height, imgMat, param, TrainIndex);
+  Result := GNIC_Train(Snapshot_, LargeScale_, RSeri, SS_width, SS_height, imgMat, param, TrainIndex);
   if Result then
       TrainIndex.SaveToFile(train_index_output);
   DisposeObject(TrainIndex);
 end;
 
-function TAI.GNIC_Train_Stream(LargeScale_: Boolean; RSeri: TRasterSerialized; SS_width, SS_height: Integer; imgMat: TAI_ImageMatrix; param: PGNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): TMemoryStream64;
+function TAI.GNIC_Train_Stream(Snapshot_, LargeScale_: Boolean; RSeri: TRasterSerialized; SS_width, SS_height: Integer; imgMat: TAI_ImageMatrix; param: PGNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): TMemoryStream64;
 var
   fn: U_String;
 begin
   Result := nil;
 
-  if GNIC_Train(LargeScale_, RSeri, SS_width, SS_height, imgMat, param, Train_OutputIndex) then
+  if GNIC_Train(Snapshot_, LargeScale_, RSeri, SS_width, SS_height, imgMat, param, Train_OutputIndex) then
     begin
       fn := Get_P_Bytes_String(param^.train_output);
       if umlFileExists(fn) then
@@ -12114,7 +13120,7 @@ begin
     end;
 end;
 
-function TAI.GNIC_Open(train_file: U_String): TGNIC_Handle;
+function TAI.GNIC_Open(train_file: SystemString): TGNIC_Handle;
 var
   train_file_buff: P_Bytes;
 begin
@@ -12124,7 +13130,7 @@ begin
       Result := FAI_EntryAPI^.GNIC_Init(train_file_buff);
       Free_P_Bytes(train_file_buff);
       if Result <> nil then
-          DoStatus('ResNet-Image-Classifier open: %s', [train_file.Text]);
+          DoStatus('ResNet-Image-Classifier open: %s', [train_file]);
     end
   else
       Result := nil;
@@ -12141,7 +13147,7 @@ begin
       Result := nil;
 end;
 
-function TAI.GNIC_Open_Stream(train_file: U_String): TGNIC_Handle;
+function TAI.GNIC_Open_Stream(train_file: SystemString): TGNIC_Handle;
 var
   m64: TMemoryStream64;
 begin
@@ -12150,7 +13156,7 @@ begin
   Result := GNIC_Open_Stream(m64);
   DisposeObject(m64);
   if Result <> nil then
-      DoStatus('ResNet-Image-Classifier open: %s', [train_file.Text]);
+      DoStatus('ResNet-Image-Classifier open: %s', [train_file]);
 end;
 
 function TAI.GNIC_Close(var hnd: TGNIC_Handle): Boolean;
@@ -12171,6 +13177,7 @@ var
   R: Integer;
   nr: TMemoryRaster;
 begin
+  Raster.ReadyBits();
   SetLength(Result, 0);
   if hnd = nil then
       exit;
@@ -12180,7 +13187,8 @@ begin
       exit;
   SetLength(Result, C_GNIC_Dim);
 
-  // projection
+  { projection }
+  nr := nil;
   if (Raster.Width <> SS_width) or (Raster.Height <> SS_height) then
     begin
       nr := NewRaster();
@@ -12246,7 +13254,7 @@ begin
   Dispose(param);
 end;
 
-function TAI.SS_Train(LargeScale_: Boolean; RSeri: TRasterSerialized; imgList: TAI_ImageList; param: PSS_Train_Parameter; const colorPool: TSegmentationColorList): Boolean;
+function TAI.SS_Train(LargeScale_: Boolean; RSeri: TRasterSerialized; imgList: TAI_ImageList; param: PSS_Train_Parameter; const colorPool: TSegmentationColorTable): Boolean;
 var
   tk: TTimeTick;
   i: Integer;
@@ -12335,7 +13343,7 @@ begin
   SetLength(imgBuff_p, 0);
 end;
 
-function TAI.SS_Train(LargeScale_: Boolean; RSeri: TRasterSerialized; imgMat: TAI_ImageMatrix; param: PSS_Train_Parameter; const colorPool: TSegmentationColorList): Boolean;
+function TAI.SS_Train(LargeScale_: Boolean; RSeri: TRasterSerialized; imgMat: TAI_ImageMatrix; param: PSS_Train_Parameter; const colorPool: TSegmentationColorTable): Boolean;
 var
   tk: TTimeTick;
   i, j: Integer;
@@ -12427,7 +13435,7 @@ begin
   SetLength(imgBuff_p, 0);
 end;
 
-function TAI.SS_Train_Stream(imgList: TAI_ImageList; param: PSS_Train_Parameter; const colorPool: TSegmentationColorList): TMemoryStream64;
+function TAI.SS_Train_Stream(imgList: TAI_ImageList; param: PSS_Train_Parameter; const colorPool: TSegmentationColorTable): TMemoryStream64;
 var
   fn: U_String;
 begin
@@ -12445,7 +13453,7 @@ begin
     end;
 end;
 
-function TAI.SS_Train_Stream(imgMat: TAI_ImageMatrix; param: PSS_Train_Parameter; const colorPool: TSegmentationColorList): TMemoryStream64;
+function TAI.SS_Train_Stream(imgMat: TAI_ImageMatrix; param: PSS_Train_Parameter; const colorPool: TSegmentationColorTable): TMemoryStream64;
 var
   fn: U_String;
 begin
@@ -12463,7 +13471,7 @@ begin
     end;
 end;
 
-function TAI.SS_Open(train_file: U_String): TSS_Handle;
+function TAI.SS_Open(train_file: SystemString): TSS_Handle;
 var
   train_file_buff: P_Bytes;
 begin
@@ -12473,7 +13481,7 @@ begin
       Result := FAI_EntryAPI^.SS_Init(train_file_buff);
       Free_P_Bytes(train_file_buff);
       if Result <> nil then
-          DoStatus('segmantic segmentation open: %s', [train_file.Text]);
+          DoStatus('segmantic segmentation open: %s', [train_file]);
     end
   else
       Result := nil;
@@ -12490,7 +13498,7 @@ begin
       Result := nil;
 end;
 
-function TAI.SS_Open_Stream(train_file: U_String): TSS_Handle;
+function TAI.SS_Open_Stream(train_file: SystemString): TSS_Handle;
 var
   m64: TMemoryStream64;
 begin
@@ -12499,7 +13507,7 @@ begin
   Result := SS_Open_Stream(m64);
   DisposeObject(m64);
   if Result <> nil then
-      DoStatus('segmantic segmentation open: %s', [train_file.Text]);
+      DoStatus('segmantic segmentation open: %s', [train_file]);
 end;
 
 function TAI.SS_Close(var hnd: TSS_Handle): Boolean;
@@ -12520,7 +13528,7 @@ begin
   Result.BGRA := TRColor(c);
 end;
 
-function TAI.SS_Process(hnd: TSS_Handle; InputRaster: TMemoryRaster; colorPool: TSegmentationColorList; SSToken: TPascalStringList): TMemoryRaster;
+function TAI.SS_Process(parallel_: Boolean; hnd: TSS_Handle; InputRaster: TMemoryRaster; colorPool: TSegmentationColorTable; SSTokenOutput: TPascalStringList): TMemoryRaster;
 var
   R: Integer;
   dr: TMemoryRaster;
@@ -12584,6 +13592,7 @@ var
 
 
 begin
+  InputRaster.ReadyBits();
   Result := nil;
   if hnd = nil then
       exit;
@@ -12602,9 +13611,9 @@ begin
 
 {$IFDEF Parallel}
 {$IFDEF FPC}
-      FPCParallelFor(@Nested_ParallelFor, 0, dr.Height - 1);
+      FPCParallelFor(parallel_, @Nested_ParallelFor, 0, dr.Height - 1);
 {$ELSE FPC}
-      DelphiParallelFor(0, dr.Height - 1, procedure(pass: Integer)
+      DelphiParallelFor(parallel_, 0, dr.Height - 1, procedure(pass: Integer)
         var
           i: Integer;
           p: PWORD;
@@ -12631,8 +13640,8 @@ begin
 {$ELSE Parallel}
       DoFor;
 {$ENDIF Parallel}
-      if SSToken <> nil then
-          TokenHash.GetNameList(SSToken);
+      if SSTokenOutput <> nil then
+          TokenHash.GetNameList(SSTokenOutput);
       DisposeObject(TokenHash);
       Result := dr;
     end;
@@ -12640,7 +13649,12 @@ begin
   SetLength(SSMatrix, 0);
 end;
 
-function TAI.SS_Process(hnd: TSS_Handle; mat_hnd: TMatrix_Image_Handle; Width, Height: Integer; colorPool: TSegmentationColorList; SSToken: TPascalStringList): TMemoryRaster;
+function TAI.SS_Process(hnd: TSS_Handle; InputRaster: TMemoryRaster; colorPool: TSegmentationColorTable; SSTokenOutput: TPascalStringList): TMemoryRaster;
+begin
+  Result := SS_Process(True, hnd, InputRaster, colorPool, SSTokenOutput);
+end;
+
+function TAI.SS_Process(hnd: TSS_Handle; mat_hnd: TMatrix_Image_Handle; Width, Height: Integer; colorPool: TSegmentationColorTable; SSTokenOutput: TPascalStringList): TMemoryRaster;
 var
   R: Integer;
   dr: TMemoryRaster;
@@ -12751,8 +13765,8 @@ begin
 {$ELSE Parallel}
       DoFor;
 {$ENDIF Parallel}
-      if SSToken <> nil then
-          TokenHash.GetNameList(SSToken);
+      if SSTokenOutput <> nil then
+          TokenHash.GetNameList(SSTokenOutput);
       DisposeObject(TokenHash);
       Result := dr;
     end;
@@ -12760,13 +13774,14 @@ begin
   SetLength(SSMatrix, 0);
 end;
 
-procedure TAI.SS_ProcessAsync(hnd: TSS_Handle; SSInput: TMemoryRaster; colorPool: TSegmentationColorList;
+procedure TAI.SS_ProcessAsync(hnd: TSS_Handle; SSInput: TMemoryRaster; colorPool: TSegmentationColorTable;
 OnResultC: TSS_ProcessOnResultCall; OnResultM: TSS_ProcessOnResultMethod; OnResultP: TSS_ProcessOnResultProc);
 var
   ResultData: TSS_ResultProcessor;
   R: Integer;
   dr: TMemoryRaster;
 begin
+  SSInput.ReadyBits();
   ResultData := TSS_ResultProcessor.Create;
   ResultData.SSInput := SSInput;
   ResultData.colorPool := colorPool;
@@ -12787,7 +13802,7 @@ begin
     begin
       ResultData.SSInput := NewRaster();
       ResultData.SSInput.Assign(SSInput);
-      TComputeThread.RunM(nil, nil, {$IFDEF FPC}@{$ENDIF FPC}ResultData.ThRun);
+      TCompute.RunM(nil, nil, {$IFDEF FPC}@{$ENDIF FPC}ResultData.ThRun);
     end
   else
     begin
@@ -13002,7 +14017,7 @@ begin
         if rs.ReturnHeader.ID = DB_Header_Item_ID then
           begin
             fieldPh := dbEng.GetFieldPath(rs.CurrentField.RHeader.CurrentHeader);
-            md5Key := umlCombineUnixFileName(fieldPh, rs.ReturnHeader.name);
+            md5Key := umlCombineUnixFileName(fieldPh, rs.ReturnHeader.Name);
             dbEng.ItemFastOpen(rs.ReturnHeader.CurrentHeader, itmHnd);
             m64 := TMemoryStream64.Create;
             dbEng.ItemReadToStream(itmHnd, m64);
@@ -13108,7 +14123,7 @@ begin
         begin
           if dbEng.ItemExists(DBLangPath, DBLangFile) then
             begin
-              // overwrite language model
+              { overwrite language model }
               try
                 fs := TCoreClassFileStream.Create(tmpFile, fmCreate);
                 dbEng.ItemReadToStream(DBLangPath, DBLangFile, fs);
@@ -13125,7 +14140,7 @@ begin
     end
   else if dbEng.ItemExists(DBLangPath, DBLangFile) then
     begin
-      // export language model
+      { export language model }
       fs := TCoreClassFileStream.Create(tmpFile, fmCreate);
       dbEng.ItemReadToStream(DBLangPath, DBLangFile, fs);
       DisposeObject(fs);
@@ -13491,16 +14506,44 @@ end;
 procedure TSS_ResultProcessor.DoSuccessed;
 begin
   if Assigned(OnResultC) then
-      OnResultC(True, SSInput, SSOutput, SSToken);
+      OnResultC(True, SSInput, SSOutput, SSTokenOutput);
   if Assigned(OnResultM) then
-      OnResultM(True, SSInput, SSOutput, SSToken);
+      OnResultM(True, SSInput, SSOutput, SSTokenOutput);
   if Assigned(OnResultP) then
-      OnResultP(True, SSInput, SSOutput, SSToken);
+      OnResultP(True, SSInput, SSOutput, SSTokenOutput);
 end;
 
-procedure TSS_ResultProcessor.ThRun(ThSender: TComputeThread);
+procedure TSS_ResultProcessor.ThRun(ThSender: TCompute);
 var
   TokenHash: THashList;
+
+{$IFDEF Parallel}
+{$IFDEF FPC}
+  procedure Nested_ParallelFor(pass: Integer);
+  var
+    i: Integer;
+    p: ^WORD;
+    tk: U_String;
+  begin
+    p := @SSMatrix[pass * SSOutput.Width];
+    for i := 0 to SSOutput.Width - 1 do
+      begin
+        if colorPool = nil then
+            SSOutput.Pixel[i, pass] := TAI.SS_TranslateColor(p^).BGRA
+        else if colorPool.GetIDColorAndToken(p^, RColor(0, 0, 0, $FF), '', SSOutput.PixelPtr[i, pass]^, tk) then
+          begin
+            if not TokenHash.Exists(tk) then
+              begin
+                LockObject(TokenHash);
+                TokenHash.Add(tk, nil, False);
+                UnLockObject(TokenHash);
+              end;
+          end;
+        inc(p);
+      end;
+  end;
+{$ENDIF FPC}
+{$ELSE Parallel}
   procedure DoFor;
   var
     pass, i: Integer;
@@ -13527,26 +14570,57 @@ var
           end;
       end;
   end;
+{$ENDIF Parallel}
+
 
 begin
   SSOutput := NewRaster();
   SSOutput.SetSize(SSInput.Width, SSInput.Height);
   TokenHash := THashList.CustomCreate($FFFF);
   TokenHash.AccessOptimization := False;
-  SSToken := TPascalStringList.Create;
+  SSTokenOutput := TPascalStringList.Create;
 
-  // fill output
-  DoFor();
+  { fill output }
+{$IFDEF Parallel}
+{$IFDEF FPC}
+  FPCParallelFor(@Nested_ParallelFor, 0, SSOutput.Height - 1);
+{$ELSE FPC}
+  DelphiParallelFor(0, SSOutput.Height - 1, procedure(pass: Integer)
+    var
+      i: Integer;
+      p: ^WORD;
+      tk: U_String;
+    begin
+      p := @SSMatrix[pass * SSOutput.Width];
+      for i := 0 to SSOutput.Width - 1 do
+        begin
+          if colorPool = nil then
+              SSOutput.Pixel[i, pass] := TAI.SS_TranslateColor(p^).BGRA
+          else if colorPool.GetIDColorAndToken(p^, RColor(0, 0, 0, $FF), '', SSOutput.PixelPtr[i, pass]^, tk) then
+            begin
+              if not TokenHash.Exists(tk) then
+                begin
+                  LockObject(TokenHash);
+                  TokenHash.Add(tk, nil, False);
+                  UnLockObject(TokenHash);
+                end;
+            end;
+          inc(p);
+        end;
+    end);
+{$ENDIF FPC}
+{$ELSE Parallel}
+  DoFor;
+{$ENDIF Parallel}
+  TokenHash.GetNameList(SSTokenOutput);
 
-  TokenHash.GetNameList(SSToken);
-
-  // trigger event
+  { trigger event }
   DoSuccessed();
 
   DisposeObject(TokenHash);
   DisposeObject(SSInput);
   DisposeObject(SSOutput);
-  DisposeObject(SSToken);
+  DisposeObject(SSTokenOutput);
   SetLength(SSMatrix, 0);
   DisposeObject(Self);
 end;
@@ -13559,11 +14633,1731 @@ begin
 
   SSInput := nil;
   SSOutput := nil;
-  SSToken := nil;
+  SSTokenOutput := nil;
 
   OnResultC := nil;
   OnResultM := nil;
   OnResultP := nil;
+end;
+
+procedure TAI_DNN_Thread.Run_DNN_Thread(Sender: TCompute);
+var
+  tk: TTimeTick;
+  R, L: Integer;
+begin
+  FThread := Sender;
+  FThreadPost.ThreadID := FThread.ThreadID;
+
+  FAI.SetComputeDeviceOfProcess(FDevice);
+
+  if FAI.isGPU then
+      FThreadInfo := PFormat('%s GPU[%d] %s', [
+      if_(FAI.GetComputeDeviceOfProcess = FDevice, 'OK', 'Error'),
+      FAI.GetComputeDeviceOfProcess,
+      FAI.GetComputeDeviceNameOfProcess(FAI.GetComputeDeviceOfProcess).Text])
+  else if FAI.isMKL then
+      FThreadInfo := PFormat('%s INTEL-MKL[%d] %s', ['OK', 0, 'X86/X64'])
+  else
+      FThreadInfo := PFormat('%s CPU[%d] %s', ['OK', 0, 'X86/X64']);
+
+  tk := GetTimeTick();
+  R := 0;
+  while FActivted.v do
+    begin
+      L := FThreadPost.Progress(FThreadPost.ThreadID);
+      inc(R, L);
+      if GetTimeTick() - tk > 2000 then
+        begin
+          FPSP := R * 0.5;
+          FMaxPSP := umlMax(FPSP, FMaxPSP);
+          tk := GetTimeTick();
+          R := 0;
+        end;
+      if L <= 0 then
+          TCompute.Sleep(1);
+    end;
+
+  try
+      ThreadFree();
+  except
+  end;
+
+  FRuning.v := False;
+  FThread := nil;
+end;
+
+procedure TAI_DNN_Thread.ThreadFree;
+begin
+
+end;
+
+function TAI_DNN_Thread.GetTaskNum: Integer;
+begin
+  Result := FThreadPost.Count;
+end;
+
+constructor TAI_DNN_Thread.Create;
+begin
+  inherited Create;
+  FAI := nil;
+  FThread := nil;
+  FThreadPost := nil;
+  FActivted := nil;
+  FRuning := nil;
+
+  FThreadInfo := '';
+  FPSP := 0;
+  FMaxPSP := 0;
+  FCPUThreadCritical := 20;
+  FGPUPerformanceCritical := 10;
+  FName := '';
+
+  FCustomObject := nil;
+  FCustomData := nil;
+end;
+
+destructor TAI_DNN_Thread.Destroy;
+begin
+  FActivted.v := False;
+  while FRuning.v or Busy() do
+      CheckThreadSynchronize(1);
+
+  DisposeObject(FActivted);
+  DisposeObject(FRuning);
+  DisposeObject(FThreadPost);
+  DisposeObject(FAI);
+  inherited Destroy;
+end;
+
+class function TAI_DNN_Thread.Build(Owner: TAI_DNN_ThreadPool; AI_LIB_P: PAI_EntryAPI; Device_: Integer; class_: TAI_DNN_Thread_Class): TAI_DNN_Thread;
+var
+  TH_: TAI_DNN_Thread;
+begin
+  TH_ := class_.Create;
+  with TH_ do
+    begin
+      FAI := TAI.OpenEngine(AI_LIB_P);
+      FDevice := Device_;
+      FThreadPost := TThreadPost.Create(0);
+      FThreadPost.OneStep := True;
+      FThreadPost.ResetRandomSeed := False;
+      FActivted := TAtomBool.Create(True);
+      FRuning := TAtomBool.Create(True);
+      TCompute.RunM(nil, nil, {$IFDEF FPC}@{$ENDIF FPC}Run_DNN_Thread);
+    end;
+  Owner.FCritical.Acquire;
+  Owner.Add(TH_);
+  Owner.FCritical.Release;
+  Result := TH_;
+end;
+
+class function TAI_DNN_Thread.Build(Owner: TAI_DNN_ThreadPool; Device_: Integer; class_: TAI_DNN_Thread_Class): TAI_DNN_Thread;
+begin
+  Result := TAI_DNN_Thread.Build(Owner, Prepare_AI_Engine(), Device_, class_);
+end;
+
+procedure TAI_DNN_Thread.CheckGPUPerformanceCritical;
+begin
+  while (FGPUPerformanceCritical > 0) and (TaskNum >= FGPUPerformanceCritical) do
+      TCompute.Sleep(1);
+end;
+
+function TAI_DNN_Thread.CheckGPUPerformanceCritical(m: TTimeTick): Boolean;
+var
+  tk: TTimeTick;
+begin
+  tk := GetTimeTick();
+  while (FGPUPerformanceCritical > 0) and (TaskNum >= FGPUPerformanceCritical) and (GetTimeTick - tk < m) do
+      TCompute.Sleep(1);
+  Result := (FGPUPerformanceCritical = 0) or (TaskNum < FGPUPerformanceCritical);
+end;
+
+function TAI_DNN_Thread.GetCPUAsyncThreadNum: Integer;
+begin
+  Result := 0;
+  if Self is TAI_DNN_Thread_Metric then
+      Result := TAI_DNN_Thread_Metric(Self).CPUAsyncThreadNum
+  else if Self is TAI_DNN_Thread_LMetric then
+      Result := TAI_DNN_Thread_LMetric(Self).CPUAsyncThreadNum
+  else if Self is TAI_DNN_Thread_MMOD6L then
+      Result := TAI_DNN_Thread_MMOD6L(Self).CPUAsyncThreadNum
+  else if Self is TAI_DNN_Thread_MMOD3L then
+      Result := TAI_DNN_Thread_MMOD3L(Self).CPUAsyncThreadNum
+  else if Self is TAI_DNN_Thread_RNIC then
+      Result := TAI_DNN_Thread_RNIC(Self).CPUAsyncThreadNum
+  else if Self is TAI_DNN_Thread_LRNIC then
+      Result := TAI_DNN_Thread_LRNIC(Self).CPUAsyncThreadNum
+  else if Self is TAI_DNN_Thread_GDCNIC then
+      Result := TAI_DNN_Thread_GDCNIC(Self).CPUAsyncThreadNum
+  else if Self is TAI_DNN_Thread_GNIC then
+      Result := TAI_DNN_Thread_GNIC(Self).CPUAsyncThreadNum
+  else if Self is TAI_DNN_Thread_SS then
+      Result := TAI_DNN_Thread_SS(Self).CPUAsyncThreadNum;
+end;
+
+function TAI_DNN_Thread.Busy: Boolean;
+begin
+  Result := FThreadPost.Busy;
+end;
+
+constructor TAI_DNN_ThreadPool.Create;
+begin
+  inherited Create;
+  FCritical := TCritical.Create;
+  FNext_DNNThreadID := 0;
+  FQueueOptimized := True;
+end;
+
+destructor TAI_DNN_ThreadPool.Destroy;
+begin
+  Wait;
+  Clear;
+  DisposeObject(FCritical);
+  inherited Destroy;
+end;
+
+procedure TAI_DNN_ThreadPool.Remove(obj: TAI_DNN_Thread);
+begin
+  FCritical.Acquire;
+  try
+    DisposeObject(obj);
+    inherited Remove(obj);
+  finally
+      FCritical.Release;
+  end;
+end;
+
+procedure TAI_DNN_ThreadPool.Delete(index: Integer);
+begin
+  FCritical.Acquire;
+  try
+    if (index >= 0) and (index < Count) then
+      begin
+        DisposeObject(Items[index]);
+        inherited Delete(index);
+      end;
+  finally
+      FCritical.Release;
+  end;
+end;
+
+procedure TAI_DNN_ThreadPool.Clear;
+var
+  i: Integer;
+begin
+  FCritical.Acquire;
+  try
+    for i := 0 to Count - 1 do
+        DisposeObject(Items[i]);
+    inherited Clear;
+  finally
+      FCritical.Release;
+  end;
+end;
+
+function TAI_DNN_ThreadPool.Next_DNN_Thread: TAI_DNN_Thread;
+begin
+  if Count = 0 then
+      RaiseInfo('DNN FThread pool is empty.');
+  FCritical.Acquire;
+  try
+    if FNext_DNNThreadID >= Count then
+        FNext_DNNThreadID := 0;
+    Result := Items[FNext_DNNThreadID];
+    inc(FNext_DNNThreadID);
+  finally
+      FCritical.Release;
+  end;
+end;
+
+function TAI_DNN_ThreadPool.MinLoad_DNN_Thread: TAI_DNN_Thread;
+var
+  i, id_: Integer;
+  th: TAI_DNN_Thread;
+begin
+  if Count = 0 then
+      RaiseInfo('DNN FThread pool is empty.');
+  FCritical.Acquire;
+  try
+    for i := 0 to Count - 1 do
+      if (not Items[i].Busy) then
+        begin
+          if (FQueueOptimized) and (i < Count - 1) then
+              move(i, Count - 1);
+          Result := Items[i];
+          exit;
+        end;
+
+    th := Items[0];
+    id_ := 0;
+    for i := 1 to Count - 1 do
+      if Items[i].TaskNum < th.TaskNum then
+        begin
+          th := Items[i];
+          id_ := i;
+        end;
+    if (FQueueOptimized) and (id_ < Count - 1) then
+        move(id_, Count - 1);
+    Result := th;
+  finally
+      FCritical.Release;
+  end;
+end;
+
+function TAI_DNN_ThreadPool.IDLE_DNN_Thread: TAI_DNN_Thread;
+var
+  i: Integer;
+begin
+  if Count = 0 then
+      RaiseInfo('DNN FThread pool is empty.');
+  FCritical.Acquire;
+  Result := nil;
+  try
+    for i := 0 to Count - 1 do
+      if not Items[i].Busy then
+          exit(Items[i]);
+  finally
+      FCritical.Release;
+  end;
+end;
+
+procedure TAI_DNN_ThreadPool.BuildDeviceThread(AI_LIB_P: PAI_EntryAPI; Device_, ThNum_: Integer; class_: TAI_DNN_Thread_Class);
+var
+  i: Integer;
+begin
+  for i := 0 to ThNum_ - 1 do
+      TAI_DNN_Thread.Build(Self, AI_LIB_P, Device_, class_);
+end;
+
+procedure TAI_DNN_ThreadPool.BuildDeviceThread(Device_, ThNum_: Integer; class_: TAI_DNN_Thread_Class);
+var
+  i: Integer;
+begin
+  for i := 0 to ThNum_ - 1 do
+      TAI_DNN_Thread.Build(Self, Device_, class_);
+end;
+
+procedure TAI_DNN_ThreadPool.BuildPerDeviceThread(AI_LIB_P: PAI_EntryAPI; ThNum_: Integer; class_: TAI_DNN_Thread_Class);
+var
+  num_: Integer;
+  AI_: TAI;
+  i, j: Integer;
+begin
+  num_ := if_(CurrentPlatform = epWin32, 1, ThNum_);
+  AI_ := TAI.OpenEngine(AI_LIB_P);
+  for i := 0 to num_ - 1 do
+    begin
+      if AI_.isGPU then
+        begin
+          for j := 0 to AI_.GetComputeDeviceNumOfProcess - 1 do
+              BuildDeviceThread(AI_LIB_P, j, 1, class_);
+        end
+      else
+          BuildDeviceThread(AI_LIB_P, 0, 1, class_);
+    end;
+  DisposeObject(AI_);
+end;
+
+procedure TAI_DNN_ThreadPool.BuildPerDeviceThread(ThNum_: Integer; class_: TAI_DNN_Thread_Class);
+begin
+  BuildPerDeviceThread(Prepare_AI_Engine(), ThNum_, class_);
+end;
+
+procedure TAI_DNN_ThreadPool.BuildPerDeviceThread(class_: TAI_DNN_Thread_Class);
+begin
+  BuildPerDeviceThread(1, class_);
+end;
+
+function TAI_DNN_ThreadPool.GetMinLoad_DNN_Thread_TaskNum: Integer;
+var
+  th: TAI_DNN_Thread;
+begin
+  th := MinLoad_DNN_Thread();
+  if th <> nil then
+      Result := th.TaskNum
+  else
+      Result := 0;
+end;
+
+function TAI_DNN_ThreadPool.GetTaskNum: Integer;
+var
+  i: Integer;
+begin
+  Result := 0;
+  for i := 0 to Count - 1 do
+      inc(Result, Items[i].TaskNum);
+end;
+
+function TAI_DNN_ThreadPool.Busy: Boolean;
+var
+  i: Integer;
+begin
+  Result := False;
+  for i := 0 to Count - 1 do
+      Result := Result or Items[i].Busy;
+end;
+
+function TAI_DNN_ThreadPool.PSP: TGeoFloat;
+var
+  i: Integer;
+begin
+  Result := 0;
+  for i := 0 to Count - 1 do
+      Result := Result + Items[i].PSP;
+end;
+
+function TAI_DNN_ThreadPool.MaxPSP: TGeoFloat;
+var
+  i: Integer;
+begin
+  Result := 0;
+  for i := 0 to Count - 1 do
+      Result := Result + Items[i].MaxPSP;
+end;
+
+procedure TAI_DNN_ThreadPool.Wait;
+var
+  thID: TThreadID;
+begin
+  thID := TCoreClassThread.CurrentThread.ThreadID;
+  while Busy do
+    if thID = MainThreadProgress.ThreadID then
+        CheckThreadSynchronize(1)
+    else
+        TCompute.Sleep(1);
+end;
+
+function TAI_DNN_ThreadPool.StateInfo: U_String;
+var
+  i: Integer;
+begin
+  Result := '';
+  for i := 0 to Count - 1 do
+    with Items[i] do
+        Result.Append('%s %s queue: %d/%d - %s Thread Critical: %d/%d'#13#10,
+        [if_(Name = '', ClassName, Name), ThreadInfo, TaskNum, GPUPerformanceCritical, if_(Busy, 'Busy', 'IDLE'), GetCPUAsyncThreadNum(), CPUThreadCritical]);
+  Result.Append('per second avg/max: %d/%d'#13#10, [Round(PSP), Round(MaxPSP)]);
+  Result.Append('----'#13#10);
+end;
+
+procedure TAI_DNN_Thread_Metric.ThreadFree;
+begin
+  FAI.Metric_ResNet_Close(MetricHnd);
+end;
+
+procedure TAI_DNN_Thread_Metric.CMD_Open(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
+begin
+  MetricHnd := FAI.Metric_ResNet_Open(VarToStr(Data3));
+end;
+
+procedure TAI_DNN_Thread_Metric.CMD_OpenShareFace();
+begin
+  MetricHnd := FAI.Metric_ResNet_Open_ShareFace();
+end;
+
+procedure TAI_DNN_Thread_Metric.CMD_Open_Stream(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
+begin
+  MetricHnd := FAI.Metric_ResNet_Open_Stream(Data2 as TMemoryStream64);
+end;
+
+procedure TAI_DNN_Thread_Metric.CMD_SyncProcess(data: Pointer);
+var
+  p: PCMD_SyncProcess;
+begin
+  p := data;
+  p^.output := LVecCopy(FAI.Metric_ResNet_Process(MetricHnd, p^.Input));
+  p^.Done.v := True;
+end;
+
+procedure TAI_DNN_Thread_Metric.OnComputeThreadResult(ThSender: TCompute);
+var
+  p: PCMD_AsyncProcess;
+begin
+  p := ThSender.UserData;
+  try
+    if Assigned(p^.OnResult_C) then
+        p^.OnResult_C(Self, p^.UserData, p^.Input, p^.output);
+    if Assigned(p^.OnResult_M) then
+        p^.OnResult_M(Self, p^.UserData, p^.Input, p^.output);
+    if Assigned(p^.OnResult_P) then
+        p^.OnResult_P(Self, p^.UserData, p^.Input, p^.output);
+  except
+  end;
+  if p^.FreeInput then
+      DisposeObject(p^.Input);
+  SetLength(p^.output, 0);
+  Dispose(p);
+  AtomDec(FCPUAsyncThreadNum);
+end;
+
+procedure TAI_DNN_Thread_Metric.CMD_AsyncProcess(data: Pointer);
+var
+  p: PCMD_AsyncProcess;
+begin
+  while (FCPUThreadCritical > 0) and (FCPUAsyncThreadNum > FCPUThreadCritical) do
+      TCompute.Sleep(1);
+  p := data;
+  p^.output := LVecCopy(FAI.Metric_ResNet_Process(MetricHnd, p^.Input));
+  AtomInc(FCPUAsyncThreadNum);
+  TCompute.RunM(p, nil, {$IFDEF FPC}@{$ENDIF FPC}OnComputeThreadResult);
+end;
+
+constructor TAI_DNN_Thread_Metric.Create;
+begin
+  inherited Create;
+  MetricHnd := nil;
+  FCPUAsyncThreadNum := 0;
+end;
+
+procedure TAI_DNN_Thread_Metric.Open(train_file: SystemString);
+begin
+  FThreadPost.PostM3(nil, nil, train_file, {$IFDEF FPC}@{$ENDIF FPC}CMD_Open);
+end;
+
+procedure TAI_DNN_Thread_Metric.Open_ShareFace();
+begin
+  FThreadPost.PostM1({$IFDEF FPC}@{$ENDIF FPC}CMD_OpenShareFace);
+end;
+
+procedure TAI_DNN_Thread_Metric.Open_Stream(stream: TMemoryStream64);
+begin
+  FThreadPost.PostM3(nil, stream, NULL, {$IFDEF FPC}@{$ENDIF FPC}CMD_Open_Stream);
+end;
+
+function TAI_DNN_Thread_Metric.Process(Input: TMemoryRaster): TLVec;
+var
+  CMD_: TCMD_SyncProcess;
+begin
+  CheckGPUPerformanceCritical;
+  CMD_.Done := TAtomBool.Create(False);
+  CMD_.Input := Input;
+  FThreadPost.PostM2(@CMD_, {$IFDEF FPC}@{$ENDIF FPC}CMD_SyncProcess);
+  while not CMD_.Done.v do
+      TCompute.Sleep(1);
+  Result := CMD_.output;
+  DisposeObject(CMD_.Done);
+end;
+
+procedure TAI_DNN_Thread_Metric.ProcessC(UserData: Pointer; Input: TMemoryRaster; FreeInput: Boolean; OnResult: TAI_DNN_Thread_Metric_AsyncProcess_C);
+var
+  p: PCMD_AsyncProcess;
+begin
+  CheckGPUPerformanceCritical;
+  new(p);
+  p^.UserData := UserData;
+  p^.Input := Input;
+  p^.FreeInput := FreeInput;
+  p^.OnResult_C := OnResult;
+  p^.OnResult_M := nil;
+  p^.OnResult_P := nil;
+  SetLength(p^.output, 0);
+  FThreadPost.PostM2(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcess);
+end;
+
+procedure TAI_DNN_Thread_Metric.ProcessM(UserData: Pointer; Input: TMemoryRaster; FreeInput: Boolean; OnResult: TAI_DNN_Thread_Metric_AsyncProcess_M);
+var
+  p: PCMD_AsyncProcess;
+begin
+  CheckGPUPerformanceCritical;
+  new(p);
+  p^.UserData := UserData;
+  p^.Input := Input;
+  p^.FreeInput := FreeInput;
+  p^.OnResult_C := nil;
+  p^.OnResult_M := OnResult;
+  p^.OnResult_P := nil;
+  SetLength(p^.output, 0);
+  FThreadPost.PostM2(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcess);
+end;
+
+procedure TAI_DNN_Thread_Metric.ProcessP(UserData: Pointer; Input: TMemoryRaster; FreeInput: Boolean; OnResult: TAI_DNN_Thread_Metric_AsyncProcess_P);
+var
+  p: PCMD_AsyncProcess;
+begin
+  CheckGPUPerformanceCritical;
+  new(p);
+  p^.UserData := UserData;
+  p^.Input := Input;
+  p^.FreeInput := FreeInput;
+  p^.OnResult_C := nil;
+  p^.OnResult_M := nil;
+  p^.OnResult_P := OnResult;
+  SetLength(p^.output, 0);
+  FThreadPost.PostM2(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcess);
+end;
+
+function TAI_DNN_Thread_Metric.Busy(): Boolean;
+begin
+  Result := inherited Busy() or (FCPUAsyncThreadNum > 0);
+end;
+
+procedure TAI_DNN_Thread_LMetric.ThreadFree;
+begin
+  FAI.LMetric_ResNet_Close(LMetricHnd);
+end;
+
+procedure TAI_DNN_Thread_LMetric.CMD_Open(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
+begin
+  LMetricHnd := FAI.LMetric_ResNet_Open(VarToStr(Data3));
+end;
+
+procedure TAI_DNN_Thread_LMetric.CMD_Open_Stream(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
+begin
+  LMetricHnd := FAI.LMetric_ResNet_Open_Stream(Data2 as TMemoryStream64);
+end;
+
+procedure TAI_DNN_Thread_LMetric.CMD_SyncProcess(data: Pointer);
+var
+  p: PCMD_SyncProcess;
+begin
+  p := data;
+  p^.output := LVecCopy(FAI.LMetric_ResNet_Process(LMetricHnd, p^.Input));
+  p^.Done.v := True;
+end;
+
+procedure TAI_DNN_Thread_LMetric.OnComputeThreadResult(ThSender: TCompute);
+var
+  p: PCMD_AsyncProcess;
+begin
+  p := ThSender.UserData;
+  try
+    if Assigned(p^.OnResult_C) then
+        p^.OnResult_C(Self, p^.UserData, p^.Input, p^.output);
+    if Assigned(p^.OnResult_M) then
+        p^.OnResult_M(Self, p^.UserData, p^.Input, p^.output);
+    if Assigned(p^.OnResult_P) then
+        p^.OnResult_P(Self, p^.UserData, p^.Input, p^.output);
+  except
+  end;
+  if p^.FreeInput then
+      DisposeObject(p^.Input);
+  SetLength(p^.output, 0);
+  Dispose(p);
+  AtomDec(FCPUAsyncThreadNum);
+end;
+
+procedure TAI_DNN_Thread_LMetric.CMD_AsyncProcess(data: Pointer);
+var
+  p: PCMD_AsyncProcess;
+begin
+  while (FCPUThreadCritical > 0) and (FCPUAsyncThreadNum > FCPUThreadCritical) do
+      TCompute.Sleep(1);
+  p := data;
+  p^.output := LVecCopy(FAI.LMetric_ResNet_Process(LMetricHnd, p^.Input));
+  AtomInc(FCPUAsyncThreadNum);
+  TCompute.RunM(p, nil, {$IFDEF FPC}@{$ENDIF FPC}OnComputeThreadResult);
+end;
+
+constructor TAI_DNN_Thread_LMetric.Create;
+begin
+  inherited Create;
+  LMetricHnd := nil;
+  FCPUAsyncThreadNum := 0;
+end;
+
+procedure TAI_DNN_Thread_LMetric.Open(train_file: SystemString);
+begin
+  FThreadPost.PostM3(nil, nil, train_file, {$IFDEF FPC}@{$ENDIF FPC}CMD_Open);
+end;
+
+procedure TAI_DNN_Thread_LMetric.Open_Stream(stream: TMemoryStream64);
+begin
+  FThreadPost.PostM3(nil, stream, NULL, {$IFDEF FPC}@{$ENDIF FPC}CMD_Open_Stream);
+end;
+
+function TAI_DNN_Thread_LMetric.Process(Input: TMemoryRaster): TLVec;
+var
+  CMD_: TCMD_SyncProcess;
+begin
+  CheckGPUPerformanceCritical;
+  CMD_.Done := TAtomBool.Create(False);
+  CMD_.Input := Input;
+  FThreadPost.PostM2(@CMD_, {$IFDEF FPC}@{$ENDIF FPC}CMD_SyncProcess);
+  while not CMD_.Done.v do
+      TCompute.Sleep(1);
+  Result := CMD_.output;
+  DisposeObject(CMD_.Done);
+end;
+
+procedure TAI_DNN_Thread_LMetric.ProcessC(UserData: Pointer; Input: TMemoryRaster; FreeInput: Boolean; OnResult: TAI_DNN_Thread_LMetric_AsyncProcess_C);
+var
+  p: PCMD_AsyncProcess;
+begin
+  CheckGPUPerformanceCritical;
+  new(p);
+  p^.UserData := UserData;
+  p^.Input := Input;
+  p^.FreeInput := FreeInput;
+  p^.OnResult_C := OnResult;
+  p^.OnResult_M := nil;
+  p^.OnResult_P := nil;
+  SetLength(p^.output, 0);
+  FThreadPost.PostM2(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcess);
+end;
+
+procedure TAI_DNN_Thread_LMetric.ProcessM(UserData: Pointer; Input: TMemoryRaster; FreeInput: Boolean; OnResult: TAI_DNN_Thread_LMetric_AsyncProcess_M);
+var
+  p: PCMD_AsyncProcess;
+begin
+  CheckGPUPerformanceCritical;
+  new(p);
+  p^.UserData := UserData;
+  p^.Input := Input;
+  p^.FreeInput := FreeInput;
+  p^.OnResult_C := nil;
+  p^.OnResult_M := OnResult;
+  p^.OnResult_P := nil;
+  SetLength(p^.output, 0);
+  FThreadPost.PostM2(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcess);
+end;
+
+procedure TAI_DNN_Thread_LMetric.ProcessP(UserData: Pointer; Input: TMemoryRaster; FreeInput: Boolean; OnResult: TAI_DNN_Thread_LMetric_AsyncProcess_P);
+var
+  p: PCMD_AsyncProcess;
+begin
+  CheckGPUPerformanceCritical;
+  new(p);
+  p^.UserData := UserData;
+  p^.Input := Input;
+  p^.FreeInput := FreeInput;
+  p^.OnResult_C := nil;
+  p^.OnResult_M := nil;
+  p^.OnResult_P := OnResult;
+  SetLength(p^.output, 0);
+  FThreadPost.PostM2(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcess);
+end;
+
+function TAI_DNN_Thread_LMetric.Busy(): Boolean;
+begin
+  Result := inherited Busy() or (FCPUAsyncThreadNum > 0);
+end;
+
+procedure TAI_DNN_Thread_MMOD6L.ThreadFree;
+begin
+  FAI.MMOD3L_DNN_Close(MMOD6LHnd);
+end;
+
+procedure TAI_DNN_Thread_MMOD6L.CMD_Open(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
+begin
+  MMOD6LHnd := FAI.MMOD6L_DNN_Open(VarToStr(Data3));
+end;
+
+procedure TAI_DNN_Thread_MMOD6L.CMD_OpenFace();
+begin
+  MMOD6LHnd := FAI.MMOD6L_DNN_Open_Face();
+end;
+
+procedure TAI_DNN_Thread_MMOD6L.CMD_Open_Stream(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
+begin
+  MMOD6LHnd := FAI.MMOD6L_DNN_Open_Stream(Data2 as TMemoryStream64);
+end;
+
+procedure TAI_DNN_Thread_MMOD6L.CMD_SyncProcess(data: Pointer);
+var
+  p: PCMD_SyncProcess;
+begin
+  p := data;
+  p^.output := FAI.MMOD6L_DNN_Process(MMOD6LHnd, p^.Input);
+  p^.Done.v := True;
+end;
+
+procedure TAI_DNN_Thread_MMOD6L.OnComputeThreadResult(ThSender: TCompute);
+var
+  p: PCMD_AsyncProcess;
+begin
+  p := ThSender.UserData;
+  try
+    if Assigned(p^.OnResult_C) then
+        p^.OnResult_C(Self, p^.UserData, p^.Input, p^.output);
+    if Assigned(p^.OnResult_M) then
+        p^.OnResult_M(Self, p^.UserData, p^.Input, p^.output);
+    if Assigned(p^.OnResult_P) then
+        p^.OnResult_P(Self, p^.UserData, p^.Input, p^.output);
+  except
+  end;
+  if p^.FreeInput then
+      DisposeObject(p^.Input);
+  SetLength(p^.output, 0);
+  Dispose(p);
+  AtomDec(FCPUAsyncThreadNum);
+end;
+
+procedure TAI_DNN_Thread_MMOD6L.CMD_AsyncProcess(data: Pointer);
+var
+  p: PCMD_AsyncProcess;
+begin
+  while (FCPUThreadCritical > 0) and (FCPUAsyncThreadNum > FCPUThreadCritical) do
+      TCompute.Sleep(1);
+  p := data;
+  p^.output := FAI.MMOD6L_DNN_Process(MMOD6LHnd, p^.Input);
+  AtomInc(FCPUAsyncThreadNum);
+  TCompute.RunM(p, nil, {$IFDEF FPC}@{$ENDIF FPC}OnComputeThreadResult);
+end;
+
+constructor TAI_DNN_Thread_MMOD6L.Create;
+begin
+  inherited Create;
+  MMOD6LHnd := nil;
+  FCPUAsyncThreadNum := 0;
+end;
+
+procedure TAI_DNN_Thread_MMOD6L.Open(train_file: SystemString);
+begin
+  FThreadPost.PostM3(nil, nil, train_file, {$IFDEF FPC}@{$ENDIF FPC}CMD_Open);
+end;
+
+procedure TAI_DNN_Thread_MMOD6L.Open_Face;
+begin
+  FThreadPost.PostM1({$IFDEF FPC}@{$ENDIF FPC}CMD_OpenFace);
+end;
+
+procedure TAI_DNN_Thread_MMOD6L.Open_Stream(stream: TMemoryStream64);
+begin
+  FThreadPost.PostM3(nil, stream, NULL, {$IFDEF FPC}@{$ENDIF FPC}CMD_Open_Stream);
+end;
+
+function TAI_DNN_Thread_MMOD6L.Process(Input: TMemoryRaster): TMMOD_Desc;
+var
+  CMD_: TCMD_SyncProcess;
+begin
+  CheckGPUPerformanceCritical;
+  CMD_.Done := TAtomBool.Create(False);
+  CMD_.Input := Input;
+  FThreadPost.PostM2(@CMD_, {$IFDEF FPC}@{$ENDIF FPC}CMD_SyncProcess);
+  while not CMD_.Done.v do
+      TCompute.Sleep(1);
+  Result := CMD_.output;
+  DisposeObject(CMD_.Done);
+end;
+
+procedure TAI_DNN_Thread_MMOD6L.ProcessC(UserData: Pointer; Input: TMemoryRaster; FreeInput: Boolean; OnResult: TAI_DNN_Thread_MMOD6L_AsyncProcess_C);
+var
+  p: PCMD_AsyncProcess;
+begin
+  CheckGPUPerformanceCritical;
+  new(p);
+  p^.UserData := UserData;
+  p^.Input := Input;
+  p^.FreeInput := FreeInput;
+  p^.OnResult_C := OnResult;
+  p^.OnResult_M := nil;
+  p^.OnResult_P := nil;
+  SetLength(p^.output, 0);
+  FThreadPost.PostM2(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcess);
+end;
+
+procedure TAI_DNN_Thread_MMOD6L.ProcessM(UserData: Pointer; Input: TMemoryRaster; FreeInput: Boolean; OnResult: TAI_DNN_Thread_MMOD6L_AsyncProcess_M);
+var
+  p: PCMD_AsyncProcess;
+begin
+  CheckGPUPerformanceCritical;
+  new(p);
+  p^.UserData := UserData;
+  p^.Input := Input;
+  p^.FreeInput := FreeInput;
+  p^.OnResult_C := nil;
+  p^.OnResult_M := OnResult;
+  p^.OnResult_P := nil;
+  SetLength(p^.output, 0);
+  FThreadPost.PostM2(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcess);
+end;
+
+procedure TAI_DNN_Thread_MMOD6L.ProcessP(UserData: Pointer; Input: TMemoryRaster; FreeInput: Boolean; OnResult: TAI_DNN_Thread_MMOD6L_AsyncProcess_P);
+var
+  p: PCMD_AsyncProcess;
+begin
+  CheckGPUPerformanceCritical;
+  new(p);
+  p^.UserData := UserData;
+  p^.Input := Input;
+  p^.FreeInput := FreeInput;
+  p^.OnResult_C := nil;
+  p^.OnResult_M := nil;
+  p^.OnResult_P := OnResult;
+  SetLength(p^.output, 0);
+  FThreadPost.PostM2(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcess);
+end;
+
+function TAI_DNN_Thread_MMOD6L.Busy(): Boolean;
+begin
+  Result := inherited Busy() or (FCPUAsyncThreadNum > 0);
+end;
+
+procedure TAI_DNN_Thread_MMOD3L.ThreadFree;
+begin
+  FAI.MMOD3L_DNN_Close(MMOD3LHnd);
+end;
+
+procedure TAI_DNN_Thread_MMOD3L.CMD_Open(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
+begin
+  MMOD3LHnd := FAI.MMOD3L_DNN_Open(VarToStr(Data3));
+end;
+
+procedure TAI_DNN_Thread_MMOD3L.CMD_Open_Stream(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
+begin
+  MMOD3LHnd := FAI.MMOD3L_DNN_Open_Stream(Data2 as TMemoryStream64);
+end;
+
+procedure TAI_DNN_Thread_MMOD3L.CMD_SyncProcess(data: Pointer);
+var
+  p: PCMD_SyncProcess;
+begin
+  p := data;
+  p^.output := FAI.MMOD3L_DNN_Process(MMOD3LHnd, p^.Input);
+  p^.Done.v := True;
+end;
+
+procedure TAI_DNN_Thread_MMOD3L.OnComputeThreadResult(ThSender: TCompute);
+var
+  p: PCMD_AsyncProcess;
+begin
+  p := ThSender.UserData;
+  try
+    if Assigned(p^.OnResult_C) then
+        p^.OnResult_C(Self, p^.UserData, p^.Input, p^.output);
+    if Assigned(p^.OnResult_M) then
+        p^.OnResult_M(Self, p^.UserData, p^.Input, p^.output);
+    if Assigned(p^.OnResult_P) then
+        p^.OnResult_P(Self, p^.UserData, p^.Input, p^.output);
+  except
+  end;
+  if p^.FreeInput then
+      DisposeObject(p^.Input);
+  SetLength(p^.output, 0);
+  Dispose(p);
+  AtomDec(FCPUAsyncThreadNum);
+end;
+
+procedure TAI_DNN_Thread_MMOD3L.CMD_AsyncProcess(data: Pointer);
+var
+  p: PCMD_AsyncProcess;
+begin
+  while (FCPUThreadCritical > 0) and (FCPUAsyncThreadNum > FCPUThreadCritical) do
+      TCompute.Sleep(1);
+  p := data;
+  p^.output := FAI.MMOD3L_DNN_Process(MMOD3LHnd, p^.Input);
+  AtomInc(FCPUAsyncThreadNum);
+  TCompute.RunM(p, nil, {$IFDEF FPC}@{$ENDIF FPC}OnComputeThreadResult);
+end;
+
+constructor TAI_DNN_Thread_MMOD3L.Create;
+begin
+  inherited Create;
+  MMOD3LHnd := nil;
+  FCPUAsyncThreadNum := 0;
+end;
+
+procedure TAI_DNN_Thread_MMOD3L.Open(train_file: SystemString);
+begin
+  FThreadPost.PostM3(nil, nil, train_file, {$IFDEF FPC}@{$ENDIF FPC}CMD_Open);
+end;
+
+procedure TAI_DNN_Thread_MMOD3L.Open_Stream(stream: TMemoryStream64);
+begin
+  FThreadPost.PostM3(nil, stream, NULL, {$IFDEF FPC}@{$ENDIF FPC}CMD_Open_Stream);
+end;
+
+function TAI_DNN_Thread_MMOD3L.Process(Input: TMemoryRaster): TMMOD_Desc;
+var
+  CMD_: TCMD_SyncProcess;
+begin
+  CheckGPUPerformanceCritical;
+  CMD_.Done := TAtomBool.Create(False);
+  CMD_.Input := Input;
+  FThreadPost.PostM2(@CMD_, {$IFDEF FPC}@{$ENDIF FPC}CMD_SyncProcess);
+  while not CMD_.Done.v do
+      TCompute.Sleep(1);
+  Result := CMD_.output;
+  DisposeObject(CMD_.Done);
+end;
+
+procedure TAI_DNN_Thread_MMOD3L.ProcessC(UserData: Pointer; Input: TMemoryRaster; FreeInput: Boolean; OnResult: TAI_DNN_Thread_MMOD3L_AsyncProcess_C);
+var
+  p: PCMD_AsyncProcess;
+begin
+  CheckGPUPerformanceCritical;
+  new(p);
+  p^.UserData := UserData;
+  p^.Input := Input;
+  p^.FreeInput := FreeInput;
+  p^.OnResult_C := OnResult;
+  p^.OnResult_M := nil;
+  p^.OnResult_P := nil;
+  SetLength(p^.output, 0);
+  FThreadPost.PostM2(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcess);
+end;
+
+procedure TAI_DNN_Thread_MMOD3L.ProcessM(UserData: Pointer; Input: TMemoryRaster; FreeInput: Boolean; OnResult: TAI_DNN_Thread_MMOD3L_AsyncProcess_M);
+var
+  p: PCMD_AsyncProcess;
+begin
+  CheckGPUPerformanceCritical;
+  new(p);
+  p^.UserData := UserData;
+  p^.Input := Input;
+  p^.FreeInput := FreeInput;
+  p^.OnResult_C := nil;
+  p^.OnResult_M := OnResult;
+  p^.OnResult_P := nil;
+  SetLength(p^.output, 0);
+  FThreadPost.PostM2(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcess);
+end;
+
+procedure TAI_DNN_Thread_MMOD3L.ProcessP(UserData: Pointer; Input: TMemoryRaster; FreeInput: Boolean; OnResult: TAI_DNN_Thread_MMOD3L_AsyncProcess_P);
+var
+  p: PCMD_AsyncProcess;
+begin
+  CheckGPUPerformanceCritical;
+  new(p);
+  p^.UserData := UserData;
+  p^.Input := Input;
+  p^.FreeInput := FreeInput;
+  p^.OnResult_C := nil;
+  p^.OnResult_M := nil;
+  p^.OnResult_P := OnResult;
+  SetLength(p^.output, 0);
+  FThreadPost.PostM2(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcess);
+end;
+
+function TAI_DNN_Thread_MMOD3L.Busy(): Boolean;
+begin
+  Result := inherited Busy() or (FCPUAsyncThreadNum > 0);
+end;
+
+procedure TAI_DNN_Thread_RNIC.ThreadFree;
+begin
+  FAI.RNIC_Close(RNICHnd);
+end;
+
+procedure TAI_DNN_Thread_RNIC.CMD_Open(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
+begin
+  RNICHnd := FAI.RNIC_Open(VarToStr(Data3));
+end;
+
+procedure TAI_DNN_Thread_RNIC.CMD_Open_Stream(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
+begin
+  RNICHnd := FAI.RNIC_Open_Stream(Data2 as TMemoryStream64);
+end;
+
+procedure TAI_DNN_Thread_RNIC.CMD_SyncProcess(data: Pointer);
+var
+  p: PCMD_SyncProcess;
+begin
+  p := data;
+  p^.output := FAI.RNIC_Process(RNICHnd, p^.Input, p^.num_crops);
+  p^.Done.v := True;
+end;
+
+procedure TAI_DNN_Thread_RNIC.OnComputeThreadResult(ThSender: TCompute);
+var
+  p: PCMD_AsyncProcess;
+begin
+  p := ThSender.UserData;
+  try
+    if Assigned(p^.OnResult_C) then
+        p^.OnResult_C(Self, p^.UserData, p^.Input, p^.output);
+    if Assigned(p^.OnResult_M) then
+        p^.OnResult_M(Self, p^.UserData, p^.Input, p^.output);
+    if Assigned(p^.OnResult_P) then
+        p^.OnResult_P(Self, p^.UserData, p^.Input, p^.output);
+  except
+  end;
+  if p^.FreeInput then
+      DisposeObject(p^.Input);
+  SetLength(p^.output, 0);
+  Dispose(p);
+  AtomDec(FCPUAsyncThreadNum);
+end;
+
+procedure TAI_DNN_Thread_RNIC.CMD_AsyncProcess(data: Pointer);
+var
+  p: PCMD_AsyncProcess;
+begin
+  while (FCPUThreadCritical > 0) and (FCPUAsyncThreadNum > FCPUThreadCritical) do
+      TCompute.Sleep(1);
+  p := data;
+  p^.output := FAI.RNIC_Process(RNICHnd, p^.Input, p^.num_crops);
+  AtomInc(FCPUAsyncThreadNum);
+  TCompute.RunM(p, nil, {$IFDEF FPC}@{$ENDIF FPC}OnComputeThreadResult);
+end;
+
+constructor TAI_DNN_Thread_RNIC.Create;
+begin
+  inherited Create;
+  RNICHnd := nil;
+  FCPUAsyncThreadNum := 0;
+end;
+
+procedure TAI_DNN_Thread_RNIC.Open(train_file: SystemString);
+begin
+  FThreadPost.PostM3(nil, nil, train_file, {$IFDEF FPC}@{$ENDIF FPC}CMD_Open);
+end;
+
+procedure TAI_DNN_Thread_RNIC.Open_Stream(stream: TMemoryStream64);
+begin
+  FThreadPost.PostM3(nil, stream, NULL, {$IFDEF FPC}@{$ENDIF FPC}CMD_Open_Stream);
+end;
+
+function TAI_DNN_Thread_RNIC.Process(Input: TMemoryRaster; num_crops: Integer): TLVec;
+var
+  CMD_: TCMD_SyncProcess;
+begin
+  CheckGPUPerformanceCritical;
+  CMD_.Done := TAtomBool.Create(False);
+  CMD_.Input := Input;
+  CMD_.num_crops := num_crops;
+  FThreadPost.PostM2(@CMD_, {$IFDEF FPC}@{$ENDIF FPC}CMD_SyncProcess);
+  while not CMD_.Done.v do
+      TCompute.Sleep(1);
+  Result := CMD_.output;
+  DisposeObject(CMD_.Done);
+end;
+
+procedure TAI_DNN_Thread_RNIC.ProcessC(UserData: Pointer; Input: TMemoryRaster; num_crops: Integer; FreeInput: Boolean; OnResult: TAI_DNN_Thread_RNIC_AsyncProcess_C);
+var
+  p: PCMD_AsyncProcess;
+begin
+  CheckGPUPerformanceCritical;
+  new(p);
+  p^.UserData := UserData;
+  p^.Input := Input;
+  p^.num_crops := num_crops;
+  p^.FreeInput := FreeInput;
+  p^.OnResult_C := OnResult;
+  p^.OnResult_M := nil;
+  p^.OnResult_P := nil;
+  SetLength(p^.output, 0);
+  FThreadPost.PostM2(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcess);
+end;
+
+procedure TAI_DNN_Thread_RNIC.ProcessM(UserData: Pointer; Input: TMemoryRaster; num_crops: Integer; FreeInput: Boolean; OnResult: TAI_DNN_Thread_RNIC_AsyncProcess_M);
+var
+  p: PCMD_AsyncProcess;
+begin
+  CheckGPUPerformanceCritical;
+  new(p);
+  p^.UserData := UserData;
+  p^.Input := Input;
+  p^.num_crops := num_crops;
+  p^.FreeInput := FreeInput;
+  p^.OnResult_C := nil;
+  p^.OnResult_M := OnResult;
+  p^.OnResult_P := nil;
+  SetLength(p^.output, 0);
+  FThreadPost.PostM2(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcess);
+end;
+
+procedure TAI_DNN_Thread_RNIC.ProcessP(UserData: Pointer; Input: TMemoryRaster; num_crops: Integer; FreeInput: Boolean; OnResult: TAI_DNN_Thread_RNIC_AsyncProcess_P);
+var
+  p: PCMD_AsyncProcess;
+begin
+  CheckGPUPerformanceCritical;
+  new(p);
+  p^.UserData := UserData;
+  p^.Input := Input;
+  p^.num_crops := num_crops;
+  p^.FreeInput := FreeInput;
+  p^.OnResult_C := nil;
+  p^.OnResult_M := nil;
+  p^.OnResult_P := OnResult;
+  SetLength(p^.output, 0);
+  FThreadPost.PostM2(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcess);
+end;
+
+function TAI_DNN_Thread_RNIC.Busy(): Boolean;
+begin
+  Result := inherited Busy() or (FCPUAsyncThreadNum > 0);
+end;
+
+procedure TAI_DNN_Thread_LRNIC.ThreadFree;
+begin
+  FAI.LRNIC_Close(LRNICHnd);
+end;
+
+procedure TAI_DNN_Thread_LRNIC.CMD_Open(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
+begin
+  LRNICHnd := FAI.LRNIC_Open(VarToStr(Data3));
+end;
+
+procedure TAI_DNN_Thread_LRNIC.CMD_Open_Stream(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
+begin
+  LRNICHnd := FAI.LRNIC_Open_Stream(Data2 as TMemoryStream64);
+end;
+
+procedure TAI_DNN_Thread_LRNIC.CMD_SyncProcess(data: Pointer);
+var
+  p: PCMD_SyncProcess;
+begin
+  p := data;
+  p^.output := FAI.LRNIC_Process(LRNICHnd, p^.Input, p^.num_crops);
+  p^.Done.v := True;
+end;
+
+procedure TAI_DNN_Thread_LRNIC.OnComputeThreadResult(ThSender: TCompute);
+var
+  p: PCMD_AsyncProcess;
+begin
+  p := ThSender.UserData;
+  try
+    if Assigned(p^.OnResult_C) then
+        p^.OnResult_C(Self, p^.UserData, p^.Input, p^.output);
+    if Assigned(p^.OnResult_M) then
+        p^.OnResult_M(Self, p^.UserData, p^.Input, p^.output);
+    if Assigned(p^.OnResult_P) then
+        p^.OnResult_P(Self, p^.UserData, p^.Input, p^.output);
+  except
+  end;
+  if p^.FreeInput then
+      DisposeObject(p^.Input);
+  SetLength(p^.output, 0);
+  Dispose(p);
+  AtomDec(FCPUAsyncThreadNum);
+end;
+
+procedure TAI_DNN_Thread_LRNIC.CMD_AsyncProcess(data: Pointer);
+var
+  p: PCMD_AsyncProcess;
+begin
+  while (FCPUThreadCritical > 0) and (FCPUAsyncThreadNum > FCPUThreadCritical) do
+      TCompute.Sleep(1);
+  p := data;
+  p^.output := FAI.LRNIC_Process(LRNICHnd, p^.Input, p^.num_crops);
+  AtomInc(FCPUAsyncThreadNum);
+  TCompute.RunM(p, nil, {$IFDEF FPC}@{$ENDIF FPC}OnComputeThreadResult);
+end;
+
+constructor TAI_DNN_Thread_LRNIC.Create;
+begin
+  inherited Create;
+  LRNICHnd := nil;
+  FCPUAsyncThreadNum := 0;
+end;
+
+procedure TAI_DNN_Thread_LRNIC.Open(train_file: SystemString);
+begin
+  FThreadPost.PostM3(nil, nil, train_file, {$IFDEF FPC}@{$ENDIF FPC}CMD_Open);
+end;
+
+procedure TAI_DNN_Thread_LRNIC.Open_Stream(stream: TMemoryStream64);
+begin
+  FThreadPost.PostM3(nil, stream, NULL, {$IFDEF FPC}@{$ENDIF FPC}CMD_Open_Stream);
+end;
+
+function TAI_DNN_Thread_LRNIC.Process(Input: TMemoryRaster; num_crops: Integer): TLVec;
+var
+  CMD_: TCMD_SyncProcess;
+begin
+  CheckGPUPerformanceCritical;
+  CMD_.Done := TAtomBool.Create(False);
+  CMD_.Input := Input;
+  CMD_.num_crops := num_crops;
+  FThreadPost.PostM2(@CMD_, {$IFDEF FPC}@{$ENDIF FPC}CMD_SyncProcess);
+  while not CMD_.Done.v do
+      TCompute.Sleep(1);
+  Result := CMD_.output;
+  DisposeObject(CMD_.Done);
+end;
+
+procedure TAI_DNN_Thread_LRNIC.ProcessC(UserData: Pointer; Input: TMemoryRaster; num_crops: Integer; FreeInput: Boolean; OnResult: TAI_DNN_Thread_LRNIC_AsyncProcess_C);
+var
+  p: PCMD_AsyncProcess;
+begin
+  CheckGPUPerformanceCritical;
+  new(p);
+  p^.UserData := UserData;
+  p^.Input := Input;
+  p^.num_crops := num_crops;
+  p^.FreeInput := FreeInput;
+  p^.OnResult_C := OnResult;
+  p^.OnResult_M := nil;
+  p^.OnResult_P := nil;
+  SetLength(p^.output, 0);
+  FThreadPost.PostM2(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcess);
+end;
+
+procedure TAI_DNN_Thread_LRNIC.ProcessM(UserData: Pointer; Input: TMemoryRaster; num_crops: Integer; FreeInput: Boolean; OnResult: TAI_DNN_Thread_LRNIC_AsyncProcess_M);
+var
+  p: PCMD_AsyncProcess;
+begin
+  CheckGPUPerformanceCritical;
+  new(p);
+  p^.UserData := UserData;
+  p^.Input := Input;
+  p^.num_crops := num_crops;
+  p^.FreeInput := FreeInput;
+  p^.OnResult_C := nil;
+  p^.OnResult_M := OnResult;
+  p^.OnResult_P := nil;
+  SetLength(p^.output, 0);
+  FThreadPost.PostM2(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcess);
+end;
+
+procedure TAI_DNN_Thread_LRNIC.ProcessP(UserData: Pointer; Input: TMemoryRaster; num_crops: Integer; FreeInput: Boolean; OnResult: TAI_DNN_Thread_LRNIC_AsyncProcess_P);
+var
+  p: PCMD_AsyncProcess;
+begin
+  CheckGPUPerformanceCritical;
+  new(p);
+  p^.UserData := UserData;
+  p^.Input := Input;
+  p^.num_crops := num_crops;
+  p^.FreeInput := FreeInput;
+  p^.OnResult_C := nil;
+  p^.OnResult_M := nil;
+  p^.OnResult_P := OnResult;
+  SetLength(p^.output, 0);
+  FThreadPost.PostM2(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcess);
+end;
+
+function TAI_DNN_Thread_LRNIC.Busy(): Boolean;
+begin
+  Result := inherited Busy() or (FCPUAsyncThreadNum > 0);
+end;
+
+procedure TAI_DNN_Thread_GDCNIC.ThreadFree;
+begin
+  FAI.GDCNIC_Close(GDCNICHnd);
+end;
+
+procedure TAI_DNN_Thread_GDCNIC.CMD_Open(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
+begin
+  GDCNICHnd := FAI.GDCNIC_Open(VarToStr(Data3));
+end;
+
+procedure TAI_DNN_Thread_GDCNIC.CMD_Open_Stream(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
+begin
+  GDCNICHnd := FAI.GDCNIC_Open_Stream(Data2 as TMemoryStream64);
+end;
+
+procedure TAI_DNN_Thread_GDCNIC.CMD_SyncProcess(data: Pointer);
+var
+  p: PCMD_SyncProcess;
+begin
+  p := data;
+  p^.output := FAI.GDCNIC_Process(GDCNICHnd, p^.SS_width, p^.SS_height, p^.Input);
+  p^.Done.v := True;
+end;
+
+procedure TAI_DNN_Thread_GDCNIC.OnComputeThreadResult(ThSender: TCompute);
+var
+  p: PCMD_AsyncProcess;
+begin
+  p := ThSender.UserData;
+  try
+    if Assigned(p^.OnResult_C) then
+        p^.OnResult_C(Self, p^.UserData, p^.Input, p^.output);
+    if Assigned(p^.OnResult_M) then
+        p^.OnResult_M(Self, p^.UserData, p^.Input, p^.output);
+    if Assigned(p^.OnResult_P) then
+        p^.OnResult_P(Self, p^.UserData, p^.Input, p^.output);
+  except
+  end;
+  if p^.FreeInput then
+      DisposeObject(p^.Input);
+  SetLength(p^.output, 0);
+  Dispose(p);
+  AtomDec(FCPUAsyncThreadNum);
+end;
+
+procedure TAI_DNN_Thread_GDCNIC.CMD_AsyncProcess(data: Pointer);
+var
+  p: PCMD_AsyncProcess;
+begin
+  while (FCPUThreadCritical > 0) and (FCPUAsyncThreadNum > FCPUThreadCritical) do
+      TCompute.Sleep(1);
+  p := data;
+  p^.output := FAI.GDCNIC_Process(GDCNICHnd, p^.SS_width, p^.SS_height, p^.Input);
+  AtomInc(FCPUAsyncThreadNum);
+  TCompute.RunM(p, nil, {$IFDEF FPC}@{$ENDIF FPC}OnComputeThreadResult);
+end;
+
+constructor TAI_DNN_Thread_GDCNIC.Create;
+begin
+  inherited Create;
+  GDCNICHnd := nil;
+  FCPUAsyncThreadNum := 0;
+end;
+
+procedure TAI_DNN_Thread_GDCNIC.Open(train_file: SystemString);
+begin
+  FThreadPost.PostM3(nil, nil, train_file, {$IFDEF FPC}@{$ENDIF FPC}CMD_Open);
+end;
+
+procedure TAI_DNN_Thread_GDCNIC.Open_Stream(stream: TMemoryStream64);
+begin
+  FThreadPost.PostM3(nil, stream, NULL, {$IFDEF FPC}@{$ENDIF FPC}CMD_Open_Stream);
+end;
+
+function TAI_DNN_Thread_GDCNIC.Process(Input: TMemoryRaster; SS_width, SS_height: Integer): TLVec;
+var
+  CMD_: TCMD_SyncProcess;
+begin
+  CheckGPUPerformanceCritical;
+  CMD_.Done := TAtomBool.Create(False);
+  CMD_.Input := Input;
+  CMD_.SS_width := SS_width;
+  CMD_.SS_height := SS_height;
+  FThreadPost.PostM2(@CMD_, {$IFDEF FPC}@{$ENDIF FPC}CMD_SyncProcess);
+  while not CMD_.Done.v do
+      TCompute.Sleep(1);
+  Result := CMD_.output;
+  DisposeObject(CMD_.Done);
+end;
+
+procedure TAI_DNN_Thread_GDCNIC.ProcessC(UserData: Pointer; Input: TMemoryRaster; SS_width, SS_height: Integer; FreeInput: Boolean; OnResult: TAI_DNN_Thread_GDCNIC_AsyncProcess_C);
+var
+  p: PCMD_AsyncProcess;
+begin
+  CheckGPUPerformanceCritical;
+  new(p);
+  p^.UserData := UserData;
+  p^.Input := Input;
+  p^.SS_width := SS_width;
+  p^.SS_height := SS_height;
+  p^.FreeInput := FreeInput;
+  p^.OnResult_C := OnResult;
+  p^.OnResult_M := nil;
+  p^.OnResult_P := nil;
+  SetLength(p^.output, 0);
+  FThreadPost.PostM2(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcess);
+end;
+
+procedure TAI_DNN_Thread_GDCNIC.ProcessM(UserData: Pointer; Input: TMemoryRaster; SS_width, SS_height: Integer; FreeInput: Boolean; OnResult: TAI_DNN_Thread_GDCNIC_AsyncProcess_M);
+var
+  p: PCMD_AsyncProcess;
+begin
+  CheckGPUPerformanceCritical;
+  new(p);
+  p^.UserData := UserData;
+  p^.Input := Input;
+  p^.SS_width := SS_width;
+  p^.SS_height := SS_height;
+  p^.FreeInput := FreeInput;
+  p^.OnResult_C := nil;
+  p^.OnResult_M := OnResult;
+  p^.OnResult_P := nil;
+  SetLength(p^.output, 0);
+  FThreadPost.PostM2(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcess);
+end;
+
+procedure TAI_DNN_Thread_GDCNIC.ProcessP(UserData: Pointer; Input: TMemoryRaster; SS_width, SS_height: Integer; FreeInput: Boolean; OnResult: TAI_DNN_Thread_GDCNIC_AsyncProcess_P);
+var
+  p: PCMD_AsyncProcess;
+begin
+  CheckGPUPerformanceCritical;
+  new(p);
+  p^.UserData := UserData;
+  p^.Input := Input;
+  p^.SS_width := SS_width;
+  p^.SS_height := SS_height;
+  p^.FreeInput := FreeInput;
+  p^.OnResult_C := nil;
+  p^.OnResult_M := nil;
+  p^.OnResult_P := OnResult;
+  SetLength(p^.output, 0);
+  FThreadPost.PostM2(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcess);
+end;
+
+function TAI_DNN_Thread_GDCNIC.Busy(): Boolean;
+begin
+  Result := inherited Busy() or (FCPUAsyncThreadNum > 0);
+end;
+
+procedure TAI_DNN_Thread_GNIC.ThreadFree;
+begin
+  FAI.GNIC_Close(GNICHnd);
+end;
+
+procedure TAI_DNN_Thread_GNIC.CMD_Open(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
+begin
+  GNICHnd := FAI.GNIC_Open(VarToStr(Data3));
+end;
+
+procedure TAI_DNN_Thread_GNIC.CMD_Open_Stream(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
+begin
+  GNICHnd := FAI.GNIC_Open_Stream(Data2 as TMemoryStream64);
+end;
+
+procedure TAI_DNN_Thread_GNIC.CMD_SyncProcess(data: Pointer);
+var
+  p: PCMD_SyncProcess;
+begin
+  p := data;
+  p^.output := FAI.GNIC_Process(GNICHnd, p^.SS_width, p^.SS_height, p^.Input);
+  p^.Done.v := True;
+end;
+
+procedure TAI_DNN_Thread_GNIC.OnComputeThreadResult(ThSender: TCompute);
+var
+  p: PCMD_AsyncProcess;
+begin
+  p := ThSender.UserData;
+  try
+    if Assigned(p^.OnResult_C) then
+        p^.OnResult_C(Self, p^.UserData, p^.Input, p^.output);
+    if Assigned(p^.OnResult_M) then
+        p^.OnResult_M(Self, p^.UserData, p^.Input, p^.output);
+    if Assigned(p^.OnResult_P) then
+        p^.OnResult_P(Self, p^.UserData, p^.Input, p^.output);
+  except
+  end;
+  if p^.FreeInput then
+      DisposeObject(p^.Input);
+  SetLength(p^.output, 0);
+  Dispose(p);
+  AtomDec(FCPUAsyncThreadNum);
+end;
+
+procedure TAI_DNN_Thread_GNIC.CMD_AsyncProcess(data: Pointer);
+var
+  p: PCMD_AsyncProcess;
+begin
+  while (FCPUThreadCritical > 0) and (FCPUAsyncThreadNum > FCPUThreadCritical) do
+      TCompute.Sleep(1);
+  p := data;
+  p^.output := FAI.GNIC_Process(GNICHnd, p^.SS_width, p^.SS_height, p^.Input);
+  AtomInc(FCPUAsyncThreadNum);
+  TCompute.RunM(p, nil, {$IFDEF FPC}@{$ENDIF FPC}OnComputeThreadResult);
+end;
+
+constructor TAI_DNN_Thread_GNIC.Create;
+begin
+  inherited Create;
+  GNICHnd := nil;
+  FCPUAsyncThreadNum := 0;
+end;
+
+procedure TAI_DNN_Thread_GNIC.Open(train_file: SystemString);
+begin
+  FThreadPost.PostM3(nil, nil, train_file, {$IFDEF FPC}@{$ENDIF FPC}CMD_Open);
+end;
+
+procedure TAI_DNN_Thread_GNIC.Open_Stream(stream: TMemoryStream64);
+begin
+  FThreadPost.PostM3(nil, stream, NULL, {$IFDEF FPC}@{$ENDIF FPC}CMD_Open_Stream);
+end;
+
+function TAI_DNN_Thread_GNIC.Process(Input: TMemoryRaster; SS_width, SS_height: Integer): TLVec;
+var
+  CMD_: TCMD_SyncProcess;
+begin
+  CheckGPUPerformanceCritical;
+  CMD_.Done := TAtomBool.Create(False);
+  CMD_.Input := Input;
+  CMD_.SS_width := SS_width;
+  CMD_.SS_height := SS_height;
+  FThreadPost.PostM2(@CMD_, {$IFDEF FPC}@{$ENDIF FPC}CMD_SyncProcess);
+  while not CMD_.Done.v do
+      TCompute.Sleep(1);
+  Result := CMD_.output;
+  DisposeObject(CMD_.Done);
+end;
+
+procedure TAI_DNN_Thread_GNIC.ProcessC(UserData: Pointer; Input: TMemoryRaster; SS_width, SS_height: Integer; FreeInput: Boolean; OnResult: TAI_DNN_Thread_GNIC_AsyncProcess_C);
+var
+  p: PCMD_AsyncProcess;
+begin
+  CheckGPUPerformanceCritical;
+  new(p);
+  p^.UserData := UserData;
+  p^.Input := Input;
+  p^.SS_width := SS_width;
+  p^.SS_height := SS_height;
+  p^.FreeInput := FreeInput;
+  p^.OnResult_C := OnResult;
+  p^.OnResult_M := nil;
+  p^.OnResult_P := nil;
+  SetLength(p^.output, 0);
+  FThreadPost.PostM2(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcess);
+end;
+
+procedure TAI_DNN_Thread_GNIC.ProcessM(UserData: Pointer; Input: TMemoryRaster; SS_width, SS_height: Integer; FreeInput: Boolean; OnResult: TAI_DNN_Thread_GNIC_AsyncProcess_M);
+var
+  p: PCMD_AsyncProcess;
+begin
+  CheckGPUPerformanceCritical;
+  new(p);
+  p^.UserData := UserData;
+  p^.Input := Input;
+  p^.SS_width := SS_width;
+  p^.SS_height := SS_height;
+  p^.FreeInput := FreeInput;
+  p^.OnResult_C := nil;
+  p^.OnResult_M := OnResult;
+  p^.OnResult_P := nil;
+  SetLength(p^.output, 0);
+  FThreadPost.PostM2(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcess);
+end;
+
+procedure TAI_DNN_Thread_GNIC.ProcessP(UserData: Pointer; Input: TMemoryRaster; SS_width, SS_height: Integer; FreeInput: Boolean; OnResult: TAI_DNN_Thread_GNIC_AsyncProcess_P);
+var
+  p: PCMD_AsyncProcess;
+begin
+  CheckGPUPerformanceCritical;
+  new(p);
+  p^.UserData := UserData;
+  p^.Input := Input;
+  p^.SS_width := SS_width;
+  p^.SS_height := SS_height;
+  p^.FreeInput := FreeInput;
+  p^.OnResult_C := nil;
+  p^.OnResult_M := nil;
+  p^.OnResult_P := OnResult;
+  SetLength(p^.output, 0);
+  FThreadPost.PostM2(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcess);
+end;
+
+function TAI_DNN_Thread_GNIC.Busy(): Boolean;
+begin
+  Result := inherited Busy() or (FCPUAsyncThreadNum > 0);
+end;
+
+procedure TAI_DNN_Thread_SS.ThreadFree;
+begin
+  FAI.SS_Close(SSHnd);
+end;
+
+procedure TAI_DNN_Thread_SS.CMD_Open(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
+begin
+  SSHnd := FAI.SS_Open(VarToStr(Data3));
+end;
+
+procedure TAI_DNN_Thread_SS.CMD_Open_Stream(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
+begin
+  SSHnd := FAI.SS_Open_Stream(Data2 as TMemoryStream64);
+end;
+
+procedure TAI_DNN_Thread_SS.CMD_SyncProcess(data: Pointer);
+var
+  p: PCMD_SyncProcess;
+begin
+  p := data;
+  p^.output := FAI.SS_Process(SSHnd, p^.Input, p^.colorPool, p^.SSTokenOutput);
+  p^.Done.v := True;
+end;
+
+procedure TAI_DNN_Thread_SS.OnComputeThreadResult(ThSender: TCompute);
+var
+  p: PCMD_AsyncProcess;
+begin
+  p := ThSender.UserData;
+  try
+    if Assigned(p^.OnResult_C) then
+        p^.OnResult_C(Self, p^.UserData, p^.Input, p^.SSTokenOutput, p^.output);
+    if Assigned(p^.OnResult_M) then
+        p^.OnResult_M(Self, p^.UserData, p^.Input, p^.SSTokenOutput, p^.output);
+    if Assigned(p^.OnResult_P) then
+        p^.OnResult_P(Self, p^.UserData, p^.Input, p^.SSTokenOutput, p^.output);
+  except
+  end;
+  if p^.FreeInput then
+      DisposeObject(p^.Input);
+  DisposeObject(p^.SSTokenOutput);
+  if p^.output <> nil then
+      DisposeObject(p^.output);
+  Dispose(p);
+  AtomDec(FCPUAsyncThreadNum);
+end;
+
+procedure TAI_DNN_Thread_SS.CMD_AsyncProcess(data: Pointer);
+var
+  p: PCMD_AsyncProcess;
+begin
+  while (FCPUThreadCritical > 0) and (FCPUAsyncThreadNum > FCPUThreadCritical) do
+      TCompute.Sleep(1);
+  p := data;
+  p^.SSTokenOutput := TPascalStringList.Create;
+  p^.output := FAI.SS_Process(SSHnd, p^.Input, p^.colorPool, p^.SSTokenOutput);
+  AtomInc(FCPUAsyncThreadNum);
+  TCompute.RunM(p, nil, {$IFDEF FPC}@{$ENDIF FPC}OnComputeThreadResult);
+end;
+
+constructor TAI_DNN_Thread_SS.Create;
+begin
+  inherited Create;
+  SSHnd := nil;
+  FCPUAsyncThreadNum := 0;
+end;
+
+procedure TAI_DNN_Thread_SS.Open(train_file: SystemString);
+begin
+  FThreadPost.PostM3(nil, nil, train_file, {$IFDEF FPC}@{$ENDIF FPC}CMD_Open);
+end;
+
+procedure TAI_DNN_Thread_SS.Open_Stream(stream: TMemoryStream64);
+begin
+  FThreadPost.PostM3(nil, stream, NULL, {$IFDEF FPC}@{$ENDIF FPC}CMD_Open_Stream);
+end;
+
+function TAI_DNN_Thread_SS.Process(Input: TMemoryRaster; colorPool: TSegmentationColorTable; SSTokenOutput: TPascalStringList): TMemoryRaster;
+var
+  CMD_: TCMD_SyncProcess;
+begin
+  CMD_.Done := TAtomBool.Create(False);
+  CMD_.Input := Input;
+  CMD_.colorPool := colorPool;
+  CMD_.SSTokenOutput := SSTokenOutput;
+  FThreadPost.PostM2(@CMD_, {$IFDEF FPC}@{$ENDIF FPC}CMD_SyncProcess);
+  while not CMD_.Done.v do
+      TCompute.Sleep(1);
+  Result := CMD_.output;
+  DisposeObject(CMD_.Done);
+end;
+
+procedure TAI_DNN_Thread_SS.ProcessC(UserData: Pointer; Input: TMemoryRaster; colorPool: TSegmentationColorTable; FreeInput: Boolean; OnResult: TAI_DNN_Thread_SS_AsyncProcess_C);
+var
+  p: PCMD_AsyncProcess;
+begin
+  new(p);
+  p^.UserData := UserData;
+  p^.Input := Input;
+  p^.colorPool := colorPool;
+  p^.FreeInput := FreeInput;
+  p^.OnResult_C := OnResult;
+  p^.OnResult_M := nil;
+  p^.OnResult_P := nil;
+  p^.output := nil;
+  p^.SSTokenOutput := nil;
+  FThreadPost.PostM2(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcess);
+end;
+
+procedure TAI_DNN_Thread_SS.ProcessM(UserData: Pointer; Input: TMemoryRaster; colorPool: TSegmentationColorTable; FreeInput: Boolean; OnResult: TAI_DNN_Thread_SS_AsyncProcess_M);
+var
+  p: PCMD_AsyncProcess;
+begin
+  new(p);
+  p^.UserData := UserData;
+  p^.Input := Input;
+  p^.colorPool := colorPool;
+  p^.FreeInput := FreeInput;
+  p^.OnResult_C := nil;
+  p^.OnResult_M := OnResult;
+  p^.OnResult_P := nil;
+  p^.output := nil;
+  p^.SSTokenOutput := nil;
+  FThreadPost.PostM2(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcess);
+end;
+
+procedure TAI_DNN_Thread_SS.ProcessP(UserData: Pointer; Input: TMemoryRaster; colorPool: TSegmentationColorTable; FreeInput: Boolean; OnResult: TAI_DNN_Thread_SS_AsyncProcess_P);
+var
+  p: PCMD_AsyncProcess;
+begin
+  new(p);
+  p^.UserData := UserData;
+  p^.Input := Input;
+  p^.colorPool := colorPool;
+  p^.FreeInput := FreeInput;
+  p^.OnResult_C := nil;
+  p^.OnResult_M := nil;
+  p^.OnResult_P := OnResult;
+  p^.output := nil;
+  p^.SSTokenOutput := nil;
+  FThreadPost.PostM2(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcess);
+end;
+
+function TAI_DNN_Thread_SS.Busy(): Boolean;
+begin
+  Result := inherited Busy() or (FCPUAsyncThreadNum > 0);
 end;
 
 constructor TAI_Parallel.Create;
@@ -13872,7 +16666,7 @@ end;
 
 procedure TAI_Parallel.UnLockAI(AI: TAI);
 begin
-  AI.Unlock;
+  AI.UnLock;
 end;
 
 function TAI_Parallel.Busy: Integer;
@@ -13887,9 +16681,14 @@ begin
   Critical.Release;
 end;
 
-function TAI_IO.AI: TAI;
+function TAI_IO.GetAI: TAI;
 begin
   Result := Owner.FAI;
+end;
+
+function TAI_IO.GetAIPool: TAI_Parallel;
+begin
+  Result := Owner.FAIPool;
 end;
 
 constructor TAI_IO.Create(Owner_: TAI_IO_Processor);
@@ -13935,7 +16734,7 @@ begin
   UnLockObject(FInputBuffer);
 end;
 
-procedure TAI_IO_Processor.IOProcessorThreadRun(ThSender: TComputeThread);
+procedure TAI_IO_Processor.IOProcessorThreadRun(ThSender: TCompute);
 
   function DoPickBuff(): TAI_IO_Buffer;
   var
@@ -13953,17 +16752,17 @@ procedure TAI_IO_Processor.IOProcessorThreadRun(ThSender: TComputeThread);
   procedure DoProcessPick(pickBuff: TAI_IO_Buffer);
   var
     pass: Integer;
-    vio: TAI_IO;
+    IO_: TAI_IO;
     processed_ok: Boolean;
   begin
     for pass := 0 to pickBuff.Count - 1 do
       begin
-        vio := pickBuff[pass];
+        IO_ := pickBuff[pass];
 
         try
-          vio.ProcessBefore(ThSender.UserData);
-          processed_ok := vio.Process(ThSender.UserData);
-          vio.ProcessAfter(ThSender.UserData);
+          IO_.ProcessBefore(ThSender.UserData);
+          processed_ok := IO_.Process(ThSender.UserData);
+          IO_.ProcessAfter(ThSender.UserData);
         except
             processed_ok := False;
         end;
@@ -13971,12 +16770,12 @@ procedure TAI_IO_Processor.IOProcessorThreadRun(ThSender: TComputeThread);
         if processed_ok then
           begin
             LockObject(FOutputBuffer);
-            FOutputBuffer.Add(vio);
+            FOutputBuffer.Add(IO_);
             UnLockObject(FOutputBuffer);
           end
         else
           begin
-            DisposeObject(vio);
+            DisposeObject(IO_);
           end;
       end;
   end;
@@ -13989,16 +16788,16 @@ procedure TAI_IO_Processor.IOProcessorThreadRun(ThSender: TComputeThread);
 {$IFDEF FPC}
     procedure Nested_ParallelFor(pass: Integer);
     var
-      vio: TAI_IO;
+      IO_: TAI_IO;
     begin
       LockObject(tmp_buff);
-      vio := tmp_buff[pass];
+      IO_ := tmp_buff[pass];
       UnLockObject(tmp_buff);
 
       try
-        vio.ProcessBefore(ThSender.UserData);
-        tmp_buff_state[pass] := vio.Process(ThSender.UserData);
-        vio.ProcessAfter(ThSender.UserData);
+        IO_.ProcessBefore(ThSender.UserData);
+        tmp_buff_state[pass] := IO_.Process(ThSender.UserData);
+        IO_.ProcessAfter(ThSender.UserData);
       except
           tmp_buff_state[pass] := False;
       end;
@@ -14016,16 +16815,16 @@ procedure TAI_IO_Processor.IOProcessorThreadRun(ThSender: TComputeThread);
 {$ELSE FPC}
     DelphiParallelFor(0, tmp_buff.Count - 1, procedure(pass: Integer)
       var
-        vio: TAI_IO;
+        IO_: TAI_IO;
       begin
         LockObject(tmp_buff);
-        vio := tmp_buff[pass];
+        IO_ := tmp_buff[pass];
         UnLockObject(tmp_buff);
 
         try
-          vio.ProcessBefore(ThSender.UserData);
-          tmp_buff_state[pass] := vio.Process(ThSender.UserData);
-          vio.ProcessAfter(ThSender.UserData);
+          IO_.ProcessBefore(ThSender.UserData);
+          tmp_buff_state[pass] := IO_.Process(ThSender.UserData);
+          IO_.ProcessAfter(ThSender.UserData);
         except
             tmp_buff_state[pass] := False;
         end;
@@ -14048,6 +16847,7 @@ procedure TAI_IO_Processor.IOProcessorThreadRun(ThSender: TComputeThread);
 var
   pickList: TAI_IO_Buffer;
 begin
+  AtomInc(IOProcessorActivtedThreadNum);
   while (InputCount > 0) do
     begin
       pickList := DoPickBuff();
@@ -14058,32 +16858,30 @@ begin
 {$ENDIF Parallel}
           DoProcessPick(pickList);
       DisposeObject(pickList);
-      TCoreClassThread.Sleep(10);
     end;
-end;
-
-procedure TAI_IO_Processor.IOProcessorThreadDone(ThSender: TComputeThread);
-begin
-  AtomDec(FRuningThreadCounter);
+  FIOThreadRuning.v := False;
   AtomDec(IOProcessorActivtedThreadNum);
 end;
 
-constructor TAI_IO_Processor.Create(AI_: TAI; IO_Class_: TAI_IO_Class);
+constructor TAI_IO_Processor.Create(IO_Class_: TAI_IO_Class);
 begin
   inherited Create;
   FIO_Class := IO_Class_;
   FInputBuffer := TAI_IO_Buffer.Create;
   FOutputBuffer := TAI_IO_Buffer.Create;
-  FRuningThreadCounter := 0;
+  FIOThreadRuning := TAtomBool.Create(False);
   FParallelProcessor := False;
   FIndexNumber := 0;
-  FAI := AI_;
+
+  FAI := nil;
+  FAIPool := nil;
 end;
 
 destructor TAI_IO_Processor.Destroy;
 begin
-  while FRuningThreadCounter > 0 do
+  while FIOThreadRuning.v do
       CheckThreadSynchronize(100);
+  DisposeObject(FIOThreadRuning);
 
   Clear;
   DisposeObject(FInputBuffer);
@@ -14151,17 +16949,25 @@ end;
 
 procedure TAI_IO_Processor.Process(UserData: Pointer);
 begin
-  if (FRuningThreadCounter > 0) or (InputCount = 0) then
+  if (FIOThreadRuning.v) or (InputCount = 0) then
       exit;
 
-  AtomInc(IOProcessorActivtedThreadNum);
-  AtomInc(FRuningThreadCounter);
-  TComputeThread.RunM(UserData, Self, {$IFDEF FPC}@{$ENDIF FPC}IOProcessorThreadRun, {$IFDEF FPC}@{$ENDIF FPC}IOProcessorThreadDone);
+  FIOThreadRuning.v := True;
+  TCompute.RunM(UserData, Self, {$IFDEF FPC}@{$ENDIF FPC}IOProcessorThreadRun);
 end;
 
 function TAI_IO_Processor.Finished: Boolean;
 begin
-  Result := (InputCount = 0) and (FRuningThreadCounter = 0);
+  Result := (InputCount = 0) and (not FIOThreadRuning.v);
+end;
+
+procedure TAI_IO_Processor.WaitProcessDone;
+begin
+  while not Finished do
+    begin
+      DoStatus();
+      CheckThreadSynchronize(10);
+    end;
 end;
 
 procedure TAI_IO_Processor.RemoveFirstInput;

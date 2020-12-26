@@ -11,6 +11,7 @@ uses
   System.IOUtils, System.Threading,
 
   CoreClasses, UnicodeMixedLib, PascalStrings, Geometry2DUnit, MemoryRaster, MemoryStream64,
+  DoStatusIO,
   zDrawEngine, zDrawEngineInterface_SlowFMX;
 
 type
@@ -75,7 +76,7 @@ begin
   d.FillBox(d.ScreenRect, DEColor(0.1, 0.1, 0.1));
 
   LockObject(SegImgList);
-  d.CameraR := d.DrawPicturePackingInScene(SegImgList, 10, Vec2(0, 0), 1.0);
+  d.CameraR := d.DrawPicturePackingInScene(SegImgList, 10, Vec2(0, 0), 1.0, True);
   UnLockObject(SegImgList);
 
   d.DrawText('像素分割后', 16, d.ScreenRect, DEColor(0.5, 1.0, 0.5), False);
@@ -140,7 +141,8 @@ end;
 
 procedure TMorphologySegmentationMainForm.Timer1Timer(Sender: TObject);
 begin
-  EnginePool.Progress(Interval2Delta(Timer1.Interval));
+  DoStatus;
+  DrawPool.Progress;
   Invalidate;
 end;
 
@@ -156,7 +158,7 @@ begin
   if RColorDistance(pickColor, RColor(0, 0, 0)) < 0.1 then
       exit;
 
-  if RColorDistance(pickColor, Color) < 0.05 then
+  if RColorDistance(pickColor, Color) < 0.01 then
       Classify := pickColor;
 end;
 
@@ -176,7 +178,7 @@ begin
       // 使用形态分割器，多数都是在经过了重重数据预处理以后，做编程识别的步骤
       // 这一步不可自动化，需要编程基本功支持，数据结构要求高于普通编程
       test.BuildSegmentation(tex);
-      // test.RemoveNoise(500);
+      test.RemoveNoise(500);
 
       // TMorphologySegmentation分割器支持Stream保存
       // 下列程序演示了使用Stream保存TMorphologySegmentation分割器中的复杂数据

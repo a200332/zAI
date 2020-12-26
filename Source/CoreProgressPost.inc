@@ -3,12 +3,15 @@ begin
   OnCall1 := nil;
   OnCall2 := nil;
   OnCall3 := nil;
+  OnCall4 := nil;
   OnMethod1 := nil;
   OnMethod2 := nil;
   OnMethod3 := nil;
+  OnMethod4 := nil;
   OnProc1 := nil;
   OnProc2 := nil;
   OnProc3 := nil;
+  OnProc4 := nil;
   Data1 := nil;
   Data2 := nil;
   Data3 := NULL;
@@ -21,6 +24,8 @@ begin
   FThreadID := ThreadID_;
   FSyncPool := TThreadProgressPostDataList.Create;
   FProgressing := TAtomBool.Create(False);
+  FOneStep := True;
+  FResetRandomSeed := False;
 end;
 
 destructor TThreadProgressPost.Destroy;
@@ -45,27 +50,32 @@ begin
   FCritical.Release;
 end;
 
-procedure TThreadProgressPost.Progress(ThreadID_: TThreadID);
+function TThreadProgressPost.Busy: Boolean;
+begin
+  Result := (Count > 0) or (FProgressing.V);
+end;
+
+function TThreadProgressPost.Progress(ThreadID_: TThreadID): Integer;
 var
   i: Integer;
   temp: TThreadProgressPostDataList;
   p: PThreadProgressPostData;
 begin
+  Result := 0;
   if ThreadID_ <> FThreadID then
       exit;
 
-  while (not FProgressing.V) and (Count > 0) do
+  if FOneStep then
     begin
-      FProgressing.V := True;
-      FCritical.Acquire;
-      temp := FSyncPool;
-      FSyncPool := TThreadProgressPostDataList.Create;
-      FCritical.Release;
-
-      for i := 0 to temp.Count - 1 do
+      if Count > 0 then
         begin
-          p := temp[i];
-
+          FProgressing.V := True;
+          FCritical.Acquire;
+          p := FSyncPool[0];
+          FSyncPool.Delete(0);
+          FCritical.Release;
+          if FResetRandomSeed then
+              SetMT19937Seed(0);
           try
             if Assigned(p^.OnCall1) then
                 p^.OnCall1();
@@ -73,6 +83,8 @@ begin
                 p^.OnCall2(p^.Data1);
             if Assigned(p^.OnCall3) then
                 p^.OnCall3(p^.Data1, p^.Data2, p^.Data3);
+            if Assigned(p^.OnCall4) then
+                p^.OnCall4(p^.Data1, p^.Data2);
 
             if Assigned(p^.OnMethod1) then
                 p^.OnMethod1();
@@ -80,6 +92,8 @@ begin
                 p^.OnMethod2(p^.Data1);
             if Assigned(p^.OnMethod3) then
                 p^.OnMethod3(p^.Data1, p^.Data2, p^.Data3);
+            if Assigned(p^.OnMethod4) then
+                p^.OnMethod4(p^.Data1, p^.Data2);
 
             if Assigned(p^.OnProc1) then
                 p^.OnProc1();
@@ -87,25 +101,73 @@ begin
                 p^.OnProc2(p^.Data1);
             if Assigned(p^.OnProc3) then
                 p^.OnProc3(p^.Data1, p^.Data2, p^.Data3);
+            if Assigned(p^.OnProc4) then
+                p^.OnProc4(p^.Data1, p^.Data2);
           except
           end;
-
           Dispose(p);
+          FProgressing.V := False;
+          Result := 1;
         end;
+    end
+  else
+    while (not FProgressing.V) and (Count > 0) do
+      begin
+        FProgressing.V := True;
+        FCritical.Acquire;
+        temp := FSyncPool;
+        FSyncPool := TThreadProgressPostDataList.Create;
+        FCritical.Release;
+        Result := temp.Count;
+        for i := 0 to temp.Count - 1 do
+          begin
+            p := temp[i];
+            if FResetRandomSeed then
+                SetMT19937Seed(0);
+            try
+              if Assigned(p^.OnCall1) then
+                  p^.OnCall1();
+              if Assigned(p^.OnCall2) then
+                  p^.OnCall2(p^.Data1);
+              if Assigned(p^.OnCall3) then
+                  p^.OnCall3(p^.Data1, p^.Data2, p^.Data3);
+              if Assigned(p^.OnCall4) then
+                  p^.OnCall4(p^.Data1, p^.Data2);
 
-      DisposeObject(temp);
-      FProgressing.V := False;
-    end;
+              if Assigned(p^.OnMethod1) then
+                  p^.OnMethod1();
+              if Assigned(p^.OnMethod2) then
+                  p^.OnMethod2(p^.Data1);
+              if Assigned(p^.OnMethod3) then
+                  p^.OnMethod3(p^.Data1, p^.Data2, p^.Data3);
+              if Assigned(p^.OnMethod4) then
+                  p^.OnMethod4(p^.Data1, p^.Data2);
+
+              if Assigned(p^.OnProc1) then
+                  p^.OnProc1();
+              if Assigned(p^.OnProc2) then
+                  p^.OnProc2(p^.Data1);
+              if Assigned(p^.OnProc3) then
+                  p^.OnProc3(p^.Data1, p^.Data2, p^.Data3);
+              if Assigned(p^.OnProc4) then
+                  p^.OnProc4(p^.Data1, p^.Data2);
+            except
+            end;
+            Dispose(p);
+          end;
+        DisposeObject(temp);
+        FProgressing.V := False;
+      end;
 end;
 
-procedure TThreadProgressPost.Progress(Thread_: TThread);
+function TThreadProgressPost.Progress(Thread_: TThread): Integer;
 begin
-  Progress(Thread_.ThreadID);
+  Result := Progress(Thread_.ThreadID);
 end;
 
-procedure TThreadProgressPost.Progress();
+function TThreadProgressPost.Progress(): Integer;
 begin
-  Progress(TThread.CurrentThread);
+  Result := Progress(TThread.CurrentThread);
 end;
 
 procedure TThreadProgressPost.PostC1(OnSync: TThreadProgressPostCall1);
@@ -143,6 +205,20 @@ begin
   p^.Data2 := Data2;
   p^.Data3 := Data3;
   p^.OnCall3 := OnSync;
+  FCritical.Acquire;
+  FSyncPool.Add(p);
+  FCritical.Release;
+end;
+
+procedure TThreadProgressPost.PostC4(Data1: Pointer; Data2: TCoreClassObject; OnSync: TThreadProgressPostCall4);
+var
+  p: PThreadProgressPostData;
+begin
+  new(p);
+  p^.Init();
+  p^.Data1 := Data1;
+  p^.Data2 := Data2;
+  p^.OnCall4 := OnSync;
   FCritical.Acquire;
   FSyncPool.Add(p);
   FCritical.Release;
@@ -188,6 +264,20 @@ begin
   FCritical.Release;
 end;
 
+procedure TThreadProgressPost.PostM4(Data1: Pointer; Data2: TCoreClassObject; OnSync: TThreadProgressPostMethod4);
+var
+  p: PThreadProgressPostData;
+begin
+  new(p);
+  p^.Init();
+  p^.Data1 := Data1;
+  p^.Data2 := Data2;
+  p^.OnMethod4 := OnSync;
+  FCritical.Acquire;
+  FSyncPool.Add(p);
+  FCritical.Release;
+end;
+
 procedure TThreadProgressPost.PostP1(OnSync: TThreadProgressPostProc1);
 var
   p: PThreadProgressPostData;
@@ -223,6 +313,20 @@ begin
   p^.Data2 := Data2;
   p^.Data3 := Data3;
   p^.OnProc3 := OnSync;
+  FCritical.Acquire;
+  FSyncPool.Add(p);
+  FCritical.Release;
+end;
+
+procedure TThreadProgressPost.PostP4(Data1: Pointer; Data2: TCoreClassObject; OnSync: TThreadProgressPostProc4);
+var
+  p: PThreadProgressPostData;
+begin
+  new(p);
+  p^.Init();
+  p^.Data1 := Data1;
+  p^.Data2 := Data2;
+  p^.OnProc4 := OnSync;
   FCritical.Acquire;
   FSyncPool.Add(p);
   FCritical.Release;

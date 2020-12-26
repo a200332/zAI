@@ -46,8 +46,8 @@ type
     Busy: TAtomBool;
     DrawBox: TRectV2;
     MorphData: TMorphomatics;
-    procedure BuildHisComputeTh(thSender: TComputeThread);
-    procedure UpdateHisComputeTh(thSender: TComputeThread);
+    procedure BuildHisComputeTh(thSender: TCompute);
+    procedure UpdateHisComputeTh(thSender: TCompute);
     constructor Create(Parent_: TRasterHistogramInfos; raster_: TMemoryRaster; MorphPix_: TMorphologyPixel; Height_: Integer; hColor: TRColor);
     destructor Destroy; override;
     procedure Update(MorphPix_: TMorphologyPixel; Height_: Integer; hColor: TRColor);
@@ -78,10 +78,10 @@ type
   public
     Owner: TPictureViewerInterface;
     Raster: TMemoryRaster;
+    FreeRaster: Boolean;
     DrawBox: TRectV2;
     texInfo: U_String;
     hInfo: TRasterHistogramInfos;
-    FreeRaster: Boolean;
     constructor Create;
     destructor Destroy; override;
   end;
@@ -153,6 +153,7 @@ type
     procedure Fit(); overload;
 
     // renderer
+    procedure Render(showPicture_, flush_: Boolean); overload;
     procedure Render(showPicture_: Boolean); overload;
     procedure Render(); overload;
 
@@ -178,7 +179,7 @@ type
 
   PRasterHistogramThData = ^TRasterHistogramThData;
 
-procedure TRasterHistogramInfo.BuildHisComputeTh(thSender: TComputeThread);
+procedure TRasterHistogramInfo.BuildHisComputeTh(thSender: TCompute);
 var
   p: PRasterHistogramThData;
   r: TMemoryRaster;
@@ -191,7 +192,7 @@ begin
   Busy.V := False;
 end;
 
-procedure TRasterHistogramInfo.UpdateHisComputeTh(thSender: TComputeThread);
+procedure TRasterHistogramInfo.UpdateHisComputeTh(thSender: TCompute);
 var
   p: PRasterHistogramThData;
 begin
@@ -224,7 +225,7 @@ begin
   p^.MorphPix_ := MorphPix_;
   p^.Height_ := Height_;
   p^.hColor := hColor;
-  TComputeThread.RunM(p, nil, {$IFDEF FPC}@{$ENDIF FPC}BuildHisComputeTh);
+  TCompute.RunM(p, nil, {$IFDEF FPC}@{$ENDIF FPC}BuildHisComputeTh);
 
 {$ELSE Parallel}
     MorphData := raster_.BuildMorphomatics(MorphPix_);
@@ -262,7 +263,7 @@ begin
   p^.MorphPix_ := MorphPix_;
   p^.Height_ := Height_;
   p^.hColor := hColor;
-  TComputeThread.RunM(p, nil, {$IFDEF FPC}@{$ENDIF FPC}UpdateHisComputeTh);
+  TCompute.RunM(p, nil, {$IFDEF FPC}@{$ENDIF FPC}UpdateHisComputeTh);
 {$ELSE Parallel}
     Parent.Parent.Raster.BuildMorphomaticsTo(MorphPix_, MorphData);
   MorphData.BuildHistogramTo(Height_, hColor, Raster);
@@ -467,10 +468,10 @@ begin
   inherited Create;
   Owner := nil;
   Raster := NewRaster();
+  FreeRaster := True;
   DrawBox := RectV2(0, 0, 0, 0);
   texInfo := '';
   hInfo := nil;
-  FreeRaster := True;
 end;
 
 destructor TPictureViewerData.Destroy;
@@ -790,7 +791,7 @@ begin
     end;
 end;
 
-procedure TPictureViewerInterface.Render(showPicture_: Boolean);
+procedure TPictureViewerInterface.Render(showPicture_, flush_: Boolean);
 var
   i, j: Integer;
   hisRect: TRectV2;
@@ -865,7 +866,13 @@ begin
             sData.hInfo.Draw(FDrawEng);
       end;
 
-  FDrawEng.Flush;
+  if flush_ then
+      FDrawEng.Flush;
+end;
+
+procedure TPictureViewerInterface.Render(showPicture_: Boolean);
+begin
+  Render(True, True);
 end;
 
 procedure TPictureViewerInterface.Render();

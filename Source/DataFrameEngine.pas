@@ -36,6 +36,10 @@ uses SysUtils, CoreClasses, Types,
   CoreCompress, UnicodeMixedLib, PascalStrings;
 
 type
+  TDataFrameEngine = class;
+  TDFE = TDataFrameEngine;
+  TDataFrame = TDataFrameEngine;
+
   TDataFrameBase = class(TCoreClassObject)
   protected
     FID: Byte; // data frame id
@@ -369,6 +373,7 @@ type
     function GetBuffer: TCoreClassStream;
     procedure SetBuffer(_Buffer: TCoreClassStream);
     property Buffer: TCoreClassStream read GetBuffer write SetBuffer;
+    property InstanceBuffer: TMemoryStream64 read FBuffer write FBuffer;
   end;
 
   TDataFrameVariant = class sealed(TDataFrameBase)
@@ -427,8 +432,6 @@ type
 
     property Buffer: UInt64 read FBuffer write FBuffer;
   end;
-
-  TDataFrameEngine = class;
 
   TDataFrameEngineReader = class sealed(TCoreClassObject)
   private
@@ -493,6 +496,8 @@ type
     procedure Read(var aBuf; aCount: Int64); overload;
     // read as TDataFrameBase
     function Read: TDataFrameBase; overload;
+    // return current TDataFrameBase
+    function Current: TDataFrameBase;
   end;
 
   TDataFrameEngine = class(TCoreClassObject)
@@ -547,6 +552,7 @@ type
     function WriteArrayDouble: TDataFrameArrayDouble;
     function WriteArrayInt64: TDataFrameArrayInt64;
     procedure WriteStream(v: TCoreClassStream);
+    procedure WriteInstanceStream(v: TMemoryStream64);
     procedure WriteVariant(v: Variant);
     procedure WriteInt64(v: Int64);
     procedure WriteUInt64(v: UInt64);
@@ -2471,6 +2477,11 @@ begin
   inc(FIndex);
 end;
 
+function TDataFrameEngineReader.Current: TDataFrameBase;
+begin
+  Result := FOwner.Read(FIndex);
+end;
+
 function TDataFrameEngine.DataTypeToByte(v: TRunTimeDataType): Byte;
 begin
   Result := Byte(v);
@@ -2815,6 +2826,15 @@ var
 begin
   Obj_ := TDataFrameStream.Create(DataTypeToByte(rdtStream));
   Obj_.Buffer := v;
+  FDataList.Add(Obj_);
+end;
+
+procedure TDataFrameEngine.WriteInstanceStream(v: TMemoryStream64);
+var
+  Obj_: TDataFrameStream;
+begin
+  Obj_ := TDataFrameStream.Create(DataTypeToByte(rdtStream));
+  Obj_.InstanceBuffer := v;
   FDataList.Add(Obj_);
 end;
 
@@ -3927,7 +3947,7 @@ begin
   // if encode size too large(>1M), we use EncodeAsSelectCompressor
   if (AutoCompressed) and (ComputeEncodeSize > 1024 * 1024) then
     begin
-      Result := EncodeAsSelectCompressor(TSelectCompressionMethod.scmZLIB, output, FastMode);
+      Result := EncodeAsSelectCompressor(TSelectCompressionMethod.scmZLIB_Fast, output, FastMode);
       Exit;
     end;
 
@@ -4178,7 +4198,7 @@ begin
       md5 := umlMD5(StoreStream.Memory, StoreStream.Size);
 
   compStream := TMemoryStream64.CustomCreate($FFFF);
-  ParallelCompressStream(scm, StoreStream, compStream);
+  ParallelCompressMemory(scm, StoreStream, compStream);
   DisposeObject(StoreStream);
 
   // make header
@@ -4225,7 +4245,7 @@ begin
   if ComputeEncodeSize > 64 * 1024 then
     begin
       if FastMode then
-          scm := TSelectCompressionMethod.scmZLIB
+          scm := TSelectCompressionMethod.scmZLIB_Fast
       else
           scm := TSelectCompressionMethod.scmZLIB_Max;
       Result := EncodeAsSelectCompressor(scm, output, FastMode);

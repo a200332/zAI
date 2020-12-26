@@ -24,7 +24,7 @@ unit MemoryRaster;
 
 interface
 
-uses Types, Math, Variants, CoreClasses, MemoryStream64, Geometry2DUnit, Geometry3DUnit,
+uses Types, Math, Variants, TypInfo, CoreClasses, MemoryStream64, Geometry2DUnit, Geometry3DUnit,
   PascalStrings, UnicodeMixedLib,
 {$IFDEF FPC}
   UPascalStrings,
@@ -127,9 +127,12 @@ type
 
   TByteRaster = array of array of Byte;
   PByteRaster = ^TByteRaster;
-
   TWordRaster = array of array of Word;
   PWordRaster = ^TWordRaster;
+  TByteBuffer = array [0 .. MaxInt - 1] of Byte;
+  PByteBuffer = ^TByteBuffer;
+  TWordBuffer = array [0 .. MaxInt div SizeOf(Word) - 1] of Word;
+  PWordBuffer = ^TWordBuffer;
 
   TMemoryRaster = class;
   TMemoryRaster_AggImage = class;
@@ -189,7 +192,7 @@ type
     rsJPEG_YCbCrA_Qualily50, rsJPEG_YCbCr_Qualily50, rsJPEG_Gray_Qualily50, rsJPEG_GrayA_Qualily50,
     rsJPEG_CMYK_Qualily90, rsJPEG_CMYK_Qualily80, rsJPEG_CMYK_Qualily70, rsJPEG_CMYK_Qualily60, rsJPEG_CMYK_Qualily50,
     rsJPEG_YCbCrA_Qualily100, rsJPEG_YCbCr_Qualily100, rsJPEG_Gray_Qualily100, rsJPEG_GrayA_Qualily100, rsJPEG_CMYK_Qualily100,
-    rsPNG
+    rsGrayscale, rsColor255, rsPNG
     );
 
   TOnGetRasterizationMemory = procedure(Sender: TMemoryRaster) of object;
@@ -380,6 +383,7 @@ type
     function Size2D: TVec2;
     function Size0: TVec2;
     function Empty: Boolean;
+    property IsEmpty: Boolean read Empty;
     function BoundsRect: TRect;
     function BoundsRect0: TRect;
     function BoundsRectV2: TRectV2;
@@ -426,6 +430,8 @@ type
     procedure FitScale(R: TRectV2); overload;
     function FitScaleAsNew(NewWidth, NewHeight: TGeoFloat): TMemoryRaster; overload;
     function FitScaleAsNew(R: TRectV2): TMemoryRaster; overload;
+    function NonlinearFitScaleAsNew(NewWidth, NewHeight: TGeoFloat): TMemoryRaster; overload;
+    function NonlinearFitScaleAsNew(R: TRectV2): TMemoryRaster; overload;
     procedure SigmaGaussian(const SIGMA: TGeoFloat; const SigmaGaussianKernelFactor: Integer); overload;
     procedure SigmaGaussian(const SIGMA: TGeoFloat); overload;
     procedure SigmaGaussian(parallel_: Boolean; const SIGMA: TGeoFloat; const SigmaGaussianKernelFactor: Integer); overload;
@@ -435,6 +441,12 @@ type
     function BuildRGB(cSwapBR: Boolean): PRGBArray;
     procedure InputRGB(var buff; W, H: Integer; cSwapBR: Boolean);
     procedure OutputRGB(var buff; cSwapBR: Boolean);
+    function EncryptGrayscale(): PByteBuffer;
+    function EncryptColor255(): PByteBuffer;
+    function EncryptColor65535(): PWordBuffer;
+    procedure DecryptGrayscale(Width_, Height_: Integer; buffer: PByteBuffer);
+    procedure DecryptColor255(Width_, Height_: Integer; buffer: PByteBuffer);
+    procedure DecryptColor65535(Width_, Height_: Integer; buffer: PWordBuffer);
     procedure ColorReplace(const old_c, new_c: TRColor);
     procedure ColorTransparent(c_: TRColor);
     procedure ColorBlend(C: TRColor);
@@ -445,12 +457,14 @@ type
     procedure ExtractGreen(var output: TByteRaster);
     procedure ExtractBlue(var output: TByteRaster);
     procedure ExtractAlpha(var output: TByteRaster);
-    function ComputeAreaScaleSpace(clipArea: TRectV2; SS_width, SS_height: Integer): TRectV2; overload;
+    function ComputeAreaScaleSpace(clipArea: TRectV2; SS_width, SS_height: TGeoFloat): TRectV2; overload;
     function ComputeAreaScaleSpace(clipArea: TRect; SS_width, SS_height: Integer): TRect; overload;
     function BuildAreaOffsetScaleSpace(clipArea: TRectV2; SS_width, SS_height: Integer): TMemoryRaster; overload;
     function BuildAreaOffsetScaleSpace(clipArea: TRect; SS_width, SS_height: Integer): TMemoryRaster; overload;
-    function BuildAreaCopy(clipArea: TRectV2): TMemoryRaster; overload;
-    function BuildAreaCopy(clipArea: TRect): TMemoryRaster; overload;
+    function BuildAreaCopyAs(clipArea: TRectV2): TMemoryRaster; overload;
+    function BuildAreaCopyAs(clipArea: TRect): TMemoryRaster; overload;
+    function FastAreaCopyAs(X1, Y1, X2, Y2: TGeoInt): TMemoryRaster;
+    procedure FastAreaCopyFrom(Source: TMemoryRaster; DestX, DestY: Integer);
     function ExistsColor(C: TRColor): Boolean;
     function FindFirstColor(C: TRColor): TPoint;
     function FindLastColor(C: TRColor): TPoint;
@@ -465,11 +479,11 @@ type
     procedure Black();
 
     { shape support }
-    procedure Line(x1, y1, x2, y2: Integer; Color: TRColor; L: Boolean); virtual;                              // L = draw closed pixel
-    procedure LineF(x1, y1, x2, y2: TGeoFloat; Color: TRColor; L: Boolean); overload;                          // L = draw closed pixel
+    procedure Line(X1, Y1, X2, Y2: Integer; Color: TRColor; L: Boolean); virtual;                              // L = draw closed pixel
+    procedure LineF(X1, Y1, X2, Y2: TGeoFloat; Color: TRColor; L: Boolean); overload;                          // L = draw closed pixel
     procedure LineF(p1, p2: TVec2; Color: TRColor; L: Boolean); overload;                                      // L = draw closed pixel
     procedure LineF(p1, p2: TVec2; Color: TRColor; L: Boolean; LineDist: TGeoFloat; Cross: Boolean); overload; // L = draw closed pixel
-    procedure FillRect(x1, y1, x2, y2: Integer; Color: TRColor); overload;
+    procedure FillRect(X1, Y1, X2, Y2: Integer; Color: TRColor); overload;
     procedure FillRect(Dstx, Dsty, LineDist: Integer; Color: TRColor); overload;
     procedure FillRect(Dst: TVec2; LineDist: Integer; Color: TRColor); overload;
     procedure FillRect(R: TRect; Color: TRColor); overload;
@@ -591,8 +605,11 @@ type
     procedure SaveToJpegCMYKStream(stream: TCoreClassStream; Quality: TJpegQuality);            // custom,24bit CMYK
     procedure SaveToJpegGrayStream(stream: TCoreClassStream; Quality: TJpegQuality);            // published,8bit grayscale
     procedure SaveToJpegGrayAStream(stream: TCoreClassStream; Quality: TJpegQuality);           // custom,16bit grayscale+alpha
-    // published, Portable Network Graphic, automated detect and save as gray,rgb24,rgba32 format
-    procedure SaveToPNGStream(stream: TCoreClassStream);
+    procedure SaveToGrayscaleStream(stream: TCoreClassStream);                                  // custom grayscale,no alpha
+    procedure SaveToColor255Stream(stream: TCoreClassStream);                                   // custom color 255,no alpha
+    procedure SaveToColor65535Stream(stream: TCoreClassStream);                                 // custom color 65535,no alpha
+    // png support
+    procedure SaveToPNGStream(stream: TCoreClassStream); // published, Portable Network Graphic, automated detect and save as gray,rgb24,rgba32 format
 
     { load file format }
     class function CanLoadFile(fn: SystemString): Boolean;
@@ -601,7 +618,7 @@ type
     { save file format }
     procedure SaveToBmp32File(fn: SystemString);                             // published,32bit bitmap,include alpha
     procedure SaveToBmp24File(fn: SystemString);                             // published,24bit bitmap,no alpha
-    procedure SaveToFile(fn: SystemString);                                  // save format from ext name .jpg .jpeg .png .bmp .yv12 .jls .hyuv .qyuv .zlib_bmp .deflate_bmp .BRRC_bmp
+    procedure SaveToFile(fn: SystemString);                                  // save format from ext name .jpg .jpeg .png .bmp .yv12 .jls .hyuv .qyuv .zlib_bmp .deflate_bmp .BRRC_bmp .gray .grayscale .255 .256 .64K
     procedure SaveToZLibCompressFile(fn: SystemString);                      // custom,32bit include alpha
     procedure SaveToDeflateCompressFile(fn: SystemString);                   // custom,32bit include alpha
     procedure SaveToBRRCCompressFile(fn: SystemString);                      // custom,32bit include alpha
@@ -618,6 +635,9 @@ type
     procedure SaveToJpegCMYKFile(fn: SystemString; Quality: TJpegQuality);   // custom,24bit CMYK
     procedure SaveToJpegGrayFile(fn: SystemString; Quality: TJpegQuality);   // published,8bit grayscale
     procedure SaveToJpegGrayAFile(fn: SystemString; Quality: TJpegQuality);  // custom,8bit grayscale + 8bit alpha
+    procedure SaveToGrayscaleFile(fn: SystemString);                         // custom grapscale,no alpha
+    procedure SaveToColor255File(fn: SystemString);                          // custom color 255,no alpha
+    procedure SaveToColor65535File(fn: SystemString);                        // custom color 65535,no alpha
     // published, Portable Network Graphic, automated detect and save as gray,rgb24,rgba32 format
     procedure SaveToPNGFile(fn: SystemString);
 
@@ -668,21 +688,48 @@ type
   TMemoryRasterClass = class of TMemoryRaster;
 
   TMemoryRasterArray = array of TMemoryRaster;
-
+  TRasterArray = TMemoryRasterArray;
   TMemoryRaster2DArray = array of TMemoryRasterArray;
+  TRaster2DArray = TMemoryRaster2DArray;
+  TRasterMatrix = TMemoryRaster2DArray;
 
   TMemoryRasterList_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TMemoryRaster>;
 
   TMemoryRasterList = class(TMemoryRasterList_Decl)
+  private
+    FCritical: TCritical;
   public
+    AutoFreeRaster: Boolean;
+    UserToken: U_String;
+    constructor Create;
+    destructor Destroy; override;
+    procedure Lock;
+    procedure UnLock;
+    procedure Remove(obj: TMemoryRaster);
+    procedure Delete(index: Integer);
+    procedure Clear;
+
     function BuildArray: TMemoryRasterArray;
+    procedure Clean;
   end;
 
   TMemoryRaster2DMatrix_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TMemoryRasterList>;
 
   TMemoryRaster2DMatrix = class(TMemoryRaster2DMatrix_Decl)
+  private
+    FCritical: TCritical;
   public
+    AutoFreeRaster: Boolean;
+    constructor Create;
+    destructor Destroy; override;
+    procedure Lock;
+    procedure UnLock;
+    procedure Remove(obj: TMemoryRasterList);
+    procedure Delete(index: Integer);
+    procedure Clear;
+
     function BuildArray: TMemoryRaster2DArray;
+    procedure Clean;
   end;
 
   TRasterList = TMemoryRasterList;
@@ -695,9 +742,6 @@ type
     procedure SaveToStream(stream: TCoreClassStream);
     procedure LoadFromStream(stream: TCoreClassStream);
   end;
-
-  TRasterArray = array of TMemoryRaster;
-  TRasterMatrix = array of TRasterArray;
 
 {$ENDREGION 'MemoryRaster'}
 {$REGION 'Serialized'}
@@ -714,7 +758,7 @@ type
     destructor Destroy; override;
 
     function Write(R: TMemoryRaster): Int64;
-    function Read(R: TMemoryRaster): Int64;
+    function read(R: TMemoryRaster): Int64;
     procedure Remove(R: TMemoryRaster);
     procedure ClearHistory;
 
@@ -789,8 +833,8 @@ type
   public
     procedure Attach(raster: TMemoryRaster); overload;
 
-    procedure FillLinearGradient(x1, y1, x2, y2: Double; c1, c2: TRColor; Profile: Double = 1);
-    procedure LineLinearGradient(x1, y1, x2, y2: Double; c1, c2: TRColor; Profile: Double = 1);
+    procedure FillLinearGradient(X1, Y1, X2, Y2: Double; c1, c2: TRColor; Profile: Double = 1);
+    procedure LineLinearGradient(X1, Y1, X2, Y2: Double; c1, c2: TRColor; Profile: Double = 1);
 
     procedure FillRadialGradient(X, Y, R: Double; c1, c2: TRColor; Profile: Double = 1); overload;
     procedure LineRadialGradient(X, Y, R: Double; c1, c2: TRColor; Profile: Double = 1); overload;
@@ -1084,6 +1128,17 @@ type
 
   TMorphomaticsDraw = {$IFDEF FPC}specialize {$ENDIF FPC}TLineProcessor<TMorphomaticsValue>;
 
+  TMorphomaticsList_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TMorphomatics>;
+
+  TMorphomaticsList = class(TMorphomaticsList_Decl)
+  public
+    procedure Clean;
+  end;
+
+  TMorphMathList = TMorphomaticsList;
+  TMorphomaticsPool = TMorphomaticsList;
+  TMorphMathPool = TMorphomaticsList;
+
   TMorphomatics = class
   private
     FBits: PMorphomaticsBits;
@@ -1132,8 +1187,8 @@ type
     procedure GetHistogramData(var H: THistogramData);
     procedure BuildHistogramTo(Height_: Integer; hColor: TRColor; output_: TMemoryRaster);
     function BuildHistogram(Height_: Integer; hColor: TRColor): TMemoryRaster;
-    procedure DrawLine(const x1, y1, x2, y2: Integer; const PixelValue_: TMorphomaticsValue; const L: Boolean);
-    procedure FillBox(const x1, y1, x2, y2: Integer; const PixelValue_: TMorphomaticsValue);
+    procedure DrawLine(const X1, Y1, X2, Y2: Integer; const PixelValue_: TMorphomaticsValue; const L: Boolean);
+    procedure FillBox(const X1, Y1, X2, Y2: Integer; const PixelValue_: TMorphomaticsValue);
     function BuildHoughLine(const MaxAngle_, AlphaStep_, Treshold_: TGeoFloat; const BestLinesCount_: Integer): THoughLineArry;
     procedure ProjectionTo(SourMorph_, DestMorph_: TMorphologyPixel; Dst: TMorphomatics; sourRect, DestRect: TV2Rect4; bilinear_sampling: Boolean; alpha: TGeoFloat); overload;
     procedure ProjectionTo(SourMorph_, DestMorph_: TMorphologyPixel; Dst: TMorphomatics; sourRect, DestRect: TRectV2; bilinear_sampling: Boolean; alpha: TGeoFloat); overload;
@@ -1275,10 +1330,21 @@ type
     FPixelSum: NativeInt;
     FPixelValue: TBinaryzationValue;
   public
-    function AnalysisBox(const x1, y1, x2, y2: NativeInt; const PixelValue_: TBinaryzationValue): NativeInt;
-    function AnalysisLine(const x1, y1, x2, y2: NativeInt; const PixelValue_: TBinaryzationValue): NativeInt;
+    function AnalysisBox(const X1, Y1, X2, Y2: NativeInt; const PixelValue_: TBinaryzationValue): NativeInt;
+    function AnalysisLine(const X1, Y1, X2, Y2: NativeInt; const PixelValue_: TBinaryzationValue): NativeInt;
     procedure Process(const vp: TMorphologyBinaryzationLineHitAnalysis_.PT_; const v: TBinaryzationValue); override;
   end;
+
+  TMorphologyBinaryzation_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TMorphologyBinaryzation>;
+
+  TMorphologyBinaryzationList = class(TMorphomaticsList_Decl)
+  public
+    procedure Clean;
+  end;
+
+  TMorphBinList = TMorphologyBinaryzationList;
+  TMorphologyBinaryzationPool = TMorphologyBinaryzationList;
+  TMorphBinPool = TMorphologyBinaryzationList;
 
   TMorphologyBinaryzation = class
   private
@@ -1308,10 +1374,10 @@ type
     procedure FillRandomValue();
     procedure FillValueFromPolygon(Polygon: TVec2List; InsideValue, OutsideValue: TBinaryzationValue);
     function ValueSum(Value: TBinaryzationValue): Integer;
-    procedure DrawLine(const x1, y1, x2, y2: Integer; const PixelValue_: TBinaryzationValue; const L: Boolean);
-    procedure FillBox(const x1, y1, x2, y2: Integer; const PixelValue_: TBinaryzationValue);
-    function LineHitSum(const x1, y1, x2, y2: Integer; const PixelValue_: TBinaryzationValue; const L: Boolean): Integer;
-    function BoxHitSum(const x1, y1, x2, y2: Integer; const PixelValue_: TBinaryzationValue): Integer; overload;
+    procedure DrawLine(const X1, Y1, X2, Y2: Integer; const PixelValue_: TBinaryzationValue; const L: Boolean);
+    procedure FillBox(const X1, Y1, X2, Y2: Integer; const PixelValue_: TBinaryzationValue);
+    function LineHitSum(const X1, Y1, X2, Y2: Integer; const PixelValue_: TBinaryzationValue; const L: Boolean): Integer;
+    function BoxHitSum(const X1, Y1, X2, Y2: Integer; const PixelValue_: TBinaryzationValue): Integer; overload;
     function BoxHitSum(const R: TRect; const PixelValue_: TBinaryzationValue): Integer; overload;
     function BoxHitSum(const R: TRectV2; const PixelValue_: TBinaryzationValue): Integer; overload;
     function BuildHoughLine(const MaxAngle_, AlphaStep_: TGeoFloat; const BestLinesCount_: Integer): THoughLineArry;
@@ -1653,13 +1719,12 @@ type
   protected
     FIO_Class: TRaster_IO_Class;
     FInputBuffer, FOutputBuffer: TRaster_IO_Buffer;
-    FRuningThreadCounter: Integer;
+    FIOThreadRuning: TAtomBool;
     FParallelProcessor: Boolean;
     FIndexNumber: UInt64;
     procedure LockInputBuffer;
     procedure UnLockInputBuffer;
-    procedure IOProcessorThreadRun(ThSender: TComputeThread);
-    procedure IOProcessorThreadDone(ThSender: TComputeThread);
+    procedure IOProcessorThreadRun(ThSender: TCompute);
   public
     constructor Create(IO_Class_: TRaster_IO_Class); virtual;
     destructor Destroy; override;
@@ -1673,6 +1738,7 @@ type
     function InputCount: Integer;
     procedure Process(UserData: Pointer);
     function Finished: Boolean;
+    procedure WaitProcessDone;
 
     // output
     function LockOutputBuffer: TRaster_IO_Buffer;
@@ -1755,6 +1821,7 @@ function RColorDistanceSum(c1, c2: TRColor): Integer; {$IFDEF INLINE_ASM} inline
 function RColorDistance(c1, c2: TRColor): TGeoFloat; {$IFDEF INLINE_ASM} inline; {$ENDIF}
 function RColorDistanceByte(c1, c2: TRColor): Byte; {$IFDEF INLINE_ASM} inline; {$ENDIF}
 function RColorGradient(C: TRColor; level: Byte): TRColor; {$IFDEF INLINE_ASM} inline; {$ENDIF}
+function RColorGrayGradient(C: TRColor; level: Byte): Byte; {$IFDEF INLINE_ASM} inline; {$ENDIF}
 
 function RGBA2BGRA(const sour: TRColor): TRColor; {$IFDEF INLINE_ASM} inline; {$ENDIF}
 function BGRA2RGBA(const sour: TRColor): TRColor; {$IFDEF INLINE_ASM} inline; {$ENDIF}
@@ -1775,6 +1842,11 @@ function MinRGBIndex(sour: TRColor): Byte; {$IFDEF INLINE_ASM} inline; {$ENDIF}
 function RColorToApproximateMorph(Color, ApproximateColor_: TRColor): TMorphomaticsValue; {$IFDEF INLINE_ASM} inline; {$ENDIF}
 function RColorToMorph(Color: TRColor; MorphPix: TMorphologyPixel): TMorphomaticsValue; {$IFDEF INLINE_ASM} inline; {$ENDIF}
 procedure MorphToRColor(MorphPix: TMorphologyPixel; Value: TMorphomaticsValue; var Color: TRColor); {$IFDEF INLINE_ASM} inline; {$ENDIF}
+
+procedure FillColorTable(const RBits, GBits, BBits: Byte; const DestCount: Integer; dest: PRColorArray);
+function FindColorIndex(Color: TRColor; const DestCount: Integer; dest: PRColorArray): Integer;
+function FindColor255Index(Color: TRColor): Integer;
+function FindColor65535Index(Color: TRColor): Integer;
 
 function AggColor(const Value: TRColor): TAggColorRgba8; {$IFDEF INLINE_ASM} inline; {$ENDIF}overload;
 function AggColor(const R, G, B: TGeoFloat; const A: TGeoFloat = 1.0): TAggColorRgba8; {$IFDEF INLINE_ASM} inline; {$ENDIF}overload;
@@ -1920,6 +1992,12 @@ procedure ClassifyMapConvolution(Width, Height: Integer; var classifyMap: TMorph
 procedure ClassifyMapConvolution(Width, Height: Integer; var classifyMap: TMorphologySegClassifyMap;
   Operations: array of TBinaryzationOperation; ConvolutionKernel: TMorphologyBinaryzation; MaxClassifyCount, MinGranularity: Integer); overload;
 
+{
+  rastermization performance test.
+}
+
+procedure TestRasterSavePerformance(inputfile: SystemString);
+
 {$ENDREGION 'RasterAPI'}
 {$REGION 'Constant'}
 
@@ -1967,6 +2045,12 @@ var
     Rastermization Serialized Pool
   }
   RasterSerializedPool: TRasterSerializedPool;
+
+  {
+    Color Table
+  }
+  Color255: array [Byte] of TRColor;
+  Color65535: array [Word] of TRColor;
 
 {$ENDREGION 'Var'}
 
@@ -2108,6 +2192,11 @@ MakeMergeTables;
 Init_DefaultFont;
 InitBinaryzationPreset;
 RasterSerializedPool := TRasterSerializedPool.Create(TRasterSerializedPool_Decl.Create);
+
+FillColorTable(3, 3, 2, $FF, @Color255);
+FillColorTable(6, 5, 5, $FFFF, @Color65535);
+FindColor255Index(RColor($7F, $7F, $9F));
+FindColor65535Index(RColor($7F, $7F, $9F));
 
 finalization
 

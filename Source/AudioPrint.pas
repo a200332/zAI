@@ -2475,10 +2475,8 @@ begin
   lLength := Math.min(ALength, FBufferSize - FBufferOffset);
 
   case (FNumChannels) of
-    1:
-      LoadMono(Input, offset, lLength);
-    2:
-      LoadStereo(Input, offset, lLength);
+    1: LoadMono(Input, offset, lLength);
+    2: LoadStereo(Input, offset, lLength);
     else
       LoadMultiChannel(Input, offset, lLength);
 

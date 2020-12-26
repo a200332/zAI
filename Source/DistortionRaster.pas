@@ -189,7 +189,8 @@ var
   procedure Nested_ParallelFor(pass: Integer);
   var
     i: Integer;
-    f, d, dx, dy: TGeoFloat;
+    f: TLFloat;
+    d, dx, dy: TGeoFloat;
   begin
     for i := 0 to nRaster.width - 1 do
       begin
@@ -214,7 +215,8 @@ var
   var
     pass: Integer;
     i: Integer;
-    f, d, dx, dy: TGeoFloat;
+    f: TLFloat;
+    d, dx, dy: TGeoFloat;
   begin
     for pass := 0 to nRaster.height - 1 do
       begin
@@ -250,7 +252,8 @@ begin
   DelphiParallelFor(0, nRaster.height - 1, procedure(pass: Integer)
     var
       i: Integer;
-      f, d, dx, dy: TGeoFloat;
+      f: TLFloat;
+      d, dx, dy: TGeoFloat;
     begin
       for i := 0 to nRaster.width - 1 do
         begin

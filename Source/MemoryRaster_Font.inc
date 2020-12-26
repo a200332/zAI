@@ -441,7 +441,7 @@ const
 {$ENDIF}
 
 
-procedure InitSystemFont_Thread_Run(Sender: TComputeThread);
+procedure InitSystemFont_Thread_Run(Sender: TCompute);
 var
   stream: TCoreClassStream;
   fr: TFontRaster;
@@ -494,7 +494,7 @@ end;
 procedure Init_DefaultFont;
 begin
   SystemFont := TAtomFontRaster.Create(nil);
-  TComputeThread.RunC(nil, nil, {$IFDEF FPC}@{$ENDIF FPC}InitSystemFont_Thread_Run);
+  TCompute.RunC(nil, nil, {$IFDEF FPC}@{$ENDIF FPC}InitSystemFont_Thread_Run);
 end;
 
 procedure Free_DefaultFont;

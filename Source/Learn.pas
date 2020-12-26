@@ -57,6 +57,7 @@ type
     FRandomNumber: Boolean;
     FInSize, FOutSize: TLInt;
     FMemorySource: TCoreClassList;
+    FTokenCache: THashList;
     FKDToken: TKDTree;
     FLearnType: TLearnType;
     FLearnData: Pointer;
@@ -75,18 +76,18 @@ type
     procedure FreeLearnData;
     procedure CreateLearnData(const isTrainingTime: Boolean);
   public
-    // regression style
+    { regression style }
     class function CreateRegression(const lt: TLearnType; const InDataLen, OutDataLen: TLInt): TLearn;
-    // regression style of level 1
+    { regression style of level 1 }
     class function CreateRegression1(const lt: TLearnType; const InDataLen, OutDataLen: TLInt): TLearn;
-    // regression style of level 2
+    { regression style of level 2 }
     class function CreateRegression2(const lt: TLearnType; const InDataLen, OutDataLen: TLInt): TLearn;
 
-    // classifier style
+    { classifier style }
     class function CreateClassifier(const lt: TLearnType; const InDataLen: TLInt): TLearn;
-    // classifier style of level 1
+    { classifier style of level 1 }
     class function CreateClassifier1(const lt: TLearnType; const InDataLen: TLInt): TLearn;
-    // classifier style of level 2
+    { classifier style of level 2 }
     class function CreateClassifier2(const lt: TLearnType; const InDataLen: TLInt): TLearn;
 
     constructor Create; virtual;
@@ -115,12 +116,13 @@ type
     property UserObject: TCoreClassObject read FUserObject write FUserObject;
 
     { * sampler * }
-    procedure AddMemory(const f_In, f_Out: TLVec; f_token: TPascalString); overload;
-    procedure AddMemory(const f_In: TLVec; f_token: TPascalString); overload;
-    procedure AddMemory(const f_In, f_Out: TLVec); overload;
-    procedure AddMemory(const s_In, s_Out: TPascalString); overload;
-    procedure AddMemory(const s_In, s_Out, s_token: TPascalString); overload;
-    procedure AddMemory(const s: TPascalString); overload;
+    function AddMemory(const f_In, f_Out: TLVec; f_token: TPascalString): PLearnMemory; overload;
+    function AddMemory(const f_In: TLVec; f_token: TPascalString): PLearnMemory; overload;
+    function AddMemory(const f_In, f_Out: TLVec): PLearnMemory; overload;
+    function AddMemory(const s_In, s_Out: TPascalString): PLearnMemory; overload;
+    function AddMemory(const s_In, s_Out, s_token: TPascalString): PLearnMemory; overload;
+    function AddMemory(const s: TPascalString): PLearnMemory; overload;
+
     procedure AddSampler(const f_In, f_Out: TLVec); overload;
     procedure AddSampler(const s_In, s_Out: TPascalString); overload;
     procedure AddSampler(const s: TPascalString); overload;
@@ -140,15 +142,16 @@ type
     procedure TrainingM(const TrainDepth: TLInt; const OnResult: TLearnState_Method);
     procedure TrainingP(const TrainDepth: TLInt; const OnResult: TLearnState_Proc);
 
-    // wait thread
+    { wait thread }
     procedure WaitTraining;
 
-    // token
+    { token }
     function SearchToken(const v: TLVec): TPascalString;
     function SearchOutVecToken(const v: TLVec): TPascalString;
     function FindTokenIndex(const token_: TPascalString): Integer;
+    function FindTokenData(const token_: TPascalString): PLearnMemory;
 
-    // data input/output
+    { data input/output }
     function Process(const p_in, p_out: PLVec): Boolean; overload;
     function Process(const ProcessIn: PLVec): TPascalString; overload;
     function Process(const ProcessIn: TLVec): TPascalString; overload;
@@ -157,53 +160,53 @@ type
     function ProcessToken(const ProcessIn: PLVec): TPascalString; overload;
     function ProcessToken(const ProcessIn: TLVec): TPascalString; overload;
 
-    // result max value
+    { result max value }
     function ProcessMax(const ProcessIn: TLVec): TLFloat; overload;
     function ProcessMax(const ProcessIn: TLMatrix): TLFloat; overload;
     function ProcessMaxToken(const ProcessIn: TLVec): TPascalString; overload;
     function ProcessMaxToken(const ProcessIn: TLMatrix): TPascalString; overload;
 
-    // result max index
+    { result max index }
     function ProcessMaxIndex(const ProcessIn: TLVec): TLInt; overload;
     function ProcessMaxIndex(const ProcessIn: TLMatrix): TLInt; overload;
     function ProcessMaxIndexToken(const ProcessIn: TLVec): TPascalString; overload;
     function ProcessMaxIndexToken(const ProcessIn: TLMatrix): TPascalString; overload;
 
-    // result min value
+    { result min value }
     function ProcessMin(const ProcessIn: TLVec): TLFloat; overload;
     function ProcessMin(const ProcessIn: TLMatrix): TLFloat; overload;
     function ProcessMinToken(const ProcessIn: TLVec): TPascalString; overload;
     function ProcessMinToken(const ProcessIn: TLMatrix): TPascalString; overload;
 
-    // result min index
+    { result min index }
     function ProcessMinIndex(const ProcessIn: TLVec): TLInt; overload;
     function ProcessMinIndex(const ProcessIn: TLMatrix): TLInt; overload;
     function ProcessMinIndexToken(const ProcessIn: TLVec): TPascalString; overload;
     function ProcessMinIndexToken(const ProcessIn: TLMatrix): TPascalString; overload;
 
-    // result first value
+    { result first value }
     function ProcessFV(const ProcessIn: TLVec): TLFloat; overload;
     function ProcessFV(const ProcessIn: TLMatrix): TLFloat; overload;
     function ProcessFV(const ProcessIn: TPascalString): TLFloat; overload;
 
-    // result last value
+    { result last value }
     function ProcessLV(const ProcessIn: TLVec): TLFloat; overload;
     function ProcessLV(const ProcessIn: TLMatrix): TLFloat; overload;
     function ProcessLV(const ProcessIn: TPascalString): TLFloat; overload;
 
-    // search with Pearson
+    { search with Pearson }
     function SearchMemoryPearson(const ProcessIn: TLVec): TLInt; overload;
     procedure SearchMemoryPearson(const ProcessIn: TLVec; out List: TLIVec); overload;
 
-    // search with Spearman
+    { search with Spearman }
     function SearchMemorySpearman(const ProcessIn: TLVec): TLInt; overload;
     procedure SearchMemorySpearman(const ProcessIn: TLVec; out List: TLIVec); overload;
 
-    // search with euclidean metric:K
+    { search with euclidean metric:K }
     function SearchMemoryDistance(const ProcessIn: TLVec): TLInt; overload;
     procedure SearchMemoryDistance(const ProcessIn: TLVec; out List: TLIVec); overload;
 
-    // build input Vector to KDTree
+    { build input Vector to KDTree }
     function BuildKDTree: TKDTree;
 
     { * fast binary store * }
@@ -256,6 +259,7 @@ function LVecCopy(const v: TLBVec; const index, Count: TLInt): TLBVec; overload;
 function LMatrixCopy(const v: TLMatrix): TLMatrix; overload;
 function LMatrixCopy(const v: TLIMatrix): TLIMatrix; overload;
 function LMatrixCopy(const v: TLBMatrix): TLBMatrix; overload;
+function LVec(): TLVec; overload;
 function LVec(const veclen: TLInt; const VDef: TLFloat): TLVec; overload;
 function LVec(const veclen: TLInt): TLVec; overload;
 function LVec(const v: TLVec): TPascalString; overload;
@@ -287,10 +291,12 @@ function LMinVecIndex(const v: TLVec): TLInt;
 function LDistance(const v1, v2: TLVec): TLFloat;
 function LHamming(const v1, v2: TLVec): TLInt; overload;
 function LHamming(const v1, v2: TLIVec): TLInt; overload;
-procedure LClampF(var AValue: TLFloat; const aMin, aMax: TLFloat); overload;
-procedure LClampI(var AValue: TLInt; const aMin, aMax: TLInt); overload;
-function LClamp(const AValue: TLFloat; const aMin, aMax: TLFloat): TLFloat; overload;
-function LClamp(const AValue: TLInt; const aMin, aMax: TLInt): TLInt; overload;
+procedure LClampF(var v: TLFloat; const min_, max_: TLFloat); overload;
+procedure LClampI(var v: TLInt; const min_, max_: TLInt); overload;
+function LClamp(const v: TLFloat; const min_, max_: TLFloat): TLFloat; overload;
+function LClamp(const v: TLInt; const min_, max_: TLInt): TLInt; overload;
+function LComplex(X, Y: TLFloat): TLComplex; overload;
+function LComplex(f: TLFloat): TLComplex; overload;
 
 { * sampler support * }
 procedure LZoomMatrix(var Source, dest: TLMatrix; const DestWidth, DestHeight: TLInt); overload;
@@ -321,7 +327,7 @@ procedure FisherLDA(const xy: TLMatrix; NPoints: TLInt; NVars: TLInt; NClasses: 
 *)
 function PCA(const buff: TLMatrix; const NPoints, NVars: TLInt; var v: TLVec; var M: TLMatrix): TLInt; overload;
 function PCA(const buff: TLMatrix; const NPoints, NVars: TLInt; var M: TLMatrix): TLInt; overload;
-procedure PCABuildBasis(const x: TLMatrix; NPoints: TLInt; NVars: TLInt; var Info: TLInt; var s2: TLVec; var v: TLMatrix);
+procedure PCABuildBasis(const X: TLMatrix; NPoints: TLInt; NVars: TLInt; var Info: TLInt; var s2: TLVec; var v: TLMatrix);
 
 { * k-means++ clusterization support * }
 function KMeans(const Source: TLMatrix; const NVars, K: TLInt; var KArray: TLMatrix; var kIndex: TLIVec): Boolean;
@@ -335,12 +341,12 @@ function ExpressionToLMatrix(w, h: TLInt; const s: TPascalString): TLMatrix; ove
 
 {$ENDREGION 'LearnAPI'}
 {$REGION 'FloatAPI'}
-function AbsReal(x: TLFloat): TLFloat;
+function AbsReal(X: TLFloat): TLFloat;
 function AbsInt(i: TLInt): TLInt;
 function RandomReal(): TLFloat;
 function RandomInteger(i: TLInt): TLInt;
-function Sign(x: TLFloat): TLInt;
-function AP_Sqr(x: TLFloat): TLFloat;
+function Sign(X: TLFloat): TLInt;
+function AP_Sqr(X: TLFloat): TLFloat;
 
 function DynamicArrayCopy(const a: TLIVec): TLIVec; overload;
 function DynamicArrayCopy(const a: TLVec): TLVec; overload;
@@ -356,7 +362,7 @@ function AbsComplex(const z: TLComplex): TLFloat;
 function Conj(const z: TLComplex): TLComplex;
 function CSqr(const z: TLComplex): TLComplex;
 
-function C_Complex(const x: TLFloat): TLComplex;
+function C_Complex(const X: TLFloat): TLComplex;
 function C_Opposite(const z: TLComplex): TLComplex;
 function C_Add(const z1: TLComplex; const z2: TLComplex): TLComplex;
 function C_Mul(const z1: TLComplex; const z2: TLComplex): TLComplex;
@@ -384,13 +390,13 @@ procedure APVSub(VDst: PLFloat; i11, i12: TLInt; vSrc: PLFloat; i21, i22: TLInt;
 procedure APVMul(VOp: PLFloat; i1, i2: TLInt; s: TLFloat);
 procedure APVFillValue(VOp: PLFloat; i1, i2: TLInt; s: TLFloat);
 
-function AP_Float(x: TLFloat): TLFloat;
-function AP_FP_Eq(x: TLFloat; y: TLFloat): Boolean;
-function AP_FP_NEq(x: TLFloat; y: TLFloat): Boolean;
-function AP_FP_Less(x: TLFloat; y: TLFloat): Boolean;
-function AP_FP_Less_Eq(x: TLFloat; y: TLFloat): Boolean;
-function AP_FP_Greater(x: TLFloat; y: TLFloat): Boolean;
-function AP_FP_Greater_Eq(x: TLFloat; y: TLFloat): Boolean;
+function AP_Float(X: TLFloat): TLFloat;
+function AP_FP_Eq(X: TLFloat; Y: TLFloat): Boolean;
+function AP_FP_NEq(X: TLFloat; Y: TLFloat): Boolean;
+function AP_FP_Less(X: TLFloat; Y: TLFloat): Boolean;
+function AP_FP_Less_Eq(X: TLFloat; Y: TLFloat): Boolean;
+function AP_FP_Greater(X: TLFloat; Y: TLFloat): Boolean;
+function AP_FP_Greater_Eq(X: TLFloat; Y: TLFloat): Boolean;
 
 procedure TagSort(var a: TLVec; const n: TLInt; var p1: TLIVec; var p2: TLIVec);
 procedure TagSortFastI(var a: TLVec; var b: TLIVec; n: TLInt);
@@ -442,10 +448,10 @@ function XFastPow(r: TLFloat; n: TLInt): TLFloat;
 {$ENDREGION 'FloatAPI'}
 {$REGION 'LowLevelMatrix'}
 { matrix base }
-function VectorNorm2(const x: TLVec; const i1, i2: TLInt): TLFloat;
-function VectorIdxAbsMax(const x: TLVec; const i1, i2: TLInt): TLInt;
-function ColumnIdxAbsMax(const x: TLMatrix; const i1, i2, j: TLInt): TLInt;
-function RowIdxAbsMax(const x: TLMatrix; const j1, j2, i: TLInt): TLInt;
+function VectorNorm2(const X: TLVec; const i1, i2: TLInt): TLFloat;
+function VectorIdxAbsMax(const X: TLVec; const i1, i2: TLInt): TLInt;
+function ColumnIdxAbsMax(const X: TLMatrix; const i1, i2, j: TLInt): TLInt;
+function RowIdxAbsMax(const X: TLMatrix; const j1, j2, i: TLInt): TLInt;
 function UpperHessenberg1Norm(const a: TLMatrix; const i1, i2, j1, j2: TLInt; var Work: TLVec): TLFloat;
 
 procedure CopyMatrix(const a: TLMatrix; const IS1, IS2, JS1, JS2: TLInt;
@@ -457,10 +463,10 @@ procedure CopyAndTranspose(const a: TLMatrix; IS1, IS2, JS1, JS2: TLInt;
   var b: TLMatrix; ID1, id2, JD1, JD2: TLInt);
 
 procedure MatrixVectorMultiply(const a: TLMatrix; const i1, i2, j1, j2: TLInt; const Trans: Boolean;
-  const x: TLVec; const IX1, IX2: TLInt; const alpha: TLFloat;
-  var y: TLVec; const IY1, IY2: TLInt; const beta: TLFloat);
+  const X: TLVec; const IX1, IX2: TLInt; const alpha: TLFloat;
+  var Y: TLVec; const IY1, IY2: TLInt; const beta: TLFloat);
 
-function Pythag2(x: TLFloat; y: TLFloat): TLFloat;
+function Pythag2(X: TLFloat; Y: TLFloat): TLFloat;
 
 procedure MatrixMatrixMultiply(const a: TLMatrix; const AI1, AI2, AJ1, AJ2: TLInt; const TransA: Boolean;
   const b: TLMatrix; const BI1, BI2, BJ1, BJ2: TLInt; const TransB: Boolean;
@@ -481,26 +487,26 @@ procedure CMatrixCopy(M: TLInt; n: TLInt; const a: TLComplexMatrix; IA: TLInt; j
 procedure RMatrixCopy(M: TLInt; n: TLInt; const a: TLMatrix; IA: TLInt; ja: TLInt; var b: TLMatrix; IB: TLInt; JB: TLInt);
 procedure CMatrixRank1(M: TLInt; n: TLInt; var a: TLComplexMatrix; IA: TLInt; ja: TLInt; var u: TLComplexVec; IU: TLInt; var v: TLComplexVec; IV: TLInt);
 procedure RMatrixRank1(M: TLInt; n: TLInt; var a: TLMatrix; IA: TLInt; ja: TLInt; var u: TLVec; IU: TLInt; var v: TLVec; IV: TLInt);
-procedure CMatrixMV(M: TLInt; n: TLInt; var a: TLComplexMatrix; IA: TLInt; ja: TLInt; OpA: TLInt; var x: TLComplexVec; ix: TLInt; var y: TLComplexVec; iy: TLInt);
-procedure RMatrixMV(M: TLInt; n: TLInt; var a: TLMatrix; IA: TLInt; ja: TLInt; OpA: TLInt; var x: TLVec; ix: TLInt; var y: TLVec; iy: TLInt);
+procedure CMatrixMV(M: TLInt; n: TLInt; var a: TLComplexMatrix; IA: TLInt; ja: TLInt; OpA: TLInt; var X: TLComplexVec; ix: TLInt; var Y: TLComplexVec; iy: TLInt);
+procedure RMatrixMV(M: TLInt; n: TLInt; var a: TLMatrix; IA: TLInt; ja: TLInt; OpA: TLInt; var X: TLVec; ix: TLInt; var Y: TLVec; iy: TLInt);
 
 procedure CMatrixRightTRSM(M: TLInt; n: TLInt;
   const a: TLComplexMatrix; i1: TLInt; j1: TLInt;
   IsUpper: Boolean; IsUnit: Boolean; OpType: TLInt;
-  var x: TLComplexMatrix; i2: TLInt; j2: TLInt);
+  var X: TLComplexMatrix; i2: TLInt; j2: TLInt);
 
 procedure CMatrixLeftTRSM(M: TLInt; n: TLInt;
   const a: TLComplexMatrix; i1: TLInt; j1: TLInt;
   IsUpper: Boolean; IsUnit: Boolean; OpType: TLInt;
-  var x: TLComplexMatrix; i2: TLInt; j2: TLInt);
+  var X: TLComplexMatrix; i2: TLInt; j2: TLInt);
 
 procedure RMatrixRightTRSM(M: TLInt; n: TLInt;
   const a: TLMatrix; i1: TLInt; j1: TLInt; IsUpper: Boolean;
-  IsUnit: Boolean; OpType: TLInt; var x: TLMatrix; i2: TLInt; j2: TLInt);
+  IsUnit: Boolean; OpType: TLInt; var X: TLMatrix; i2: TLInt; j2: TLInt);
 
 procedure RMatrixLeftTRSM(M: TLInt; n: TLInt;
   const a: TLMatrix; i1: TLInt; j1: TLInt; IsUpper: Boolean;
-  IsUnit: Boolean; OpType: TLInt; var x: TLMatrix; i2: TLInt; j2: TLInt);
+  IsUnit: Boolean; OpType: TLInt; var X: TLMatrix; i2: TLInt; j2: TLInt);
 
 procedure CMatrixSYRK(n: TLInt; K: TLInt; alpha: TLFloat;
   const a: TLComplexMatrix; IA: TLInt; ja: TLInt; OpTypeA: TLInt;
@@ -532,11 +538,11 @@ procedure CMatrixPLU(var a: TLComplexMatrix; M: TLInt; n: TLInt; var Pivots: TLI
 
 { matrix safe }
 function RMatrixScaledTRSafeSolve(const a: TLMatrix; SA: TLFloat;
-  n: TLInt; var x: TLVec; IsUpper: Boolean; Trans: TLInt;
+  n: TLInt; var X: TLVec; IsUpper: Boolean; Trans: TLInt;
   IsUnit: Boolean; MaxGrowth: TLFloat): Boolean;
 
 function CMatrixScaledTRSafeSolve(const a: TLComplexMatrix; SA: TLFloat;
-  n: TLInt; var x: TLComplexVec; IsUpper: Boolean;
+  n: TLInt; var X: TLComplexVec; IsUpper: Boolean;
   Trans: TLInt; IsUnit: Boolean; MaxGrowth: TLFloat): Boolean;
 
 { * Condition number estimate support * }
@@ -681,21 +687,21 @@ function UpperHessenbergSchurDecomposition(var h: TLMatrix; n: TLInt; var s: TLM
 {$REGION 'LowlevelDistribution'}
 
 { Normal distribution support }
-function NormalDistribution(const x: TLFloat): TLFloat;
+function NormalDistribution(const X: TLFloat): TLFloat;
 function InvNormalDistribution(const y0: TLFloat): TLFloat;
 
 { statistics base }
-function Log1P(const x: TLFloat): TLFloat;
-function ExpM1(const x: TLFloat): TLFloat;
-function CosM1(const x: TLFloat): TLFloat;
+function Log1P(const X: TLFloat): TLFloat;
+function ExpM1(const X: TLFloat): TLFloat;
+function CosM1(const X: TLFloat): TLFloat;
 { Gamma support }
-function Gamma(const x: TLFloat): TLFloat;
+function Gamma(const X: TLFloat): TLFloat;
 { Natural logarithm of gamma function }
-function LnGamma(const x: TLFloat; var SgnGam: TLFloat): TLFloat;
+function LnGamma(const X: TLFloat; var SgnGam: TLFloat): TLFloat;
 { Incomplete gamma integral }
-function IncompleteGamma(const a, x: TLFloat): TLFloat;
+function IncompleteGamma(const a, X: TLFloat): TLFloat;
 { Complemented incomplete gamma integral }
-function IncompleteGammaC(const a, x: TLFloat): TLFloat;
+function IncompleteGammaC(const a, X: TLFloat): TLFloat;
 { Inverse of complemented imcomplete gamma integral }
 function InvIncompleteGammaC(const a, y0: TLFloat): TLFloat;
 
@@ -704,70 +710,70 @@ function PoissonDistribution(K: TLInt; M: TLFloat): TLFloat;
 { Complemented Poisson distribution }
 function PoissonCDistribution(K: TLInt; M: TLFloat): TLFloat;
 { Inverse Poisson distribution }
-function InvPoissonDistribution(K: TLInt; y: TLFloat): TLFloat;
+function InvPoissonDistribution(K: TLInt; Y: TLFloat): TLFloat;
 
 { Incomplete beta integral support }
-function IncompleteBeta(a, b, x: TLFloat): TLFloat;
+function IncompleteBeta(a, b, X: TLFloat): TLFloat;
 { Inverse of imcomplete beta integral }
-function InvIncompleteBeta(const a, b, y: TLFloat): TLFloat;
+function InvIncompleteBeta(const a, b, Y: TLFloat): TLFloat;
 
 { F distribution support }
-function FDistribution(const a: TLInt; const b: TLInt; const x: TLFloat): TLFloat;
+function FDistribution(const a: TLInt; const b: TLInt; const X: TLFloat): TLFloat;
 { Complemented F distribution }
-function FCDistribution(const a: TLInt; const b: TLInt; const x: TLFloat): TLFloat;
+function FCDistribution(const a: TLInt; const b: TLInt; const X: TLFloat): TLFloat;
 { Inverse of complemented F distribution }
-function InvFDistribution(const a: TLInt; const b: TLInt; const y: TLFloat): TLFloat;
+function InvFDistribution(const a: TLInt; const b: TLInt; const Y: TLFloat): TLFloat;
 { Two-sample F-test }
-procedure FTest(const x: TLVec; n: TLInt; const y: TLVec; M: TLInt; var BothTails, LeftTail, RightTail: TLFloat);
+procedure FTest(const X: TLVec; n: TLInt; const Y: TLVec; M: TLInt; var BothTails, LeftTail, RightTail: TLFloat);
 
 { Binomial distribution support }
 function BinomialDistribution(const K, n: TLInt; const p: TLFloat): TLFloat;
 { Complemented binomial distribution }
 function BinomialCDistribution(const K, n: TLInt; const p: TLFloat): TLFloat;
 { Inverse binomial distribution }
-function InvBinomialDistribution(const K, n: TLInt; const y: TLFloat): TLFloat;
+function InvBinomialDistribution(const K, n: TLInt; const Y: TLFloat): TLFloat;
 { Sign test }
-procedure OneSampleSignTest(const x: TLVec; n: TLInt; Median: TLFloat; var BothTails, LeftTail, RightTail: TLFloat);
+procedure OneSampleSignTest(const X: TLVec; n: TLInt; Median: TLFloat; var BothTails, LeftTail, RightTail: TLFloat);
 
 { Chi-square distribution support }
-function ChiSquareDistribution(const v, x: TLFloat): TLFloat;
+function ChiSquareDistribution(const v, X: TLFloat): TLFloat;
 { Complemented Chi-square distribution }
-function ChiSquareCDistribution(const v, x: TLFloat): TLFloat;
+function ChiSquareCDistribution(const v, X: TLFloat): TLFloat;
 { Inverse of complemented Chi-square distribution }
-function InvChiSquareDistribution(const v, y: TLFloat): TLFloat;
+function InvChiSquareDistribution(const v, Y: TLFloat): TLFloat;
 { One-sample chi-square test }
-procedure OneSampleVarianceTest(const x: TLVec; n: TLInt; Variance: TLFloat; var BothTails, LeftTail, RightTail: TLFloat);
+procedure OneSampleVarianceTest(const X: TLVec; n: TLInt; Variance: TLFloat; var BothTails, LeftTail, RightTail: TLFloat);
 
 { Student's t distribution support }
 function StudentTDistribution(const K: TLInt; const t: TLFloat): TLFloat;
 { Functional inverse of Student's t distribution }
 function InvStudentTDistribution(const K: TLInt; p: TLFloat): TLFloat;
 { One-sample t-test }
-procedure StudentTTest1(const x: TLVec; n: TLInt; Mean: TLFloat; var BothTails, LeftTail, RightTail: TLFloat);
+procedure StudentTTest1(const X: TLVec; n: TLInt; Mean: TLFloat; var BothTails, LeftTail, RightTail: TLFloat);
 { Two-sample pooled test }
-procedure StudentTTest2(const x: TLVec; n: TLInt; const y: TLVec; M: TLInt; var BothTails, LeftTail, RightTail: TLFloat);
+procedure StudentTTest2(const X: TLVec; n: TLInt; const Y: TLVec; M: TLInt; var BothTails, LeftTail, RightTail: TLFloat);
 { Two-sample unpooled test }
-procedure UnequalVarianceTTest(const x: TLVec; n: TLInt; const y: TLVec; M: TLInt; var BothTails, LeftTail, RightTail: TLFloat);
+procedure UnequalVarianceTTest(const X: TLVec; n: TLInt; const Y: TLVec; M: TLInt; var BothTails, LeftTail, RightTail: TLFloat);
 
 { Pearson and Spearman distribution support }
 { Pearson product-moment correlation coefficient }
-function PearsonCorrelation(const x, y: TLVec; const n: TLInt): TLFloat;
+function PearsonCorrelation(const X, Y: TLVec; const n: TLInt): TLFloat;
 { Spearman's rank correlation coefficient }
-function SpearmanRankCorrelation(const x, y: TLVec; const n: TLInt): TLFloat;
-procedure SpearmanRank(var x: TLVec; n: TLInt);
+function SpearmanRankCorrelation(const X, Y: TLVec; const n: TLInt): TLFloat;
+procedure SpearmanRank(var X: TLVec; n: TLInt);
 { Pearson's correlation coefficient significance test }
 procedure PearsonCorrelationSignificance(const r: TLFloat; const n: TLInt; var BothTails, LeftTail, RightTail: TLFloat);
 { Spearman's rank correlation coefficient significance test }
 procedure SpearmanRankCorrelationSignificance(const r: TLFloat; const n: TLInt; var BothTails, LeftTail, RightTail: TLFloat);
 
 { Jarque-Bera test }
-procedure JarqueBeraTest(const x: TLVec; const n: TLInt; var p: TLFloat);
+procedure JarqueBeraTest(const X: TLVec; const n: TLInt; var p: TLFloat);
 
 { Mann-Whitney U-test }
-procedure MannWhitneyUTest(const x: TLVec; n: TLInt; const y: TLVec; M: TLInt; var BothTails, LeftTail, RightTail: TLFloat);
+procedure MannWhitneyUTest(const X: TLVec; n: TLInt; const Y: TLVec; M: TLInt; var BothTails, LeftTail, RightTail: TLFloat);
 
 { Wilcoxon signed-rank test }
-procedure WilcoxonSignedRankTest(const x: TLVec; n: TLInt; E: TLFloat; var BothTails, LeftTail, RightTail: TLFloat);
+procedure WilcoxonSignedRankTest(const X: TLVec; n: TLInt; E: TLFloat; var BothTails, LeftTail, RightTail: TLFloat);
 {$ENDREGION 'LowlevelDistribution'}
 {$REGION 'LowLevelGauss'}
 {
@@ -785,7 +791,7 @@ procedure WilcoxonSignedRankTest(const x: TLVec; n: TLInt; E: TLFloat; var BothT
 
   Mu0 = integral(W(x)dx,a,b)
 }
-procedure GaussQuadratureGenerateRec(const alpha, beta: TLVec; const Mu0: TLFloat; n: TLInt; var Info: TLInt; var x: TLVec; var w: TLVec);
+procedure GaussQuadratureGenerateRec(const alpha, beta: TLVec; const Mu0: TLFloat; n: TLInt; var Info: TLInt; var X: TLVec; var w: TLVec);
 {
   Computation of nodes and weights for a Gauss-Lobatto quadrature formula
 
@@ -801,7 +807,7 @@ procedure GaussQuadratureGenerateRec(const alpha, beta: TLVec; const Mu0: TLFloa
 
   Mu0 = integral(W(x)dx,a,b)
 }
-procedure GaussQuadratureGenerateGaussLobattoRec(const alpha, beta: TLVec; const Mu0, a, b: TLFloat; n: TLInt; var Info: TLInt; var x: TLVec; var w: TLVec);
+procedure GaussQuadratureGenerateGaussLobattoRec(const alpha, beta: TLVec; const Mu0, a, b: TLFloat; n: TLInt; var Info: TLInt; var X: TLVec; var w: TLVec);
 {
   Computation of nodes and weights for a Gauss-Radau quadrature formula
 
@@ -817,19 +823,19 @@ procedure GaussQuadratureGenerateGaussLobattoRec(const alpha, beta: TLVec; const
 
   Mu0 = integral(W(x)dx,a,b)
 }
-procedure GaussQuadratureGenerateGaussRadauRec(const alpha, beta: TLVec; const Mu0, a: TLFloat; n: TLInt; var Info: TLInt; var x: TLVec; var w: TLVec);
+procedure GaussQuadratureGenerateGaussRadauRec(const alpha, beta: TLVec; const Mu0, a: TLFloat; n: TLInt; var Info: TLInt; var X: TLVec; var w: TLVec);
 
 { Returns nodes/weights for Gauss-Legendre quadrature on [-1,1] with N nodes }
-procedure GaussQuadratureGenerateGaussLegendre(const n: TLInt; var Info: TLInt; var x: TLVec; var w: TLVec);
+procedure GaussQuadratureGenerateGaussLegendre(const n: TLInt; var Info: TLInt; var X: TLVec; var w: TLVec);
 
 { Returns nodes/weights for Gauss-Jacobi quadrature on [-1,1] with weight function W(x)=Power(1-x,Alpha)*Power(1+x,Beta) }
-procedure GaussQuadratureGenerateGaussJacobi(const n: TLInt; const alpha, beta: TLFloat; var Info: TLInt; var x: TLVec; var w: TLVec);
+procedure GaussQuadratureGenerateGaussJacobi(const n: TLInt; const alpha, beta: TLFloat; var Info: TLInt; var X: TLVec; var w: TLVec);
 
 { Returns nodes/weights for Gauss-Laguerre quadrature on (0,+inf) with weight function W(x)=Power(x,Alpha)*Exp(-x) }
-procedure GaussQuadratureGenerateGaussLaguerre(const n: TLInt; const alpha: TLFloat; var Info: TLInt; var x: TLVec; var w: TLVec);
+procedure GaussQuadratureGenerateGaussLaguerre(const n: TLInt; const alpha: TLFloat; var Info: TLInt; var X: TLVec; var w: TLVec);
 
 { Returns nodes/weights for Gauss-Hermite quadrature on (-inf,+inf) with weight function W(x)=Exp(-x*x) }
-procedure GaussQuadratureGenerateGaussHermite(const n: TLInt; var Info: TLInt; var x: TLVec; var w: TLVec);
+procedure GaussQuadratureGenerateGaussHermite(const n: TLInt; var Info: TLInt; var X: TLVec; var w: TLVec);
 
 {
   Computation of nodes and weights of a Gauss-Kronrod quadrature formula
@@ -846,51 +852,51 @@ procedure GaussQuadratureGenerateGaussHermite(const n: TLInt; var Info: TLInt; v
 
   Mu0 = integral(W(x)dx,a,b)
 }
-procedure GaussKronrodQuadratureGenerateRec(const alpha, beta: TLVec; const Mu0: TLFloat; n: TLInt; var Info: TLInt; var x, WKronrod, WGauss: TLVec);
+procedure GaussKronrodQuadratureGenerateRec(const alpha, beta: TLVec; const Mu0: TLFloat; n: TLInt; var Info: TLInt; var X, WKronrod, WGauss: TLVec);
 
 {
   Returns Gauss and Gauss-Kronrod nodes/weights for Gauss-Legendre quadrature with N points.
   GKQLegendreCalc (calculation) or GKQLegendreTbl (precomputed table) is used depending on machine precision and number of nodes.
 }
-procedure GaussKronrodQuadratureGenerateGaussLegendre(const n: TLInt; var Info: TLInt; var x, WKronrod, WGauss: TLVec);
+procedure GaussKronrodQuadratureGenerateGaussLegendre(const n: TLInt; var Info: TLInt; var X, WKronrod, WGauss: TLVec);
 
 {
   Returns Gauss and Gauss-Kronrod nodes/weights for Gauss-Jacobi quadrature on [-1,1] with weight function
   W(x)=Power(1-x,Alpha)*Power(1+x,Beta).
 }
-procedure GaussKronrodQuadratureGenerateGaussJacobi(const n: TLInt; const alpha, beta: TLFloat; var Info: TLInt; var x, WKronrod, WGauss: TLVec);
+procedure GaussKronrodQuadratureGenerateGaussJacobi(const n: TLInt; const alpha, beta: TLFloat; var Info: TLInt; var X, WKronrod, WGauss: TLVec);
 
 {
   Returns Gauss and Gauss-Kronrod nodes for quadrature with N points.
   Reduction to tridiagonal eigenproblem is used.
 }
-procedure GaussKronrodQuadratureLegendreCalc(const n: TLInt; var Info: TLInt; var x, WKronrod, WGauss: TLVec);
+procedure GaussKronrodQuadratureLegendreCalc(const n: TLInt; var Info: TLInt; var X, WKronrod, WGauss: TLVec);
 
 {
   Returns Gauss and Gauss-Kronrod nodes for quadrature with N  points  using pre-calculated table. Nodes/weights were computed with accuracy up to 1.0E-32.
   In standard TLFloat  precision accuracy reduces to something about 2.0E-16 (depending  on your compiler's handling of long floating point constants).
 }
-procedure GaussKronrodQuadratureLegendreTbl(const n: TLInt; var x, WKronrod, WGauss: TLVec; var Eps: TLFloat);
+procedure GaussKronrodQuadratureLegendreTbl(const n: TLInt; var X, WKronrod, WGauss: TLVec; var Eps: TLFloat);
 {$ENDREGION 'LowLevelGauss'}
 {$REGION 'Limited memory BFGS optimizer'}
-procedure MinLBFGSCreate(n: TLInt; M: TLInt; const x: TLVec; var State: TMinLBFGSState);
+procedure MinLBFGSCreate(n: TLInt; M: TLInt; const X: TLVec; var State: TMinLBFGSState);
 procedure MinLBFGSSetCond(var State: TMinLBFGSState; EpsG: TLFloat; EpsF: TLFloat; EpsX: TLFloat; MAXITS: TLInt);
 procedure MinLBFGSSetXRep(var State: TMinLBFGSState; NeedXRep: Boolean);
 procedure MinLBFGSSetStpMax(var State: TMinLBFGSState; StpMax: TLFloat);
-procedure MinLBFGSCreateX(n: TLInt; M: TLInt; const x: TLVec; Flags: TLInt; var State: TMinLBFGSState);
+procedure MinLBFGSCreateX(n: TLInt; M: TLInt; const X: TLVec; Flags: TLInt; var State: TMinLBFGSState);
 function MinLBFGSIteration(var State: TMinLBFGSState): Boolean;
-procedure MinLBFGSResults(const State: TMinLBFGSState; var x: TLVec; var Rep: TMinLBFGSReport);
-procedure MinLBFGSFree(var x: TLVec; var State: TMinLBFGSState);
+procedure MinLBFGSResults(const State: TMinLBFGSState; var X: TLVec; var Rep: TMinLBFGSReport);
+procedure MinLBFGSFree(var X: TLVec; var State: TMinLBFGSState);
 {$ENDREGION 'Limited memory BFGS optimizer'}
 {$REGION 'Improved Levenberg-Marquardt optimizer'}
-procedure MinLMCreateFGH(const n: TLInt; const x: TLVec; var State: TMinLMState);
-procedure MinLMCreateFGJ(const n: TLInt; const M: TLInt; const x: TLVec; var State: TMinLMState);
-procedure MinLMCreateFJ(const n: TLInt; const M: TLInt; const x: TLVec; var State: TMinLMState);
+procedure MinLMCreateFGH(const n: TLInt; const X: TLVec; var State: TMinLMState);
+procedure MinLMCreateFGJ(const n: TLInt; const M: TLInt; const X: TLVec; var State: TMinLMState);
+procedure MinLMCreateFJ(const n: TLInt; const M: TLInt; const X: TLVec; var State: TMinLMState);
 procedure MinLMSetCond(var State: TMinLMState; EpsG: TLFloat; EpsF: TLFloat; EpsX: TLFloat; MAXITS: TLInt);
 procedure MinLMSetXRep(var State: TMinLMState; NeedXRep: Boolean);
 procedure MinLMSetStpMax(var State: TMinLMState; StpMax: TLFloat);
 function MinLMIteration(var State: TMinLMState): Boolean;
-procedure MinLMResults(const State: TMinLMState; var x: TLVec; var Rep: TMinLMReport);
+procedure MinLMResults(const State: TMinLMState; var X: TLVec; var Rep: TMinLMReport);
 {$ENDREGION 'Improved Levenberg-Marquardt optimizer'}
 {$REGION 'neural network'}
 procedure MLPCreate0(NIn, NOut: TLInt; var Network: TMultiLayerPerceptron);
@@ -924,7 +930,7 @@ procedure MLPInitPreprocessor(var Network: TMultiLayerPerceptron; const xy: TLMa
 procedure MLPProperties(const Network: TMultiLayerPerceptron; var NIn: TLInt; var NOut: TLInt; var WCount: TLInt);
 function MLPIsSoftmax(const Network: TMultiLayerPerceptron): Boolean;
 
-procedure MLPProcess(var Network: TMultiLayerPerceptron; const x: TLVec; var y: TLVec);
+procedure MLPProcess(var Network: TMultiLayerPerceptron; const X: TLVec; var Y: TLVec);
 
 function MLPError(var Network: TMultiLayerPerceptron; const xy: TLMatrix; SSize: TLInt): TLFloat;
 function MLPErrorN(var Network: TMultiLayerPerceptron; const xy: TLMatrix; SSize: TLInt): TLFloat;
@@ -935,8 +941,8 @@ function MLPRMSError(var Network: TMultiLayerPerceptron; const xy: TLMatrix; NPo
 function MLPAvgError(var Network: TMultiLayerPerceptron; const xy: TLMatrix; NPoints: TLInt): TLFloat;
 function MLPAvgRelError(var Network: TMultiLayerPerceptron; const xy: TLMatrix; NPoints: TLInt): TLFloat;
 
-procedure MLPGrad(var Network: TMultiLayerPerceptron; const x: TLVec; const DesiredY: TLVec; var E: TLFloat; var Grad: TLVec);
-procedure MLPGradN(var Network: TMultiLayerPerceptron; const x: TLVec; const DesiredY: TLVec; var E: TLFloat; var Grad: TLVec);
+procedure MLPGrad(var Network: TMultiLayerPerceptron; const X: TLVec; const DesiredY: TLVec; var E: TLFloat; var Grad: TLVec);
+procedure MLPGradN(var Network: TMultiLayerPerceptron; const X: TLVec; const DesiredY: TLVec; var E: TLFloat; var Grad: TLVec);
 procedure MLPGradBatch(var Network: TMultiLayerPerceptron; const xy: TLMatrix; SSize: TLInt; var E: TLFloat; var Grad: TLVec);
 procedure MLPGradNBatch(var Network: TMultiLayerPerceptron; const xy: TLMatrix; SSize: TLInt; var E: TLFloat; var Grad: TLVec);
 
@@ -946,7 +952,7 @@ procedure MLPHessianBatch(var Network: TMultiLayerPerceptron; const xy: TLMatrix
 procedure MLPInternalProcessVector(const StructInfo: TLIVec;
   const Weights: TLVec; const ColumnMeans: TLVec;
   const ColumnSigmas: TLVec; var Neurons: TLVec;
-  var DFDNET: TLVec; const x: TLVec; var y: TLVec);
+  var DFDNET: TLVec; const X: TLVec; var Y: TLVec);
 
 procedure MLPTrainLM(var Network: TMultiLayerPerceptron; const xy: TLMatrix;
   NPoints: TLInt; Decay: TLFloat; Restarts: TLInt;
@@ -1016,7 +1022,7 @@ procedure MLPEProperties(const Ensemble: TMLPEnsemble; var NIn: TLInt; var NOut:
 
 function MLPEIsSoftmax(const Ensemble: TMLPEnsemble): Boolean;
 
-procedure MLPEProcess(var Ensemble: TMLPEnsemble; const x: TLVec; var y: TLVec);
+procedure MLPEProcess(var Ensemble: TMLPEnsemble; const X: TLVec; var Y: TLVec);
 
 function MLPERelClsError(var Ensemble: TMLPEnsemble; const xy: TLMatrix; NPoints: TLInt): TLFloat;
 function MLPEAvgCE(var Ensemble: TMLPEnsemble; const xy: TLMatrix; NPoints: TLInt): TLFloat;
@@ -1035,7 +1041,7 @@ procedure MLPEBaggingLBFGS(const MultiThread: Boolean; var Ensemble: TMLPEnsembl
 {$ENDREGION 'Neural networks ensemble'}
 {$REGION 'Random Decision Forest'}
 procedure DFBuildRandomDecisionForest(const xy: TLMatrix; NPoints, NVars, NClasses, NTrees: TLInt; r: TLFloat; var Info: TLInt; var df: TDecisionForest; var Rep: TDFReport);
-procedure DFProcess(const df: TDecisionForest; const x: TLVec; var y: TLVec);
+procedure DFProcess(const df: TDecisionForest; const X: TLVec; var Y: TLVec);
 function DFRelClsError(const df: TDecisionForest; const xy: TLMatrix; NPoints: TLInt): TLFloat;
 function DFAvgCE(const df: TDecisionForest; const xy: TLMatrix; NPoints: TLInt): TLFloat;
 function DFRMSError(const df: TDecisionForest; const xy: TLMatrix; NPoints: TLInt): TLFloat;
@@ -1048,7 +1054,7 @@ procedure DFUnserialize(const ResArry: TLVec; var df: TDecisionForest);
 {$REGION 'LogitModel'}
 
 procedure MNLTrainH(const xy: TLMatrix; NPoints: TLInt; NVars: TLInt; NClasses: TLInt; var Info: TLInt; var LM: TLogitModel; var Rep: TMNLReport);
-procedure MNLProcess(var LM: TLogitModel; const x: TLVec; var y: TLVec);
+procedure MNLProcess(var LM: TLogitModel; const X: TLVec; var Y: TLVec);
 procedure MNLUnpack(const LM: TLogitModel; var a: TLMatrix; var NVars: TLInt; var NClasses: TLInt);
 procedure MNLPack(const a: TLMatrix; NVars: TLInt; NClasses: TLInt; var LM: TLogitModel);
 procedure MNLCopy(const LM1: TLogitModel; var LM2: TLogitModel);
@@ -1063,64 +1069,64 @@ function MNLClsError(var LM: TLogitModel; const xy: TLMatrix; NPoints: TLInt): T
 {$ENDREGION 'LogitModel'}
 {$REGION 'fitting'}
 
-// Least squares fitting
-procedure LSFitLinearW(y: TLVec; w: TLVec; FMatrix: TLMatrix; n: TLInt; M: TLInt; var Info: TLInt; var c: TLVec; var Rep: TLSFitReport);
-procedure LSFitLinearWC(y: TLVec; w: TLVec; FMatrix: TLMatrix; CMatrix: TLMatrix; n: TLInt; M: TLInt; K: TLInt; var Info: TLInt; var c: TLVec; var Rep: TLSFitReport);
-procedure LSFitLinear(y: TLVec; FMatrix: TLMatrix; n: TLInt; M: TLInt; var Info: TLInt; var c: TLVec; var Rep: TLSFitReport);
-procedure LSFitLinearC(y: TLVec; FMatrix: TLMatrix; CMatrix: TLMatrix; n: TLInt; M: TLInt; K: TLInt; var Info: TLInt; var c: TLVec; var Rep: TLSFitReport);
-procedure LSFitNonlinearWFG(x: TLMatrix; y: TLVec; w: TLVec; c: TLVec; n: TLInt; M: TLInt; K: TLInt; CheapFG: Boolean; var State: TLSFitState);
-procedure LSFitNonlinearFG(x: TLMatrix; y: TLVec; c: TLVec; n: TLInt; M: TLInt; K: TLInt; CheapFG: Boolean; var State: TLSFitState);
-procedure LSFitNonlinearWFGH(x: TLMatrix; y: TLVec; w: TLVec; c: TLVec; n: TLInt; M: TLInt; K: TLInt; var State: TLSFitState);
-procedure LSFitNonlinearFGH(x: TLMatrix; y: TLVec; c: TLVec; n: TLInt; M: TLInt; K: TLInt; var State: TLSFitState);
+{ Least squares fitting }
+procedure LSFitLinearW(Y: TLVec; w: TLVec; FMatrix: TLMatrix; n: TLInt; M: TLInt; var Info: TLInt; var c: TLVec; var Rep: TLSFitReport);
+procedure LSFitLinearWC(Y: TLVec; w: TLVec; FMatrix: TLMatrix; CMatrix: TLMatrix; n: TLInt; M: TLInt; K: TLInt; var Info: TLInt; var c: TLVec; var Rep: TLSFitReport);
+procedure LSFitLinear(Y: TLVec; FMatrix: TLMatrix; n: TLInt; M: TLInt; var Info: TLInt; var c: TLVec; var Rep: TLSFitReport);
+procedure LSFitLinearC(Y: TLVec; FMatrix: TLMatrix; CMatrix: TLMatrix; n: TLInt; M: TLInt; K: TLInt; var Info: TLInt; var c: TLVec; var Rep: TLSFitReport);
+procedure LSFitNonlinearWFG(X: TLMatrix; Y: TLVec; w: TLVec; c: TLVec; n: TLInt; M: TLInt; K: TLInt; CheapFG: Boolean; var State: TLSFitState);
+procedure LSFitNonlinearFG(X: TLMatrix; Y: TLVec; c: TLVec; n: TLInt; M: TLInt; K: TLInt; CheapFG: Boolean; var State: TLSFitState);
+procedure LSFitNonlinearWFGH(X: TLMatrix; Y: TLVec; w: TLVec; c: TLVec; n: TLInt; M: TLInt; K: TLInt; var State: TLSFitState);
+procedure LSFitNonlinearFGH(X: TLMatrix; Y: TLVec; c: TLVec; n: TLInt; M: TLInt; K: TLInt; var State: TLSFitState);
 procedure LSFitNonlinearSetCond(var State: TLSFitState; EpsF: TLFloat; EpsX: TLFloat; MAXITS: TLInt);
 procedure LSFitNonlinearSetStpMax(var State: TLSFitState; StpMax: TLFloat);
 function LSFitNonlinearIteration(var State: TLSFitState): Boolean;
 procedure LSFitNonlinearResults(State: TLSFitState; var Info: TLInt; var c: TLVec; var Rep: TLSFitReport);
-procedure LSFitScaleXY(var x, y: TLVec; n: TLInt; var XC, YC: TLVec; DC: TLIVec; K: TLInt; var XA, XB, SA, SB: TLFloat; var XOriginal, YOriginal: TLVec);
+procedure LSFitScaleXY(var X, Y: TLVec; n: TLInt; var XC, YC: TLVec; DC: TLIVec; K: TLInt; var XA, XB, SA, SB: TLFloat; var XOriginal, YOriginal: TLVec);
 
-// Barycentric fitting
+{ Barycentric fitting }
 function BarycentricCalc(b: TBarycentricInterpolant; t: TLFloat): TLFloat;
 procedure BarycentricDiff1(b: TBarycentricInterpolant; t: TLFloat; var f: TLFloat; var df: TLFloat);
 procedure BarycentricDiff2(b: TBarycentricInterpolant; t: TLFloat; var f: TLFloat; var df: TLFloat; var D2F: TLFloat);
 procedure BarycentricLinTransX(var b: TBarycentricInterpolant; ca: TLFloat; CB: TLFloat);
 procedure BarycentricLinTransY(var b: TBarycentricInterpolant; ca: TLFloat; CB: TLFloat);
-procedure BarycentricUnpack(b: TBarycentricInterpolant; var n: TLInt; var x: TLVec; var y: TLVec; var w: TLVec);
+procedure BarycentricUnpack(b: TBarycentricInterpolant; var n: TLInt; var X: TLVec; var Y: TLVec; var w: TLVec);
 procedure BarycentricSerialize(b: TBarycentricInterpolant; var ResArry: TLVec; var ResLen: TLInt);
 procedure BarycentricUnserialize(ResArry: TLVec; var b: TBarycentricInterpolant);
 procedure BarycentricCopy(b: TBarycentricInterpolant; var b2: TBarycentricInterpolant);
-procedure BarycentricBuildXYW(x, y, w: TLVec; n: TLInt; var b: TBarycentricInterpolant);
-procedure BarycentricBuildFloaterHormann(x, y: TLVec; n: TLInt; d: TLInt; var b: TBarycentricInterpolant);
-procedure BarycentricFitFloaterHormannWC(x, y, w: TLVec; n: TLInt; XC, YC: TLVec; DC: TLIVec; K, M: TLInt; var Info: TLInt; var b: TBarycentricInterpolant; var Rep: TBarycentricFitReport);
-procedure BarycentricFitFloaterHormann(x, y: TLVec; n: TLInt; M: TLInt; var Info: TLInt; var b: TBarycentricInterpolant; var Rep: TBarycentricFitReport);
+procedure BarycentricBuildXYW(X, Y, w: TLVec; n: TLInt; var b: TBarycentricInterpolant);
+procedure BarycentricBuildFloaterHormann(X, Y: TLVec; n: TLInt; d: TLInt; var b: TBarycentricInterpolant);
+procedure BarycentricFitFloaterHormannWC(X, Y, w: TLVec; n: TLInt; XC, YC: TLVec; DC: TLIVec; K, M: TLInt; var Info: TLInt; var b: TBarycentricInterpolant; var Rep: TBarycentricFitReport);
+procedure BarycentricFitFloaterHormann(X, Y: TLVec; n: TLInt; M: TLInt; var Info: TLInt; var b: TBarycentricInterpolant; var Rep: TBarycentricFitReport);
 
-// Polynomial fitting
-procedure PolynomialBuild(x, y: TLVec; n: TLInt; var p: TBarycentricInterpolant);
-procedure PolynomialBuildEqDist(a: TLFloat; b: TLFloat; y: TLVec; n: TLInt; var p: TBarycentricInterpolant);
-procedure PolynomialBuildCheb1(a: TLFloat; b: TLFloat; y: TLVec; n: TLInt; var p: TBarycentricInterpolant);
-procedure PolynomialBuildCheb2(a: TLFloat; b: TLFloat; y: TLVec; n: TLInt; var p: TBarycentricInterpolant);
+{ Polynomial fitting }
+procedure PolynomialBuild(X, Y: TLVec; n: TLInt; var p: TBarycentricInterpolant);
+procedure PolynomialBuildEqDist(a: TLFloat; b: TLFloat; Y: TLVec; n: TLInt; var p: TBarycentricInterpolant);
+procedure PolynomialBuildCheb1(a: TLFloat; b: TLFloat; Y: TLVec; n: TLInt; var p: TBarycentricInterpolant);
+procedure PolynomialBuildCheb2(a: TLFloat; b: TLFloat; Y: TLVec; n: TLInt; var p: TBarycentricInterpolant);
 function PolynomialCalcEqDist(a: TLFloat; b: TLFloat; f: TLVec; n: TLInt; t: TLFloat): TLFloat;
 function PolynomialCalcCheb1(a: TLFloat; b: TLFloat; f: TLVec; n: TLInt; t: TLFloat): TLFloat;
 function PolynomialCalcCheb2(a: TLFloat; b: TLFloat; f: TLVec; n: TLInt; t: TLFloat): TLFloat;
-procedure PolynomialFit(x, y: TLVec; n, M: TLInt; var Info: TLInt; var p: TBarycentricInterpolant; var Rep: TPolynomialFitReport);
-procedure PolynomialFitWC(x, y, w: TLVec; n: TLInt; XC, YC: TLVec; DC: TLIVec; K: TLInt; M: TLInt; var Info: TLInt; var p: TBarycentricInterpolant; var Rep: TPolynomialFitReport);
+procedure PolynomialFit(X, Y: TLVec; n, M: TLInt; var Info: TLInt; var p: TBarycentricInterpolant; var Rep: TPolynomialFitReport);
+procedure PolynomialFitWC(X, Y, w: TLVec; n: TLInt; XC, YC: TLVec; DC: TLIVec; K: TLInt; M: TLInt; var Info: TLInt; var p: TBarycentricInterpolant; var Rep: TPolynomialFitReport);
 
-// Spline1D fitting
-procedure Spline1DBuildLinear(x, y: TLVec; n: TLInt; var c: TSpline1DInterpolant);
-procedure Spline1DBuildCubic(x, y: TLVec; n: TLInt; BoundLType: TLInt; BoundL: TLFloat; BoundRType: TLInt; BoundR: TLFloat; var c: TSpline1DInterpolant);
-procedure Spline1DBuildCatmullRom(x, y: TLVec; n: TLInt; BoundType: TLInt; Tension: TLFloat; var c: TSpline1DInterpolant);
-procedure Spline1DBuildHermite(x, y: TLVec; d: TLVec; n: TLInt; var c: TSpline1DInterpolant);
-procedure Spline1DBuildAkima(x, y: TLVec; n: TLInt; var c: TSpline1DInterpolant);
-procedure Spline1DFitCubicWC(x, y, w: TLVec; n: TLInt; XC: TLVec; YC: TLVec; DC: TLIVec; K: TLInt; M: TLInt; var Info: TLInt; var s: TSpline1DInterpolant; var Rep: TSpline1DFitReport);
-procedure Spline1DFitHermiteWC(x, y, w: TLVec; n: TLInt; XC: TLVec; YC: TLVec; DC: TLIVec; K: TLInt; M: TLInt; var Info: TLInt; var s: TSpline1DInterpolant; var Rep: TSpline1DFitReport);
-procedure Spline1DFitCubic(x, y: TLVec; n: TLInt; M: TLInt; var Info: TLInt; var s: TSpline1DInterpolant; var Rep: TSpline1DFitReport);
-procedure Spline1DFitHermite(x, y: TLVec; n: TLInt; M: TLInt; var Info: TLInt; var s: TSpline1DInterpolant; var Rep: TSpline1DFitReport);
-function Spline1DCalc(c: TSpline1DInterpolant; x: TLFloat): TLFloat;
-procedure Spline1DDiff(c: TSpline1DInterpolant; x: TLFloat; var s: TLFloat; var DS: TLFloat; var D2S: TLFloat);
+{ Spline1D fitting }
+procedure Spline1DBuildLinear(X, Y: TLVec; n: TLInt; var c: TSpline1DInterpolant);
+procedure Spline1DBuildCubic(X, Y: TLVec; n: TLInt; BoundLType: TLInt; BoundL: TLFloat; BoundRType: TLInt; BoundR: TLFloat; var c: TSpline1DInterpolant);
+procedure Spline1DBuildCatmullRom(X, Y: TLVec; n: TLInt; BoundType: TLInt; Tension: TLFloat; var c: TSpline1DInterpolant);
+procedure Spline1DBuildHermite(X, Y: TLVec; d: TLVec; n: TLInt; var c: TSpline1DInterpolant);
+procedure Spline1DBuildAkima(X, Y: TLVec; n: TLInt; var c: TSpline1DInterpolant);
+procedure Spline1DFitCubicWC(X, Y, w: TLVec; n: TLInt; XC: TLVec; YC: TLVec; DC: TLIVec; K: TLInt; M: TLInt; var Info: TLInt; var s: TSpline1DInterpolant; var Rep: TSpline1DFitReport);
+procedure Spline1DFitHermiteWC(X, Y, w: TLVec; n: TLInt; XC: TLVec; YC: TLVec; DC: TLIVec; K: TLInt; M: TLInt; var Info: TLInt; var s: TSpline1DInterpolant; var Rep: TSpline1DFitReport);
+procedure Spline1DFitCubic(X, Y: TLVec; n: TLInt; M: TLInt; var Info: TLInt; var s: TSpline1DInterpolant; var Rep: TSpline1DFitReport);
+procedure Spline1DFitHermite(X, Y: TLVec; n: TLInt; M: TLInt; var Info: TLInt; var s: TSpline1DInterpolant; var Rep: TSpline1DFitReport);
+function Spline1DCalc(c: TSpline1DInterpolant; X: TLFloat): TLFloat;
+procedure Spline1DDiff(c: TSpline1DInterpolant; X: TLFloat; var s: TLFloat; var DS: TLFloat; var D2S: TLFloat);
 procedure Spline1DCopy(c: TSpline1DInterpolant; var CC: TSpline1DInterpolant);
 procedure Spline1DUnpack(c: TSpline1DInterpolant; var n: TLInt; var Tbl: TLMatrix);
 procedure Spline1DLinTransX(var c: TSpline1DInterpolant; a: TLFloat; b: TLFloat);
 procedure Spline1DLinTransY(var c: TSpline1DInterpolant; a: TLFloat; b: TLFloat);
-function Spline1DIntegrate(c: TSpline1DInterpolant; x: TLFloat): TLFloat;
+function Spline1DIntegrate(c: TSpline1DInterpolant; X: TLFloat): TLFloat;
 
 {$ENDREGION 'fitting'}
 {$REGION 'Portable high quality random number'}
@@ -1129,7 +1135,7 @@ procedure HQRNDSeed(const s1, s2: TLInt; var State: THQRNDState);
 function HQRNDUniformR(var State: THQRNDState): TLFloat;
 function HQRNDUniformI(const n: TLInt; var State: THQRNDState): TLInt;
 function HQRNDNormal(var State: THQRNDState): TLFloat;
-procedure HQRNDUnit2(var State: THQRNDState; var x: TLFloat; var y: TLFloat);
+procedure HQRNDUnit2(var State: THQRNDState; var X: TLFloat; var Y: TLFloat);
 procedure HQRNDNormal2(var State: THQRNDState; var x1: TLFloat; var x2: TLFloat);
 function HQRNDExponential(const LAMBDA: TLFloat; var State: THQRNDState): TLFloat;
 {$ENDREGION 'Portable high quality random number'}
@@ -1149,6 +1155,27 @@ procedure CMatrixRndOrthogonalFromTheLeft(var a: TLComplexMatrix; M: TLInt; n: T
 procedure SMatrixRndMultiply(var a: TLMatrix; n: TLInt);
 procedure HMatrixRndMultiply(var a: TLComplexMatrix; n: TLInt);
 {$ENDREGION 'Generation of random matrix'}
+{$REGION 'fft'}
+{ generates FFT plan }
+procedure FTBaseGenerateComplexFFTPlan(n: TLInt; var Plan: TFTPlan);
+procedure FTBaseGenerateRealFFTPlan(n: TLInt; var Plan: TFTPlan);
+procedure FTBaseGenerateRealFHTPlan(n: TLInt; var Plan: TFTPlan);
+procedure FTBaseExecutePlan(var a: TLVec; AOffset: TLInt; n: TLInt; var Plan: TFTPlan);
+procedure FTBaseExecutePlanRec(var a: TLVec; AOffset: TLInt; var Plan: TFTPlan; EntryOffset: TLInt; StackPtr: TLInt);
+procedure FTBaseFactorize(n: TLInt; TaskType: TLInt; var n1: TLInt; var n2: TLInt);
+function FTBaseIsSmooth(n: TLInt): Boolean;
+function FTBaseFindSmooth(n: TLInt): TLInt;
+function FTBaseFindSmoothEven(n: TLInt): TLInt;
+function FTBaseGetFLOPEstimate(n: TLInt): TLFloat;
+{ 1-dimensional TLComplex FFT. }
+procedure FFTC1D(var a: TLComplexVec; n: TLInt);
+{ 1-dimensional TLComplex inverse FFT. }
+procedure FFTC1DInv(var a: TLComplexVec; n: TLInt);
+{ 1-dimensional real FFT. }
+procedure FFTR1D(const a: TLVec; n: TLInt; var f: TLComplexVec);
+{ 1-dimensional real inverse FFT. }
+procedure FFTR1DInv(const f: TLComplexVec; n: TLInt; var a: TLVec);
+{$ENDREGION 'fft'}
 {$REGION 'test'}
 procedure LearnTest;
 {$ENDREGION 'test'}
@@ -1197,6 +1224,7 @@ uses KM, DoStatusIO, TextParsing, zExpression, OpCode;
 {$INCLUDE learn_fitting.inc}
 {$INCLUDE learn_quality_random.inc}
 {$INCLUDE learn_matgen.inc}
+{$INCLUDE learn_fft.inc}
 {$INCLUDE learn_extAPI.inc}
 {$INCLUDE learn_th.inc}
 {$INCLUDE learn_class.inc}

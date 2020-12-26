@@ -8,7 +8,7 @@ type
 
   PFPCParallelThData32_Block = ^TFPCParallelThData32_Block;
 
-procedure FPCParallelTh32_Block(ThSender: TComputeThread);
+procedure FPCParallelTh32_Block(ThSender: TCompute);
 var
   p: PFPCParallelThData32_Block;
   Pass: Integer;
@@ -71,7 +71,7 @@ begin
             p^.Completed := @Completed;
             p^.OnFor := OnFor;
             p^.Critical := Critical;
-            TComputeThread.RunC(p, nil, @FPCParallelTh32_Block);
+            TCompute.RunC(p, nil, @FPCParallelTh32_Block);
             inc(Pass);
           end;
       end
@@ -100,7 +100,7 @@ begin
             p^.Completed := @Completed;
             p^.OnFor := OnFor;
             p^.Critical := Critical;
-            TComputeThread.RunC(p, nil, @FPCParallelTh32_Block);
+            TCompute.RunC(p, nil, @FPCParallelTh32_Block);
             inc(Pass);
           end;
       end;
@@ -128,7 +128,7 @@ type
 
   PFPCParallelThData64_Block = ^TFPCParallelThData64_Block;
 
-procedure FPCParallelTh64_Block(ThSender: TComputeThread);
+procedure FPCParallelTh64_Block(ThSender: TCompute);
 var
   p: PFPCParallelThData64_Block;
   Pass: Int64;
@@ -191,7 +191,7 @@ begin
             p^.Completed := @Completed;
             p^.OnFor := OnFor;
             p^.Critical := Critical;
-            TComputeThread.RunC(p, nil, @FPCParallelTh64_Block);
+            TCompute.RunC(p, nil, @FPCParallelTh64_Block);
             inc(Pass);
           end;
       end
@@ -220,7 +220,7 @@ begin
             p^.Completed := @Completed;
             p^.OnFor := OnFor;
             p^.Critical := Critical;
-            TComputeThread.RunC(p, nil, @FPCParallelTh64_Block);
+            TCompute.RunC(p, nil, @FPCParallelTh64_Block);
             inc(Pass);
           end;
       end;
@@ -249,7 +249,7 @@ type
 
   PFPCParallelThData32_Fold = ^TFPCParallelThData32_Fold;
 
-procedure FPCParallelTh32_Fold(ThSender: TComputeThread);
+procedure FPCParallelTh32_Fold(ThSender: TCompute);
 var
   p: PFPCParallelThData32_Fold;
 begin
@@ -298,7 +298,8 @@ begin
     Depth := Min(ParallelGranularity, e - b + 1);
     SetLength(states, Depth);
 
-    for i := 0 to Length(states) - 1 do
+    i := 0;
+    while i < Depth do
       begin
         p := @states[i];
         p^.Pass := b + i;
@@ -307,7 +308,8 @@ begin
         p^.Completed := False;
         p^.OnFor := OnFor;
         p^.Critical := Critical;
-        TComputeThread.RunC(p, nil, @FPCParallelTh32_Fold);
+        TCompute.RunC(p, nil, @FPCParallelTh32_Fold);
+        inc(i);
       end;
 
     repeat
@@ -340,7 +342,7 @@ type
 
   PFPCParallelThData64_Fold = ^TFPCParallelThData64_Fold;
 
-procedure FPCParallelTh64_Fold(ThSender: TComputeThread);
+procedure FPCParallelTh64_Fold(ThSender: TCompute);
 var
   p: PFPCParallelThData64_Fold;
 begin
@@ -388,8 +390,8 @@ begin
     Critical := TCritical.Create;
     Depth := Min(ParallelGranularity, e - b + 1);
     SetLength(states, Depth);
-
-    for i := 0 to Length(states) - 1 do
+    i := 0;
+    while i < Depth do
       begin
         p := @states[i];
         p^.Pass := b + i;
@@ -398,7 +400,8 @@ begin
         p^.Completed := False;
         p^.OnFor := OnFor;
         p^.Critical := Critical;
-        TComputeThread.RunC(p, nil, @FPCParallelTh64_Fold);
+        TCompute.RunC(p, nil, @FPCParallelTh64_Fold);
+        inc(i);
       end;
 
     repeat
