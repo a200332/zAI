@@ -90,7 +90,7 @@ begin
       Train_OutputIndex.LoadFromFile(gnic_index_fn);
 
       // 在每个分类中，随机采集出来测试的数量
-      pick_raster := 100;
+      pick_raster := 10;
 
       // 从训练数据集中随机构建测试数据集
       rasterList := TMemoryRasterList.Create;
@@ -183,7 +183,7 @@ begin
 
           // 收敛梯度的处理条件
           // 在收敛梯度中，只要失效步数高于该数值，梯度就会开始收敛
-          param^.iterations_without_progress_threshold := 4000;
+          param^.iterations_without_progress_threshold := 5000;
 
           // 对每个步数输入的图片
           param^.img_mini_batch := 128;
@@ -200,7 +200,7 @@ begin
           LargeScaleTrainingMemoryRecycleTime := C_Tick_Second * 5;
 
           Train_OutputIndex := TPascalStringList.Create;
-          if ai.GNIC_Train(True, RSeri, 32, 32, imgMat, param, Train_OutputIndex) then
+          if ai.GNIC_Train(True, True, RSeri, 32, 32, imgMat, param, Train_OutputIndex) then
             begin
               Train_OutputIndex.SaveToFile(gnic_index_fn);
               DoStatus('训练成功.');

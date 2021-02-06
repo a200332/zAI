@@ -99,7 +99,7 @@ begin
 
       // 开始训练图片库矩阵
       // 我们训练大规模样本时，都应该选择图片矩阵方式来训练
-      m64 := ai.OD_Marshal_Train(imgMat, 100, 100, 8);
+      m64 := ai.OD6L_Marshal_Train(imgMat, 100, 100, 8);
 
       if m64 <> nil then
         begin
@@ -107,7 +107,7 @@ begin
           TThread.Synchronize(Sender, procedure
             begin
               // 当训练完成后，我们将训练好的数据保存
-              SaveDialog.FileName := 'output' + C_OD_Marshal_Ext;
+              SaveDialog.FileName := 'output' + C_OD6L_Marshal_Ext;
               if not SaveDialog.Execute() then
                   exit;
 

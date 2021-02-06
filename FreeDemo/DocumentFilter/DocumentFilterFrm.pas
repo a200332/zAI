@@ -57,7 +57,7 @@ begin
   viewIntf.ShowPixelInfo := False;
   viewIntf.ShowPictureInfo := False;
   viewIntf.ShowBackground := True;
-  viewIntf.PictureViewerStyle := pvsLeft2Right;
+  viewIntf.PictureViewerStyle := pvsDynamic;
 
   fArry := umlGetFileListWithFullPath(TPath.GetLibraryPath);
   for f in fArry do

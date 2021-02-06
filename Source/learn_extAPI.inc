@@ -176,6 +176,11 @@ begin
       Result[i] := LVecCopy(v[i]);
 end;
 
+function LVec(): TLVec;
+begin
+  SetLength(Result, 0);
+end;
+
 function LVec(const veclen: TLInt; const VDef: TLFloat): TLVec;
 begin
   SetLength(Result, veclen);
@@ -503,48 +508,60 @@ begin
       inc(Result, v1[i] xor v2[i]);
 end;
 
-procedure LClampF(var AValue: TLFloat; const aMin, aMax: TLFloat);
+procedure LClampF(var v: TLFloat; const min_, max_: TLFloat);
 begin
-  if aMin > aMax then
-      LClampF(AValue, aMax, aMin)
-  else if AValue > aMax then
-      AValue := aMax
-  else if AValue < aMin then
-      AValue := aMin;
+  if min_ > max_ then
+      LClampF(v, max_, min_)
+  else if v > max_ then
+      v := max_
+  else if v < min_ then
+      v := min_;
 end;
 
-procedure LClampI(var AValue: TLInt; const aMin, aMax: TLInt);
+procedure LClampI(var v: TLInt; const min_, max_: TLInt);
 begin
-  if aMin > aMax then
-      LClampI(AValue, aMax, aMin)
-  else if AValue > aMax then
-      AValue := aMax
-  else if AValue < aMin then
-      AValue := aMin;
+  if min_ > max_ then
+      LClampI(v, max_, min_)
+  else if v > max_ then
+      v := max_
+  else if v < min_ then
+      v := min_;
 end;
 
-function LClamp(const AValue: TLFloat; const aMin, aMax: TLFloat): TLFloat;
+function LClamp(const v: TLFloat; const min_, max_: TLFloat): TLFloat;
 begin
-  if aMin > aMax then
-      Result := LClamp(AValue, aMax, aMin)
-  else if AValue > aMax then
-      Result := aMax
-  else if AValue < aMin then
-      Result := aMin
+  if min_ > max_ then
+      Result := LClamp(v, max_, min_)
+  else if v > max_ then
+      Result := max_
+  else if v < min_ then
+      Result := min_
   else
-      Result := AValue;
+      Result := v;
 end;
 
-function LClamp(const AValue: TLInt; const aMin, aMax: TLInt): TLInt;
+function LClamp(const v: TLInt; const min_, max_: TLInt): TLInt;
 begin
-  if aMin > aMax then
-      Result := LClamp(AValue, aMax, aMin)
-  else if AValue > aMax then
-      Result := aMax
-  else if AValue < aMin then
-      Result := aMin
+  if min_ > max_ then
+      Result := LClamp(v, max_, min_)
+  else if v > max_ then
+      Result := max_
+  else if v < min_ then
+      Result := min_
   else
-      Result := AValue;
+      Result := v;
+end;
+
+function LComplex(X, Y: TLFloat): TLComplex;
+begin
+  Result.X := X;
+  Result.Y := Y;
+end;
+
+function LComplex(f: TLFloat): TLComplex;
+begin
+  Result.X := f;
+  Result.Y := f;
 end;
 
 procedure ZoomLineF(const Source, dest: PLMatrix; const pass, SourceWidth, SourceHeight, DestWidth, DestHeight: TLInt);

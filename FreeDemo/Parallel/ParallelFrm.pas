@@ -108,22 +108,15 @@ end;
 procedure TParallelForm.ParaLockButtonClick(Sender: TObject);
 begin
   atomString.Value := '';
-  DelphiParallelFor(0, 10000 - 1, procedure(pass: Integer)
+  DelphiParallelFor(0, 1000, procedure(pass: Integer)
     begin
-      // 锁住后赋值再解锁
-      atomString.Value := umlIntToStr(pass);
-
-      // 锁住，取值，如果值是'55'，处理，解锁
+      // 锁住，赋值，取值，如果值是'55'，处理，解锁
       atomString.Lock;
+      atomString.p^ := IntToStr(pass);
       if atomString.p^ = '55' then
           DoStatus(atomString.p^);
       atomString.UnLock();
-
-      // 锁住后取值再解锁，如果值是'99'
-      if atomString.Value = '99' then
-          DoStatus('99');
     end);
-  DoStatus();
 end;
 
 procedure TParallelForm.Para19937ButtonClick(Sender: TObject);
@@ -138,10 +131,6 @@ begin
     begin
       SetMT19937Seed(0);
       n := '';
-
-      // 批量随机数生成，这种方式简单暴力，适用于生成噪音图这种东西
-      SetLength(Buff, 100);
-      MT19937Rand32(10, @Buff[0], 100);
 
       for i := 1 to 20 do
         begin

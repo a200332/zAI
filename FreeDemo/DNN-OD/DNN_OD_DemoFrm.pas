@@ -53,7 +53,7 @@ begin
 
       m64: TMemoryStream64;
 
-      mmod_hnd: TMMOD_Handle;
+      mmod_hnd: TMMOD6L_Handle;
       matrix_img: TMatrix_Image_Handle;
       detTarget: TMemoryRaster;
       tk: TTimeTick;
@@ -65,7 +65,7 @@ begin
         end);
       try
         bear_dataset_file := umlCombineFileName(TPath.GetLibraryPath, 'bear.ImgDataSet');
-        bear_od_file := umlChangeFileExt(bear_dataset_file, C_MMOD_Ext);
+        bear_od_file := umlChangeFileExt(bear_dataset_file, C_MMOD6L_Ext);
 
         bear_ImgL := TAI_ImageList.Create;
         bear_ImgL.LoadFromFile(bear_dataset_file);
@@ -91,7 +91,7 @@ begin
                   detDef.R := detDef.Owner.Raster.ComputeAreaScaleSpace(detDef.R, 100, 100);
                 end;
 
-            param := ai.MMOD_DNN_PrepareTrain(bear_ImgL, umlChangeFileExt(bear_dataset_file, '.sync'));
+            param := ai.MMOD6L_DNN_PrepareTrain(bear_ImgL, umlChangeFileExt(bear_dataset_file, '.sync'));
 
             // 这里的OD训练参数叫做超参数，简称超参
 
@@ -159,7 +159,7 @@ begin
             // MMOD也可以叫做DNN-OD
             // MMOD相比SVM-OD，会多出标签
             // 我们在detDef.Token中定义的标签将会被DNN记忆和学习(分类)
-            m64 := ai.MMOD_DNN_Train_Stream(param);
+            m64 := ai.MMOD6L_DNN_Train_Stream(param);
 
             if m64 <> nil then
               begin
@@ -170,13 +170,13 @@ begin
             else
                 DoStatus('训练失败');
 
-            ai.Free_MMOD_DNN_TrainParam(param);
+            ai.Free_MMOD6L_DNN_TrainParam(param);
           end;
 
         if umlFileExists(bear_od_file) then
           begin
             DoStatus('载入熊本熊的OD检测器 : %s', [bear_od_file.Text]);
-            mmod_hnd := ai.MMOD_DNN_Open_Stream(bear_od_file);
+            mmod_hnd := ai.MMOD6L_DNN_Open_Stream(bear_od_file);
 
             // 使用texture atlas技术体系做纹理光栅的排序，输出排序后的新光栅
             detTarget := bear_ImgL.PackingRaster;
@@ -206,7 +206,7 @@ begin
                     // 注意：MMOD_DNN_Process在每次处理前，会将内存的光栅，传递给gpu，这个过程是等待，不能并行，这是主要性能瓶颈
                     // 注意：当我们要求非常高的实时性，我们就需要将分辨率调低一点，或则使用Tracker技术来做快速跟踪定位
                     // 注意：当我们要求非常高的实时性，我们也可以使用TAI_Parallel功能来并行化的处理多个并发的OD检测，以此来提升效率
-                    ai.MMOD_DNN_Process(mmod_hnd, detTarget);
+                    ai.MMOD6L_DNN_Process(mmod_hnd, detTarget);
                     inc(mmod_processcounter);
                   end;
                 DoStatus('干扰GPU-性能测试：GPU-OD在5秒内总共算成了 %d 次OD检测，大约每秒完成 %d 次检测', [mmod_processcounter, Round(mmod_processcounter / 5.0)]);
@@ -228,7 +228,7 @@ begin
                     // 注意：MMOD_DNN_Process在每次处理前，会将内存的光栅，传递给gpu，这个过程是等待，不能并行，这是主要性能瓶颈
                     // 注意：当我们要求非常高的实时性，我们就需要将分辨率调低一点，或则使用Tracker技术来做快速跟踪定位
                     // 注意：当我们要求非常高的实时性，我们也可以使用TAI_Parallel功能来并行化的处理多个并发的OD检测，以此来提升效率
-                    ai.MMOD_DNN_Process_Matrix(mmod_hnd, matrix_img);
+                    ai.MMOD6L_DNN_Process_Matrix(mmod_hnd, matrix_img);
                     inc(mmod_processcounter);
                   end;
                 DoStatus('纯净GPU-性能测试：GPU-OD在5秒内总共算成了 %d 次OD检测，大约每秒完成 %d 次检测', [mmod_processcounter, Round(mmod_processcounter / 5.0)]);
@@ -254,7 +254,7 @@ begin
                     // 注意：MMOD_DNN_Process在每次处理前，会将内存的光栅，传递给gpu，这个过程是等待，不能并行，这是主要性能瓶颈
                     // 注意：当我们要求非常高的实时性，我们就需要将分辨率调低一点，或则使用Tracker技术来做快速跟踪定位
                     // 注意：当我们要求非常高的实时性，我们也可以使用TAI_Parallel功能来并行化的处理多个并发的OD检测，以此来提升效率
-                    ai.MMOD_DNN_Process(mmod_hnd, detTarget);
+                    ai.MMOD6L_DNN_Process(mmod_hnd, detTarget);
                     inc(mmod_processcounter);
                   end;
                 DoStatus('干扰GPU-性能测试：GPU-OD在5秒内总共算成了 %d 次OD检测，大约每秒完成 %d 次检测', [mmod_processcounter, Round(mmod_processcounter / 5.0)]);
@@ -275,14 +275,14 @@ begin
                     // 注意：MMOD_DNN_Process在每次处理前，会将内存的光栅，传递给gpu，这个过程是等待，不能并行，这是主要性能瓶颈
                     // 注意：当我们要求非常高的实时性，我们就需要将分辨率调低一点，或则使用Tracker技术来做快速跟踪定位
                     // 注意：当我们要求非常高的实时性，我们也可以使用TAI_Parallel功能来并行化的处理多个并发的OD检测，以此来提升效率
-                    ai.MMOD_DNN_Process_Matrix(mmod_hnd, matrix_img);
+                    ai.MMOD6L_DNN_Process_Matrix(mmod_hnd, matrix_img);
                     inc(mmod_processcounter);
                   end;
                 DoStatus('纯净GPU-性能测试：GPU-OD在5秒内总共算成了 %d 次OD检测，大约每秒完成 %d 次检测', [mmod_processcounter, Round(mmod_processcounter / 5.0)]);
               end);
             ai.Close_Matrix_Image(matrix_img);
 
-            ai.MMOD_DNN_Close(mmod_hnd);
+            ai.MMOD6L_DNN_Close(mmod_hnd);
           end;
 
         disposeObject(bear_ImgL);
@@ -327,7 +327,7 @@ var
   end;
 
 begin
-  fn := umlCombineFileName(TPath.GetLibraryPath, 'bear' + C_MMOD_Ext);
+  fn := umlCombineFileName(TPath.GetLibraryPath, 'bear' + C_MMOD6L_Ext);
   d(fn);
   d(umlChangeFileExt(fn, '.sync'));
   d(umlChangeFileExt(fn, '.sync_'));

@@ -116,7 +116,7 @@ type
 
   TPolyPassManager = class(TCoreClassPersistent)
   private type
-    TCacheState = (csUnCalc, csYes, csNo);
+    TCacheState = (csNoCompute, csYes, csNo);
     TIntersectCache = array of array of array of array of TCacheState;
     TPointInCache = array of array of TCacheState;
   private
@@ -715,7 +715,7 @@ end;
 
 function TPolyPassManager.PointOkCache(AExpandDist: TGeoFloat; poly1: TPolyManagerChildren; idx1: Integer): Boolean;
 begin
-  if FPointInCache[poly1.index][idx1] = csUnCalc then
+  if FPointInCache[poly1.index][idx1] = csNoCompute then
     begin
       Result := PointOk(AExpandDist - 1, poly1.Expands[idx1, AExpandDist + 1]);
 
@@ -733,7 +733,7 @@ end;
 function TPolyPassManager.LineIntersectCache(AExpandDist: TGeoFloat;
   poly1: TPolyManagerChildren; idx1: Integer; poly2: TPolyManagerChildren; idx2: Integer): Boolean;
 begin
-  if FIntersectCache[poly1.index][idx1][poly2.index][idx2] = csUnCalc then
+  if FIntersectCache[poly1.index][idx1][poly2.index][idx2] = csNoCompute then
     begin
       Result := LineIntersect(AExpandDist, poly1.Expands[idx1, AExpandDist + 1], poly2.Expands[idx2, AExpandDist + 1]);
 
@@ -855,13 +855,13 @@ procedure TPolyPassManager.BuildPass;
 
       SetLength(ACache^[0], FPolyManager.Scene.Count);
       for i := 0 to FPolyManager.Scene.Count - 1 do
-          ACache^[0][i] := csUnCalc;
+          ACache^[0][i] := csNoCompute;
 
       for i := 0 to FPolyManager.Count - 1 do
         begin
           SetLength(ACache^[1 + i], FPolyManager[i].Count);
           for j := 0 to FPolyManager[i].Count - 1 do
-              ACache^[1 + i][j] := csUnCalc;
+              ACache^[1 + i][j] := csNoCompute;
         end;
     end;
 
@@ -913,13 +913,13 @@ procedure TPolyPassManager.BuildPass;
 
     SetLength(FPointInCache[0], FPolyManager.Scene.Count);
     for i := 0 to FPolyManager.Scene.Count - 1 do
-        FPointInCache[0][i] := csUnCalc;
+        FPointInCache[0][i] := csNoCompute;
 
     for i := 0 to FPolyManager.Count - 1 do
       begin
         SetLength(FPointInCache[1 + i], FPolyManager[i].Count);
         for j := 0 to FPolyManager[i].Count - 1 do
-            FPointInCache[1 + i][j] := csUnCalc;
+            FPointInCache[1 + i][j] := csNoCompute;
       end;
   end;
 

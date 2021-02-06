@@ -42,7 +42,7 @@ type
     drawIntf: TDrawEngineInterface_FMX;
     rList: TMemoryRasterList;
     ai: TAI;
-    dnn_face_hnd: TMMOD_Handle;
+    dnn_face_hnd: TMMOD6L_Handle;
   end;
 
 var
@@ -78,12 +78,12 @@ begin
         begin
           nmr := NewRaster;
           nmr.ZoomFrom(mr, mr.width * 4, mr.height * 4);
-          mmod_desc := ai.MMOD_DNN_Process(dnn_face_hnd, nmr);
+          mmod_desc := ai.MMOD6L_DNN_Process(dnn_face_hnd, nmr);
           DisposeObject(nmr);
         end
       else
         begin
-          mmod_desc := ai.MMOD_DNN_Process(dnn_face_hnd, mr);
+          mmod_desc := ai.MMOD6L_DNN_Process(dnn_face_hnd, mr);
         end;
 
       d := TDrawEngine.Create;
@@ -121,7 +121,7 @@ begin
   // 验证key都是抗量子级，无法被破解
   zAI.Prepare_AI_Engine();
   ai := TAI.OpenEngine();
-  dnn_face_hnd := ai.MMOD_DNN_Open_Stream(umlCombineFileName(TPath.GetLibraryPath, 'human_face_detector.svm_dnn_od'));
+  dnn_face_hnd := ai.MMOD6L_DNN_Open_Stream(umlCombineFileName(TPath.GetLibraryPath, 'human_face_detector.svm_dnn_od'));
 
   drawIntf := TDrawEngineInterface_FMX.Create;
   rList := TMemoryRasterList.Create;

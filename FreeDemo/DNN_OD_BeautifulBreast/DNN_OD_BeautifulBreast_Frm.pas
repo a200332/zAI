@@ -32,7 +32,7 @@ type
     frame: TDETexture;
     cadencer_eng: TCadencer;
     ai: TAI;
-    mmod_hnd: TMMOD_Handle;
+    mmod_hnd: TMMOD6L_Handle;
   end;
 
 var
@@ -74,7 +74,7 @@ begin
   ai := TAI.OpenEngine();
 
   // ¼ÓÔØdnn-odµÄ¼ì²âÆ÷
-  mmod_hnd := ai.MMOD_DNN_Open_Stream(umlCombineFileName(TPath.GetLibraryPath, 'BeautifulBreast.svm_dnn_od'));
+  mmod_hnd := ai.MMOD6L_DNN_Open_Stream(umlCombineFileName(TPath.GetLibraryPath, 'BeautifulBreast.svm_dnn_od'));
 end;
 
 procedure TForm1.Timer1Timer(Sender: TObject);

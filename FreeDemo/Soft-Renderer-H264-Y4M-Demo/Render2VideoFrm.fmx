@@ -22,22 +22,13 @@ object Render2VideoForm: TRender2VideoForm
       Size.Height = 50.000000000000000000
       Size.PlatformDefault = False
       TabOrder = 0
-      object PlayButton: TButton
-        Position.X = 16.000000000000000000
-        Position.Y = 8.000000000000000000
-        Size.Width = 113.000000000000000000
-        Size.Height = 33.000000000000000000
-        Size.PlatformDefault = False
-        TabOrder = 1
-        Text = 'Play'
-      end
       object Layout2: TLayout
-        Position.X = 136.000000000000000000
+        Position.X = 8.000000000000000000
         Position.Y = 8.000000000000000000
         Size.Width = 137.000000000000000000
         Size.Height = 34.000000000000000000
         Size.PlatformDefault = False
-        TabOrder = 3
+        TabOrder = 2
         object Label1: TLabel
           Align = Left
           StyledSettings = [Family, Style, FontColor]
@@ -66,7 +57,7 @@ object Render2VideoForm: TRender2VideoForm
           'YUV for Mpeg'
           'H264')
         ItemIndex = 1
-        Position.X = 336.000000000000000000
+        Position.X = 208.000000000000000000
         Position.Y = 12.000000000000000000
         Size.Width = 97.000000000000000000
         Size.Height = 22.000000000000000000
@@ -74,22 +65,22 @@ object Render2VideoForm: TRender2VideoForm
         TabOrder = 0
       end
       object BuildButton: TButton
-        Position.X = 280.000000000000000000
+        Position.X = 152.000000000000000000
         Position.Y = 8.000000000000000000
         Size.Width = 49.000000000000000000
         Size.Height = 33.000000000000000000
         Size.PlatformDefault = False
-        TabOrder = 4
+        TabOrder = 3
         Text = 'Build'
         OnClick = BuildButtonClick
       end
       object Layout3: TLayout
-        Position.X = 440.000000000000000000
+        Position.X = 312.000000000000000000
         Position.Y = 8.000000000000000000
         Size.Width = 121.000000000000000000
         Size.Height = 34.000000000000000000
         Size.PlatformDefault = False
-        TabOrder = 2
+        TabOrder = 1
         object Label2: TLabel
           Align = Left
           StyledSettings = [Family, Style, FontColor]
@@ -115,9 +106,9 @@ object Render2VideoForm: TRender2VideoForm
       object ProgressBar: TProgressBar
         Anchors = [akLeft, akTop, akRight]
         Orientation = Horizontal
-        Position.X = 568.000000000000000000
+        Position.X = 440.000000000000000000
         Position.Y = 16.000000000000000000
-        Size.Width = 377.000000000000000000
+        Size.Width = 505.000000000000000000
         Size.Height = 20.000000000000000000
         Size.PlatformDefault = False
         object SizeInfoLabel: TLabel

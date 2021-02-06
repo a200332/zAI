@@ -67,7 +67,7 @@ begin
     var
       fn: U_String;
       // 训练引擎
-      tt: TTrainingTask;
+      tt: TAI_TrainingTask;
       // 训练参数
       param: THashVariantList;
       // AI引擎
@@ -80,7 +80,7 @@ begin
         begin
           fn := umlCombineFileName(TPath.GetLibraryPath, FileEdit.Text);
         end);
-      tt := TTrainingTask.CreateTask;
+      tt := TAI_TrainingTask.CreateMemoryTask;
 
       // 将文件写入训练任务
       tt.WriteFile(umlGetFileName(fn), fn);
@@ -93,7 +93,7 @@ begin
       param.SetDefaultValue('window_height', 100);          // 训练完成后，窗口滑动用，检测尺度高，如果训练给高清图像用，这里就给100或则更大，低分辨率图像用，这里就给小
       param.SetDefaultValue('thread', 8);                   // 并行训练的线程数量
       param.SetDefaultValue('scale', 0.5);                  // 缩放系数，0.5可以有效提升训练速度
-      param.SetDefaultValue('output', 'output' + C_OD_Ext); // 训练完成后的输出文件
+      param.SetDefaultValue('output', 'output' + C_OD6L_Ext); // 训练完成后的输出文件
 
       tt.Write('param.txt', param);
 
@@ -118,12 +118,12 @@ begin
               TThread.Synchronize(Sender, procedure
                 begin
                   // 当训练完成后，我们将训练好的数据保存
-                  SaveDialog.FileName := param.GetDefaultValue('output', 'output' + C_OD_Ext);
+                  SaveDialog.FileName := param.GetDefaultValue('output', 'output' + C_OD6L_Ext);
                   if not SaveDialog.Execute() then
                       exit;
 
                   // 使用.svm_od数据，请参考SVM_OD的Demo
-                  tt.ReadToFile(param.GetDefaultValue('output', 'output' + C_OD_Ext), SaveDialog.FileName);
+                  tt.ReadToFile(param.GetDefaultValue('output', 'output' + C_OD6L_Ext), SaveDialog.FileName);
                 end);
             end
           else

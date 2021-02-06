@@ -12,12 +12,12 @@ uses SysUtils, Windows, ShellAPI,
 
 function RunTraining(aiEng, inputfile, paramfile, outputfile: SystemString): Boolean;
 var
-  task: TTrainingTask;
+  task: TAI_TrainingTask;
   ai: TAI;
   s: SystemString;
 begin
   Result := False;
-  task := TTrainingTask.OpenTask(inputfile);
+  task := TAI_TrainingTask.OpenMemoryTask(inputfile);
   if not task.CheckTrainingBefore(paramfile, s) then
     begin
       DoStatus(s);

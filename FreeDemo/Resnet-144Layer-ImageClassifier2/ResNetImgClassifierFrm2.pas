@@ -60,12 +60,12 @@ begin
       rnic_vec: TLVec;
       index: Integer;
       n: U_String;
-      CarHub_hnd: TMMOD_Handle;
+      CarHub_hnd: TMMOD6L_Handle;
       hub_num: Integer;
     begin
       output_fn := umlCombineFileName(TPath.GetLibraryPath, 'Mini_Car_and_Lady' + C_RNIC_Ext);
       index_fn := umlCombineFileName(TPath.GetLibraryPath, 'Mini_Car_and_Lady.index');
-      carHub_fn := umlCombineFileName(TPath.GetLibraryPath, 'carhub' + C_MMOD_Ext);
+      carHub_fn := umlCombineFileName(TPath.GetLibraryPath, 'carhub' + C_MMOD6L_Ext);
 
       if (not umlFileExists(output_fn)) or (not umlFileExists(index_fn)) then
         begin
@@ -93,7 +93,7 @@ begin
       TThread.Synchronize(TThread.CurrentThread, procedure
         begin
           // 反复读取mmod模型，在应用时可在启动时一次性读取模型
-          CarHub_hnd := ai.MMOD_DNN_Open_Stream(carHub_fn);
+          CarHub_hnd := ai.MMOD6L_DNN_Open_Stream(carHub_fn);
         end);
 
       // ZAI对cuda的支持机制说明：在10.x版本，一个ZAI进程一次只能用一个cuda，不能并行化使用cuda，如果有多种cuda计算多开进程即可
@@ -155,7 +155,7 @@ begin
       else
           DoStatus('索引与RNIC输出不匹配.需要重新训练');
 
-      ai.MMOD_DNN_Close(CarHub_hnd);
+      ai.MMOD6L_DNN_Close(CarHub_hnd);
       ai.RNIC_Close(rnic_hnd);
       disposeObject(rnic_index);
       disposeObject(mr);
@@ -168,7 +168,7 @@ begin
     var
       param: PRNIC_Train_Parameter;
       sync_fn, output_fn, index_fn, carHub_fn: U_String;
-      m_task: TTrainingTask;
+      m_task: TAI_TrainingTask;
     begin
       TThread.Synchronize(Sender, procedure
         begin
@@ -179,12 +179,12 @@ begin
         sync_fn := umlCombineFileName(TPath.GetLibraryPath, 'Mini_Car_and_Lady.imgMat.sync');
         output_fn := umlCombineFileName(TPath.GetLibraryPath, 'Mini_Car_and_Lady' + C_RNIC_Ext);
         index_fn := umlCombineFileName(TPath.GetLibraryPath, 'Mini_Car_and_Lady.index');
-        carHub_fn := umlCombineFileName(TPath.GetLibraryPath, 'carhub' + C_MMOD_Ext);
+        carHub_fn := umlCombineFileName(TPath.GetLibraryPath, 'carhub' + C_MMOD6L_Ext);
 
         if (not umlFileExists(carHub_fn)) then
           begin
             // 执行轮毂训练任务
-            m_task := TTrainingTask.OpenTask(umlCombineFileName(TPath.GetLibraryPath, 'carhub_mmod_training.OX'));
+            m_task := TAI_TrainingTask.OpenMemoryTask(umlCombineFileName(TPath.GetLibraryPath, 'carhub_mmod_training.OX'));
             if zAI.RunTrainingTask(m_task, ai, 'param.txt') then
               begin
                 m_task.ReadToFile('汽车轮毂.svm_dnn_od', carHub_fn);
@@ -319,7 +319,7 @@ begin
   d(umlCombineFileName(TPath.GetLibraryPath, 'Mini_Car_and_Lady.imgMat.sync_'));
   d(umlCombineFileName(TPath.GetLibraryPath, 'Mini_Car_and_Lady' + C_RNIC_Ext));
   d(umlCombineFileName(TPath.GetLibraryPath, 'Mini_Car_and_Lady.index'));
-  d(umlCombineFileName(TPath.GetLibraryPath, 'carhub' + C_MMOD_Ext));
+  d(umlCombineFileName(TPath.GetLibraryPath, 'carhub' + C_MMOD6L_Ext));
 end;
 
 procedure TResNetImgClassifierForm2.Timer1Timer(Sender: TObject);

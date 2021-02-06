@@ -1,5 +1,5 @@
 { ****************************************************************************** }
-{ * xNat tunnel                  written by QQ 600585@qq.com                   * }
+{ * XNAT tunnel                  written by QQ 600585@qq.com                   * }
 { * https://zpascal.net                                                        * }
 { * https://github.com/PassByYou888/zAI                                        * }
 { * https://github.com/PassByYou888/ZServer4D                                  * }
@@ -16,7 +16,7 @@
 { * https://github.com/PassByYou888/InfiniteIoT                                * }
 { * https://github.com/PassByYou888/FastMD5                                    * }
 { ****************************************************************************** }
-unit xNATClient;
+unit XNATClient;
 
 {$INCLUDE zDefine.inc}
 
@@ -24,7 +24,7 @@ interface
 
 uses CoreClasses, PascalStrings, DoStatusIO, UnicodeMixedLib, ListEngine, TextDataEngine,
   CoreCipher, DataFrameEngine, MemoryStream64, CommunicationFramework, NotifyObjectBase,
-  xNATPhysics;
+  XNATPhysics;
 
 type
   TXNATClient = class;
@@ -98,7 +98,7 @@ type
     procedure PhysicsOpenVM_Result(const cState: Boolean);
     procedure IPV6Listen_Result(Sender: TPeerIO; ResultData: TDataFrameEngine);
   public
-    constructor Create(AOwner: TPeerIO); override;
+    constructor Create(Owner_: TPeerIO); override;
     destructor Destroy; override;
   end;
 
@@ -111,19 +111,19 @@ type
     WaitAsyncConnecting_BeginTime: TTimeTick;
     PhysicsEngine: TCommunicationFramework;
 
-    // IO Interface
+    { IO Interface }
     procedure PeerIO_Create(const Sender: TPeerIO);
     procedure PeerIO_Destroy(const Sender: TPeerIO);
-    // p2pVM Interface
+    { p2pVM Interface }
     procedure p2pVMTunnelAuth(Sender: TPeerIO; const Token: SystemString; var Accept: Boolean);
     procedure p2pVMTunnelOpenBefore(Sender: TPeerIO; p2pVMTunnel: TCommunicationFrameworkWithP2PVM);
     procedure p2pVMTunnelOpen(Sender: TPeerIO; p2pVMTunnel: TCommunicationFrameworkWithP2PVM);
     procedure p2pVMTunnelOpenAfter(Sender: TPeerIO; p2pVMTunnel: TCommunicationFrameworkWithP2PVM);
     procedure p2pVMTunnelClose(Sender: TPeerIO; p2pVMTunnel: TCommunicationFrameworkWithP2PVM);
-    // backcall
+    { backcall }
     procedure PhysicsConnect_Result_BuildP2PToken(const cState: Boolean);
   public
-    // tunnel parameter
+    { tunnel parameter }
     Host: TPascalString;
     Port: TPascalString;
     AuthToken: TPascalString;
@@ -239,18 +239,18 @@ begin
       p_io := TPeerIO(XClientTunnel.PhysicsEngine.PeerIO_HashPool[p_id]);
       if p_io <> nil then
         begin
-          // uninstall p2pVM
+          { uninstall p2pVM }
           p_io.p2pVMTunnel.UninstallLogicFramework(SendTunnel);
           p_io.p2pVMTunnel.UninstallLogicFramework(RecvTunnel);
 
-          // install p2pVM
+          { install p2pVM }
           p_io.p2pVMTunnel.InstallLogicFramework(SendTunnel);
           p_io.p2pVMTunnel.InstallLogicFramework(RecvTunnel);
         end;
     end;
   SetLength(io_array, 0);
 
-  // sequence sync
+  { sequence sync }
   RecvTunnel.SyncOnCompleteBuffer := True;
   RecvTunnel.SyncOnResult := True;
   RecvTunnel.SwitchMaxPerformance;
@@ -259,7 +259,7 @@ begin
   SendTunnel.SyncOnResult := True;
   SendTunnel.SwitchMaxPerformance;
 
-  // compressed complete buffer
+  { compressed complete buffer }
   SendTunnel.CompleteBufferCompressed := XClientTunnel.ProtocolCompressed;
   RecvTunnel.CompleteBufferCompressed := XClientTunnel.ProtocolCompressed;
 
@@ -310,7 +310,7 @@ begin
   xCli.Mapping := Self;
   xCli.Activted := False;
 
-  // async connection
+  { async connection }
   xCli.AsyncConnectM(Addr, umlStrToInt(Port), {$IFDEF FPC}@{$ENDIF FPC}xCli.OnConnect_Result);
 end;
 
@@ -581,9 +581,9 @@ begin
   XNAT.WaitAsyncConnecting := False;
 end;
 
-constructor TPhysicsEngine_Special.Create(AOwner: TPeerIO);
+constructor TPhysicsEngine_Special.Create(Owner_: TPeerIO);
 begin
-  inherited Create(AOwner);
+  inherited Create(Owner_);
   XNAT := nil;
 end;
 
@@ -699,7 +699,7 @@ begin
   Host := '';
   Port := '4921';
   AuthToken := '';
-  MaxVMFragment := '1024';
+  MaxVMFragment := '8192';
   MaxRealBuffer := umlIntToStr(1024 * 1024 * 2);
   ProtocolCompressed := False;
   MappingList := TCoreClassListForObj.Create;
@@ -752,7 +752,7 @@ procedure TXNATClient.OpenTunnel(MODEL: TXNAT_PHYSICS_MODEL);
 begin
   Activted := True;
 
-  // init tunnel engine
+  { init tunnel engine }
   if PhysicsEngine = nil then
     begin
       if MODEL = TXNAT_PHYSICS_MODEL.XNAT_PHYSICS_SERVICE then
@@ -765,7 +765,7 @@ begin
   PhysicsEngine.IOInterface := Self;
   PhysicsEngine.VMInterface := Self;
 
-  // Security protocol
+  { Security protocol }
   PhysicsEngine.SwitchMaxPerformance;
 
   if PhysicsEngine is TCommunicationFrameworkServer then

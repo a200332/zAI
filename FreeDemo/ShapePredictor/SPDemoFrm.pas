@@ -187,7 +187,7 @@ var
   ai: TAI;
 
   // 方框化的检测器句柄
-  od_hnd: TOD_Handle;
+  od_hnd: TOD6L_Handle;
 
   // 坐标化的预测器句柄
   sp_hnd: TSP_Handle;
@@ -200,7 +200,7 @@ begin
   // SP需要在一个方框中才能检测出有规律的散布坐标，因为全图检查，像素太多，误判率太高，因此sp的工作机制设计都需要一个框体作为检测区域的计算参考
 
   // 读熊本熊的od取数据集
-  od_hnd := ai.OD_Open_Stream(umlCombineFileName(TPath.GetLibraryPath, 'bear.svm_od'));
+  od_hnd := ai.OD6L_Open_Stream(umlCombineFileName(TPath.GetLibraryPath, 'bear.svm_od'));
   // 读熊本熊的sp取数据集
   sp_hnd := ai.SP_Open_Stream(umlCombineFileName(TPath.GetLibraryPath, 'bear.shape'));
 
@@ -209,7 +209,7 @@ begin
 
   // 在source图像，做最大10个框体检测
   // 返回框体的动态数组
-  dest_od := ai.OD_Process(od_hnd, source, 10);
+  dest_od := ai.OD6L_Process(od_hnd, source, 10);
   DrawPool(PaintBox1).PostScrollText(5, PFormat('检测到 %d 个OD框', [length(dest_od)]), 12, DEColor(1, 0, 0, 1));
   SetLength(dest_sp, length(dest_od));
   for i := low(dest_od) to high(dest_od) do
@@ -221,7 +221,7 @@ begin
     end;
 
   ai.SP_Close(sp_hnd);
-  ai.OD_Close(od_hnd);
+  ai.OD6L_Close(od_hnd);
   disposeObject(ai);
 end;
 

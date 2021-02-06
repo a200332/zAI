@@ -58,7 +58,7 @@ begin
       rasterList: TMemoryRasterList;
 
       output_fn, matrix_learn_fn: U_String;
-      hnd: TMDNN_Handle;
+      hnd: TLMetric_Handle;
       vec: TKDTree_Vec;
       KD: TKDTree;
       wrong: Integer;
@@ -111,7 +111,9 @@ begin
           // 使用zAI的cuda必行保证在主进程中计算，否则会发生显存泄漏
           TThread.Synchronize(TThread.CurrentThread, procedure
             begin
+              rasterList[i].UnserializedMemory();
               vec := ai.LMetric_ResNet_Process(hnd, rasterList[i]);
+              rasterList[i].SerializedAndRecycleMemory();
             end);
           if not SameText(rasterList[i].UserToken, KD.SearchToken(vec)) then
               inc(wrong);
@@ -143,7 +145,7 @@ begin
     var
       param: PMetric_ResNet_Train_Parameter;
       sync_fn, output_fn, matrix_learn_fn: U_String;
-      hnd: TMDNN_Handle;
+      hnd: TLMetric_Handle;
       kdDataList: TKDTreeDataList;
       KD: TKDTree;
     begin
@@ -197,7 +199,7 @@ begin
               kdDataList := TKDTreeDataList.Create;
               hnd := ai.LMetric_ResNet_Open_Stream(output_fn);
               DoStatus('正在使用metric将image翻译成k向量.');
-              ai.LMetric_ResNet_SaveToKDTree(hnd, True, imgMat, kdDataList);
+              ai.LMetric_ResNet_SaveToKDTree(hnd, True, RSeri, imgMat, kdDataList);
               DoStatus('k向量训练，秒完.');
               KD := TKDTree.Create(zAI.C_LMetric_Dim);
               kdDataList.Build(KD);
